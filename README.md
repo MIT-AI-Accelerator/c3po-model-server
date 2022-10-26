@@ -15,7 +15,7 @@ conda activate c3po-os-api
 
 6. Setup `pipenv` to shadow `conda`-installed packages and local env version of python: `pipenv --python=$(which python) --site-packages`
 
-7. Install dependencies and dev dependencies locally from teh `Pipfile` by running `pipenv install --dev`.
+7. Install dependencies and dev dependencies locally from the `Pipfile` by running `pipenv install --dev`.
 
 8. Start the app `pipenv run uvicorn app.api:app`.
 
