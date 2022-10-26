@@ -8,7 +8,6 @@ conda activate c3po-os-api
 ```
 
 3. Install tensorflow 2.X into your `conda` environment.  Again, [follow the steps at this article](https://caffeinedev.medium.com/how-to-install-tensorflow-on-m1-mac-8e9b91d93706) if you are using an M1-based Mac.
- - install `conda` sub-dependencies `conda install matplotlib`
 
 4. Run `which pip` and `which python` to verify path to make sure that your `python` and `pip` binaries are coming from your `conda` virtual environment.  Note that the order in which you install conda vs. pip matters to set virtual env priorities.
 
