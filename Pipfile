@@ -9,11 +9,13 @@ uvicorn = "*"
 pydantic = "*"
 transformers = "*"
 matplotlib = "*"
+pandas = "*"
 
 [dev-packages]
 black = "==19.10b0"
 isort = "*"
 flake8 = "*"
+ipykernel = "*"
 
 [requires]
 python_version = "3.9"

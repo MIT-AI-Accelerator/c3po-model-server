@@ -18,7 +18,7 @@ import pandas as pd
 assert len(tf.config.list_physical_devices('GPU')) > 0
 
 # load the dataset
-chat816 = pd.read_csv('../../data/(EROB) MM_Dataset_816_CSVsanitized_flights.csv')
+chat816 = pd.read_csv('../../../data/(EROB) MM_Dataset_816_CSVsanitized_flights.csv')
 
 # print(chat816.iloc[0:1,:])
 

@@ -4,10 +4,10 @@ from pydantic import BaseModel
 
 from logging.config import dictConfig
 import logging
-from loggingConfig import LogConfig
+from app.loggingConfig import LogConfig
 
-from GPT_J_seq2seq.classifier.model import Model
-from GPT_J_seq2seq.classifier.model import get_model
+from app.models.GPT_J_seq2seq.model import Model
+from app.models.GPT_J_seq2seq.model import get_model
 
 dictConfig(LogConfig().dict())
 logger = logging.getLogger("mycoolapp")
