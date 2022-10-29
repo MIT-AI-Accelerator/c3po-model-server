@@ -16,6 +16,7 @@ black = "==19.10b0"
 isort = "*"
 flake8 = "*"
 ipykernel = "*"
+autopep8 = "*"
 
 [requires]
 python_version = "3.9"
