@@ -278,7 +278,7 @@ def classify(chats):
 
     # Evaluation step (generating ABC text using the learned RNN model)
     input_eval = vectorize_layer(tf.squeeze(chats))
-    pred = model(input_eval)
+    pred = model(input_eval, training=False)
     pred = tf.nn.softmax(tf.squeeze(pred)[:, -1, :])
     output_labels = tf.argmax(pred, axis=1)
 
