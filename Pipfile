@@ -10,6 +10,7 @@ pydantic = "*"
 transformers = "*"
 matplotlib = "*"
 pandas = "*"
+pre-commit = "*"
 
 [dev-packages]
 black = "==19.10b0"

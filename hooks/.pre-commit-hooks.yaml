@@ -1,0 +1,7 @@
+-   id: pipfile-to-requirements-txt
+    name: Pipfile to Requirements.txt
+    description: Output requirements.txt based on Pipfile.lock
+    entry: ./output-requirements-txt.sh
+    language: python
+    files: ^Pipfile(\.lock)?$
+    types: [file]

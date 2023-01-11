@@ -35,3 +35,4 @@ curl -X POST -H "Content-Type: application/json" \
 - [`pipenv` with `conda`](https://stackoverflow.com/questions/50546339/pipenv-with-conda)
 - [Basics of `pipenv` for application dependency management](https://python.plainenglish.io/getting-started-with-pipenv-d224328799de)
 - [Conda and pipenv cheat sheet](https://gist.github.com/ziritrion/8024025672ea92b8bdeb320d6015aa0d)
+- [How to use pre-commit framework for git hooks](https://pre-commit.com/index.html)

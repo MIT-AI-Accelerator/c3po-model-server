@@ -1,6 +1,6 @@
 # Import Tensorflow 2.0
 import enum
-import tensorflow as tf 
+import tensorflow as tf
 
 # Import all remaining packages
 import numpy as np
@@ -12,4 +12,3 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 
 import pandas as pd
-

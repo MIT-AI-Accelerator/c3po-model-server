@@ -1,6 +1,6 @@
 # Import Tensorflow 2.0
 import enum
-import tensorflow as tf 
+import tensorflow as tf
 
 # Import all remaining packages
 import numpy as np
@@ -28,7 +28,7 @@ chat816 = pd.read_csv('../../../data/(EROB) MM_Dataset_816_CSVsanitized_flights.
 # for chat in chat816['Column12'].astype(str):
 #     row_array = chat.split()
 #     if len(row_array) > max_length:
-#         max_length = len(row_array) 
+#         max_length = len(row_array)
 
 #     for word in row_array:
 #         vocab_array.append(word)
@@ -46,7 +46,7 @@ all_text = "\n\n".join(chat816['Column12'].astype(str).values.tolist())
 max_length = 0
 for chat in chat816['Column12'].astype(str):
     if len(chat) > max_length:
-        max_length = len(chat) 
+        max_length = len(chat)
 
 vocab = sorted(set(all_text))
 print("There are", len(vocab), "unique characters in the dataset")
@@ -103,10 +103,10 @@ def get_batch(vectorized_chats, vectorized_target, batch_size):
   return x_batch, y_batch
 
 # define the LSTM
-def LSTM(rnn_units): 
+def LSTM(rnn_units):
   return tf.keras.layers.LSTM(
-    rnn_units, 
-    return_sequences=True, 
+    rnn_units,
+    return_sequences=True,
     recurrent_initializer='glorot_uniform',
     recurrent_activation='sigmoid',
     stateful=True,
@@ -115,22 +115,22 @@ def LSTM(rnn_units):
 ### Defining the RNN Model ###
 def build_model(vocab_size, num_class, embedding_dim, rnn_units, batch_size):
   model = tf.keras.Sequential([
-    
+
     # Layer 0: mask zeros in time steps, i.e., data does not exist
     # https://www.tensorflow.org/api_docs/python/tf/keras/layers/Masking
     # https://www.tensorflow.org/guide/keras/masking_and_padding
     # tf.keras.layers.Masking(mask_value=0.0),
-    
-    # Layer 1: Embedding layer to transform indices into dense vectors 
+
+    # Layer 1: Embedding layer to transform indices into dense vectors
     #   of a fixed embedding size
     # mask zeros for diff length inputs
     tf.keras.layers.Embedding(vocab_size, embedding_dim, batch_input_shape=[batch_size, None], mask_zero=True),
 
-    # Layer 2: LSTM with `rnn_units` number of units. 
+    # Layer 2: LSTM with `rnn_units` number of units.
     LSTM(rnn_units),
 
     # Layer 3: Dense (fully-connected) layer that transforms the LSTM output
-    #   into the vocabulary size. 
+    #   into the vocabulary size.
     tf.keras.layers.Dense(num_class, activation='sigmoid')
   ])
 
@@ -154,12 +154,12 @@ num_training_iterations = 2000  # Increase this to train longer
 batch_size = 32  # Experiment between 1 and 64
 initial_learning_rate = 5e-3  # Experiment between 1e-5 and 1e-1
 
-# Model parameters: 
+# Model parameters:
 num_classes = 3
-embedding_dim = 256 
+embedding_dim = 256
 rnn_units = 1024  # Experiment between 1 and 2048
 
-# Checkpoint location: 
+# Checkpoint location:
 checkpoint_dir = './training_checkpoints'
 checkpoint_prefix = os.path.join(checkpoint_dir, "my_ckpt")
 
@@ -183,13 +183,13 @@ optimizer = tf.keras.optimizers.Adam(
 )
 
 @tf.function
-def train_step(x, y): 
+def train_step(x, y):
   # Use tf.GradientTape()
   with tf.GradientTape() as tape:
-  
+
     # generate predictions
     y_hat = model(x)
-  
+
     # get the input label
     y_sample = tf.math.argmax(y,axis=1, output_type=tf.dtypes.int64)
     # tf.print(y, summarize=-1)
@@ -198,10 +198,10 @@ def train_step(x, y):
     loss = compute_loss(y_sample, y_hat[:,-1,:])
 
     # Compute the gradients
-    # We want the gradient of the loss with respect to all of the model parameters. 
+    # We want the gradient of the loss with respect to all of the model parameters.
     # Use `model.trainable_variables` to get a list of all model parameters.
     grads = tape.gradient(loss, model.trainable_variables)
-  
+
     # Apply the gradients to the optimizer so it can update the model accordingly
     optimizer.apply_gradients(zip(grads, model.trainable_variables))
     return loss
@@ -232,11 +232,11 @@ for iter in tqdm(range(num_training_iterations)):
   history.append(loss.numpy().mean())
 
   # Update the model with the changed weights!
-  if iter % 100 == 0:     
+  if iter % 100 == 0:
     model.save_weights(checkpoint_prefix)
     plt.plot(range(iter + 1), history, 'g', label='Training loss')
     plt.show()
-    
+
 # Save the trained model and the weights
 model.save_weights(checkpoint_prefix)
 # plt.plot(epochs, loss_val, 'b', label='validation loss')    plt.show()
@@ -271,21 +271,21 @@ model.save_weights(checkpoint_prefix)
 #   for i in tqdm(range(generation_length)):
 #       '''TODO: evaluate the inputs and generate the next character predictions'''
 #       predictions = model('''TODO''')
-      
+
 #       # Remove the batch dimension
 #       predictions = tf.squeeze(predictions, 0)
-      
+
 #       '''TODO: use a multinomial distribution to sample'''
 #       predicted_id = tf.random.categorical('''TODO''', num_samples=1)[-1,0].numpy()
-      
+
 #       # Pass the prediction along with the previous hidden state
 #       #   as the next inputs to the model
 #       input_eval = tf.expand_dims([predicted_id], 0)
-      
+
 #       '''TODO: add the predicted character to the generated text!'''
 #       # Hint: consider what format the prediction is in vs. the output
 #       text_generated.append('''TODO''')
-    
+
 #   return (start_string + ''.join(text_generated))
 
 

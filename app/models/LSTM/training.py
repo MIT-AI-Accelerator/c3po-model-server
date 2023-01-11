@@ -1,5 +1,5 @@
 import enum
-import tensorflow as tf 
+import tensorflow as tf
 
 # Import all remaining packages
 import numpy as np
