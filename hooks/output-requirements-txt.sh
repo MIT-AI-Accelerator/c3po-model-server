@@ -1,3 +1,3 @@
 #!/bin/bash
 
-pipenv requirements > requirements.txt
+echo "hello"
