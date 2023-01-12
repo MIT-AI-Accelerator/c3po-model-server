@@ -7,4 +7,6 @@ COPY --chown=tensorflow:tensorflow  .cache/python-packages ./python-packages
 
 ENV PYTHONPATH=/home/python/app:/home/python/python-packages
 
-CMD ["sh", "-c", "cd /home/python && python -m puckboard_solver.cli.entrypoint run-webapp --host 0.0.0.0 --port 8080"]
+EXPOSE 8080
+
+CMD ["sh", "-c", "cd /home/python && uvicorn app.api:app --host 0.0.0.0 --port 8080"]
