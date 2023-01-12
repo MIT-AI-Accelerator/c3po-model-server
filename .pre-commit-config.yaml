@@ -8,7 +8,7 @@ repos:
     -   id: end-of-file-fixer
     -   id: check-yaml
     -   id: check-added-large-files
-# -   repo: ./
-#     rev: 49c65f2b6d46d7802adb485c8d6be9fc2cc2a8dc
-#     hooks:
-#     -   id: pipfile-to-requirements-txt
+-   repo: ./
+    rev: 7140bde96f92a20bf3cc58784dd73779dc8cace4
+    hooks:
+    -   id: pipfile-to-requirements-txt
