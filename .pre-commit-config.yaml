@@ -9,6 +9,6 @@ repos:
     -   id: check-yaml
     -   id: check-added-large-files
 -   repo: ../erob-precommit-hooks
-    rev: 09e74fddd79824be28a2ee4d9406b04f75fdfad8
+    rev: 182ed163ae74857980798ec8133a649d76aa2a80
     hooks:
     -   id: pipfile-to-requirements-txt
