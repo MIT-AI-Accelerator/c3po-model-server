@@ -12,7 +12,7 @@ repos:
     rev: 7140bde96f92a20bf3cc58784dd73779dc8cace4
     hooks:
     -   id: pipfile-to-requirements-txt
-# -   repo: https://github.com/pycqa/pylint
-#     rev: pylint-2.6.0
-#     hooks:
-#     -   id: pylint
+-   repo: https://github.com/pycqa/pylint
+    rev: pylint-2.6.0
+    hooks:
+    -   id: pylint
