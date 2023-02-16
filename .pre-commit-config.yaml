@@ -8,11 +8,27 @@ repos:
     -   id: end-of-file-fixer
     -   id: check-yaml
     -   id: check-added-large-files
--   repo: ./
-    rev: 7140bde96f92a20bf3cc58784dd73779dc8cace4
+-   repo: local
+    # rev: 7140bde96f92a20bf3cc58784dd73779dc8cace4
     hooks:
-    -   id: pipfile-to-requirements-txt
--   repo: https://github.com/pycqa/pylint
-    rev: pylint-2.6.0
+    - id: pipfile-to-requirements-txt
+      name: Pipfile to Requirements.txt
+      description: Output requirements.txt based on Pipfile.lock
+      entry: ./hooks/output-requirements-txt.sh
+      language: script
+      files: ^Pipfile(\.lock)?$
+      types: [file]
+-   repo: local
     hooks:
-    -   id: pylint
+    - id: pylint
+      name: pylint
+      entry: pylint
+      language: system
+      types: [python]
+      args:
+        [
+          "-rn", # Only display messages
+          "-sn", # Don't display the scorexs
+          "--output-format=json:.pylint/lint-log.json,colorized:.pylint/lint-colorized", # where to store the lint info
+          "--rcfile=pylintrc", # Link to your config file
+        ]

@@ -11,6 +11,7 @@ transformers = "*"
 matplotlib = "*"
 pandas = "*"
 pre-commit = "*"
+pylint = "*"
 
 [dev-packages]
 black = "==19.10b0"
