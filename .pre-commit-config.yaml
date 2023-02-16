@@ -20,7 +20,7 @@ repos:
       types: [file]
 -   repo: local
     hooks:
-    - id: pylint
+    - id: pylint2
       name: pylint
       entry: pylint
       language: system
