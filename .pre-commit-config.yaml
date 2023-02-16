@@ -9,7 +9,6 @@ repos:
     -   id: check-yaml
     -   id: check-added-large-files
 -   repo: local
-    # rev: 7140bde96f92a20bf3cc58784dd73779dc8cace4
     hooks:
     - id: pipfile-to-requirements-txt
       name: Pipfile to Requirements.txt
@@ -18,9 +17,7 @@ repos:
       language: script
       files: ^Pipfile(\.lock)?$
       types: [file]
--   repo: local
-    hooks:
-    - id: pylint2
+    - id: pylint
       name: pylint
       entry: pylint
       language: system
