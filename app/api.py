@@ -1,10 +1,9 @@
-from fastapi import Depends, FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-
 from logging.config import dictConfig
 import logging
-from app.loggingConfig import LogConfig
+from pydantic import BaseModel
+from fastapi import Depends, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from app.logging_config import LogConfig
 
 from app.models.GPT_J_seq2seq.model import Model
 from app.models.GPT_J_seq2seq.model import get_model
@@ -49,7 +48,7 @@ class PromptResponse(BaseModel):
 def predict(request: PromptRequest, model: Model = Depends(get_model)):
     # answer = model.classify_single_label(request.text)
     answer = model.predict(request.text)
-    logger.debug("start--" + request.text + "--end")
+    logger.debug("start--%s--end",request.text)
     return PromptResponse(
         answer = answer
     )

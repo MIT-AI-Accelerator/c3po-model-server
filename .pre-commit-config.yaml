@@ -24,8 +24,10 @@ repos:
       types: [python]
       args:
         [
-          "-rn", # Only display messages
-          "-sn", # Don't display the scorexs
+          "--reports=y", # summary report
+          "--recursive=y", # search recursively through folders
+          "--persistent=n", # don't pickle data for later comparisons.
           "--output-format=json:.pylint/lint-log.json,colorized:.pylint/lint-colorized", # where to store the lint info
           "--rcfile=pylintrc", # Link to your config file
+          "--verbose",
         ]
