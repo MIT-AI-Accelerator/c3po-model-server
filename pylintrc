@@ -9,7 +9,9 @@
 
 # Files or directories to be skipped. They should be base names, not
 # paths.
-ignore=CVS
+ignore=
+    CVS,
+    .cache/python-packages,
 
 # return 0 (non-error) for CI to pass automatically
 exit-zero=true
