@@ -5,8 +5,7 @@ from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.logging_config import LogConfig
 
-from app.models.LSTM_basic_classifier.model import Model
-from app.models.LSTM_basic_classifier.model import get_model
+from app.models.LSTM_basic_classifier.model import Model, get_model
 
 dictConfig(LogConfig().dict())
 logger = logging.getLogger("mycoolapp")

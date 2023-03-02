@@ -38,6 +38,14 @@ curl -X POST -H "Content-Type: application/json" \
 - [Conda and pipenv cheat sheet](https://gist.github.com/ziritrion/8024025672ea92b8bdeb320d6015aa0d)
 - [How to use pre-commit framework for git hooks](https://pre-commit.com/index.html)
 
+## Testing
+In general, tensorflow and pytorch use the underlying `unittest` framework that comes stock with Python.  However, FastAPI has a ton of great features through `pytest` that make testing HTTP much, much easier.  Good news is that, for the most part, pytest as the runner will also handle unittest, so we can use the TF or pytorch frameworks with unittest and FastAPI with pytest.  Some articles on this:
+- [FastAPI testing](https://fastapi.tiangolo.com/tutorial/testing/)
+- [Tensorflow testing](https://theaisummer.com/unit-test-deep-learning/)
+- [Pytest handling unittest](https://docs.pytest.org/en/latest/how-to/unittest.html#pytest-features-in-unittest-testcase-subclasses)
+- [Test coverage using `coverage`](https://coverage.readthedocs.io/en/7.2.1/)
+
+
 ## Tools for git
 - [Storing Credentials](https://git-scm.com/docs/git-credential-store)...or just type `git config --global credential.helper store`
 - [GPG Commit Signing](https://confluence.il2.dso.mil/display/afrsba/Setting+up+GPG+for+GitLab+Commit+Signing)
@@ -53,6 +61,10 @@ curl -X POST -H "Content-Type: application/json" \
 - [SonarQube for dependency check](https://sonarqube.il4.dso.mil/dashboard?id=platform-one-products-ai-accel-transformers-c3po-model-server-dependencies)
 - [SonarQube for SCA & code coverage](https://sonarqube.il4.dso.mil/dashboard?id=platform-one-products-ai-accel-transformers-c3po-model-server)
 - [False Positive Clearing, SQ and trufflehog](https://confluence.il2.dso.mil/display/PUCKBOARD/Sonarqube+False-Positive+Issue+Workflow)
+
+## Twistlock
+- [Twistlock link for repo](https://twistlock-il4.admin.dso.mil/api/v1/platform-one/products/ai-accel/transformers/c3po-model-server)
+- [Twistlock errors](https://confluence.il2.dso.mil/display/P1MDOHD/TS+-+Twistlock+-+Stage+Failure#TSTwistlockStageFailure-400:NoRegistrySettingsSpecificationApply)
 
 ## Helpdesk Links
 - [Jira Service Desk](https://jira.il2.dso.mil/servicedesk/customer/portals)

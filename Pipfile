@@ -12,6 +12,9 @@ matplotlib = "*"
 pandas = "*"
 pre-commit = "*"
 pylint = "*"
+pytest = "*"
+httpx = "*"
+pytest-cov = "*"
 
 [dev-packages]
 black = "==19.10b0"
