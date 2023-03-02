@@ -36,3 +36,11 @@ curl -X POST -H "Content-Type: application/json" \
 - [Basics of `pipenv` for application dependency management](https://python.plainenglish.io/getting-started-with-pipenv-d224328799de)
 - [Conda and pipenv cheat sheet](https://gist.github.com/ziritrion/8024025672ea92b8bdeb320d6015aa0d)
 - [How to use pre-commit framework for git hooks](https://pre-commit.com/index.html)
+
+# P1 Links
+- [P1 Code repo](https://code.il4.dso.mil/platform-one/products/ai-accel/transformers/c3po-model-server)
+- [P1 Pipelines](https://code.il4.dso.mil/platform-one/products/ai-accel/transformers/c3po-model-server/-/pipelines)
+- [Jira Service Desk](https://jira.il2.dso.mil/servicedesk/customer/portals)
+- [Add someone to Mattermost, Confluence, Jira](https://jira.il2.dso.mil/servicedesk/customer/portal/1/create/498?q=access&q_time=1673363010205)
+- [Add someone to DevOps](https://jira.il2.dso.mil/servicedesk/customer/portal/73/create/706?q=access&q_time=1673363566291)
+- [COT Ticket for AIA](https://jira.il2.dso.mil/browse/COT-484)
