@@ -38,8 +38,17 @@ curl -X POST -H "Content-Type: application/json" \
 - [How to use pre-commit framework for git hooks](https://pre-commit.com/index.html)
 
 # P1 Links
+## Basic Links
 - [P1 Code repo](https://code.il4.dso.mil/platform-one/products/ai-accel/transformers/c3po-model-server)
 - [P1 Pipelines](https://code.il4.dso.mil/platform-one/products/ai-accel/transformers/c3po-model-server/-/pipelines)
+- [Padawan Docs (landing pages)](https://confluence.il2.dso.mil/pages/viewpage.action?pageId=42339431)
+
+## DevOps Links
+### SonarQube
+- [SonarQube for this repo](https://sonarqube.il4.dso.mil/dashboard?id=platform-one-products-ai-accel-transformers-c3po-model-server-dependencies)
+- [False Positive Clearing](https://confluence.il2.dso.mil/display/PUCKBOARD/Sonarqube+False-Positive+Issue+Workflow)
+
+## Helpdesk Links
 - [Jira Service Desk](https://jira.il2.dso.mil/servicedesk/customer/portals)
 - [Add someone to Mattermost, Confluence, Jira](https://jira.il2.dso.mil/servicedesk/customer/portal/1/create/498?q=access&q_time=1673363010205)
 - [Add someone to DevOps](https://jira.il2.dso.mil/servicedesk/customer/portal/73/create/706?q=access&q_time=1673363566291)
