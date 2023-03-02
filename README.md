@@ -30,6 +30,7 @@ curl -X POST -H "Content-Type: application/json" \
 - This codebase assumes that you start from a base tensorflow Docker image or are running tensorflow locally via conda.  We do not install tensorflow via pip.  All other dependencies are install via pip.
 
 # Knowledge and helpful links
+## Tools for this repo
 - [Tutorial followed-ish for this repo](https://curiousily.com/posts/deploy-bert-for-sentiment-analysis-as-rest-api-using-pytorch-transformers-by-hugging-face-and-fastapi/)
 - [Install conda and tensorflow on Mac M1](https://caffeinedev.medium.com/how-to-install-tensorflow-on-m1-mac-8e9b91d93706)
 - [`pipenv` with `conda`](https://stackoverflow.com/questions/50546339/pipenv-with-conda)
@@ -37,11 +38,15 @@ curl -X POST -H "Content-Type: application/json" \
 - [Conda and pipenv cheat sheet](https://gist.github.com/ziritrion/8024025672ea92b8bdeb320d6015aa0d)
 - [How to use pre-commit framework for git hooks](https://pre-commit.com/index.html)
 
+## Tools for git
+- [Storing Credentials](https://git-scm.com/docs/git-credential-store)...or just type `git config --global credential.helper store`
+- [GPG Commit Signing](https://confluence.il2.dso.mil/display/afrsba/Setting+up+GPG+for+GitLab+Commit+Signing)
+
 # P1 Links
 ## Basic Links
 - [P1 Code repo](https://code.il4.dso.mil/platform-one/products/ai-accel/transformers/c3po-model-server)
 - [P1 Pipelines](https://code.il4.dso.mil/platform-one/products/ai-accel/transformers/c3po-model-server/-/pipelines)
-- [Padawan Docs (landing pages)](https://confluence.il2.dso.mil/pages/viewpage.action?pageId=42339431)
+- [Padawan Docs (landing pages)](https://padawan-docs.dso.mil/)
 
 ## DevOps Links
 ### SonarQube
