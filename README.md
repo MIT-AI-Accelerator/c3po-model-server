@@ -51,10 +51,12 @@ curl -X POST -H "Content-Type: application/json" \
 ## DevOps Links
 ### SonarQube
 - [SonarQube for this repo](https://sonarqube.il4.dso.mil/dashboard?id=platform-one-products-ai-accel-transformers-c3po-model-server-dependencies)
-- [False Positive Clearing](https://confluence.il2.dso.mil/display/PUCKBOARD/Sonarqube+False-Positive+Issue+Workflow)
+- [False Positive Clearing, SQ and trufflehog](https://confluence.il2.dso.mil/display/PUCKBOARD/Sonarqube+False-Positive+Issue+Workflow)
 
 ## Helpdesk Links
 - [Jira Service Desk](https://jira.il2.dso.mil/servicedesk/customer/portals)
 - [Add someone to Mattermost, Confluence, Jira](https://jira.il2.dso.mil/servicedesk/customer/portal/1/create/498?q=access&q_time=1673363010205)
 - [Add someone to DevOps](https://jira.il2.dso.mil/servicedesk/customer/portal/73/create/706?q=access&q_time=1673363566291)
+- [Request a pipeline](https://jira.il2.dso.mil/servicedesk/customer/portal/73/group/240)
 - [COT Ticket for AIA](https://jira.il2.dso.mil/browse/COT-484)
+- [False positive clearing](https://jira.il2.dso.mil/servicedesk/customer/portal/73/create/730)
