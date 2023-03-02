@@ -43,7 +43,7 @@ for item in vocab:
 
 
 # define the LSTM
-def LSTM(rnn_units, stateful=True):
+def lstm(rnn_units, stateful=True):
     return tf.keras.layers.LSTM(
         rnn_units,
         return_sequences=True,
@@ -58,7 +58,7 @@ def build_model(vocab_size, num_class, embedding_dim, rnn_units, batch_size):
     first_layer = tf.keras.layers.Embedding(vocab_size, embedding_dim, mask_zero=True) if batch_size is None else tf.keras.layers.Embedding(
         vocab_size, embedding_dim, batch_input_shape=[batch_size, None], mask_zero=True)
 
-    LSTM_layer = LSTM(rnn_units, stateful=False) if batch_size is None else LSTM(rnn_units)
+    lstm_layer = lstm(rnn_units, stateful=False) if batch_size is None else lstm(rnn_units)
 
     model = tf.keras.Sequential([
 
@@ -76,7 +76,7 @@ def build_model(vocab_size, num_class, embedding_dim, rnn_units, batch_size):
         tf.keras.layers.Dropout(.2),
 
         # Layer 2: LSTM with `rnn_units` number of units.
-        LSTM_layer,
+        lstm_layer,
 
         # dropout to prevent overfitting
         tf.keras.layers.Dropout(.2),
@@ -104,11 +104,11 @@ class Model:
     def __init__(self):
 
         # batch size None for inference, remove statefulness and allow any size input
-        self.model = build_model(vocab_size=len(vocab), num_class=num_classes, embedding_dim=embedding_dim, rnn_units=rnn_units, batch_size=None)
+        self.modelDef = build_model(vocab_size=len(vocab), num_class=num_classes, embedding_dim=embedding_dim, rnn_units=rnn_units, batch_size=None)
 
         # Restore the model weights for the last checkpoint after training
-        self.model.load_weights(tf.train.latest_checkpoint(checkpoint_dir))
-        self.model.build(tf.TensorShape([1, None]))
+        self.modelDef.load_weights(tf.train.latest_checkpoint(checkpoint_dir))
+        self.modelDef.build(tf.TensorShape([1, None]))
 
         # use to manage concurrent requests
         self.lock = Lock()
@@ -127,7 +127,7 @@ class Model:
 
             # Evaluation step (generating ABC text using the learned RNN model)
             input_eval = vectorize_layer(tf.squeeze(chats))
-            pred = self.model(input_eval, training=False)
+            pred = self.modelDef(input_eval, training=False)
             pred = tf.nn.softmax(tf.squeeze(pred)[:, -1, :])
             output_labels = tf.argmax(pred, axis=1)
 
