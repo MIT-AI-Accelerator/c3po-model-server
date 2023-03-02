@@ -50,7 +50,8 @@ curl -X POST -H "Content-Type: application/json" \
 
 ## DevOps Links
 ### SonarQube
-- [SonarQube for this repo](https://sonarqube.il4.dso.mil/dashboard?id=platform-one-products-ai-accel-transformers-c3po-model-server-dependencies)
+- [SonarQube for dependency check](https://sonarqube.il4.dso.mil/dashboard?id=platform-one-products-ai-accel-transformers-c3po-model-server-dependencies)
+- [SonarQube for SCA & code coverage](https://sonarqube.il4.dso.mil/dashboard?id=platform-one-products-ai-accel-transformers-c3po-model-server)
 - [False Positive Clearing, SQ and trufflehog](https://confluence.il2.dso.mil/display/PUCKBOARD/Sonarqube+False-Positive+Issue+Workflow)
 
 ## Helpdesk Links

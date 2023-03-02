@@ -5,11 +5,8 @@ from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.logging_config import LogConfig
 
-from app.models.GPT_J_seq2seq.model import Model
-from app.models.GPT_J_seq2seq.model import get_model
-
-# from app.models.LSTM_basic_classifier.model import Model
-# from app.models.LSTM_basic_classifier.model import get_model
+from app.models.LSTM_basic_classifier.model import Model
+from app.models.LSTM_basic_classifier.model import get_model
 
 dictConfig(LogConfig().dict())
 logger = logging.getLogger("mycoolapp")
@@ -46,8 +43,7 @@ class PromptResponse(BaseModel):
 
 @app.post("/predict", response_model=PromptResponse)
 def predict(request: PromptRequest, model: Model = Depends(get_model)):
-    # answer = model.classify_single_label(request.text)
-    answer = model.predict(request.text)
+    answer = model.classify_single_label(request.text)
     logger.debug("start--%s--end",request.text)
     return PromptResponse(
         answer = answer
