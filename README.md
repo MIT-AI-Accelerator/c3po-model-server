@@ -26,6 +26,8 @@ curl -X POST -H "Content-Type: application/json" \
     http://localhost:8000/predict
 ```
 
+10. Run tests and get coverage with `pytest --cov=app`
+
 # Notes
 - This codebase assumes that you start from a base tensorflow Docker image or are running tensorflow locally via conda.  We do not install tensorflow via pip.  All other dependencies are install via pip.
 
@@ -43,6 +45,7 @@ In general, tensorflow and pytorch use the underlying `unittest` framework that 
 - [FastAPI testing](https://fastapi.tiangolo.com/tutorial/testing/)
 - [Tensorflow testing](https://theaisummer.com/unit-test-deep-learning/)
 - [Pytest handling unittest](https://docs.pytest.org/en/latest/how-to/unittest.html#pytest-features-in-unittest-testcase-subclasses)
+- [Mocking in pytest--especially import location](https://changhsinlee.com/pytest-mock/)
 - [Test coverage using `coverage`](https://coverage.readthedocs.io/en/7.2.1/)
 
 
@@ -60,7 +63,7 @@ In general, tensorflow and pytorch use the underlying `unittest` framework that 
 ### SonarQube
 - [SonarQube for dependency check](https://sonarqube.il4.dso.mil/dashboard?id=platform-one-products-ai-accel-transformers-c3po-model-server-dependencies)
 - [SonarQube for SCA & code coverage](https://sonarqube.il4.dso.mil/dashboard?id=platform-one-products-ai-accel-transformers-c3po-model-server)
-- [False Positive Clearing, SQ and trufflehog](https://confluence.il2.dso.mil/display/PUCKBOARD/Sonarqube+False-Positive+Issue+Workflow)
+- [False Positive Clearing SQ and trufflehog](https://confluence.il2.dso.mil/display/PUCKBOARD/Sonarqube+False-Positive+Issue+Workflow)
 
 ## Twistlock
 - [Twistlock link for repo](https://twistlock-il4.admin.dso.mil/api/v1/platform-one/products/ai-accel/transformers/c3po-model-server)
