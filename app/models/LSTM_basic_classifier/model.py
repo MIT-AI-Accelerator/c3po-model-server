@@ -108,7 +108,7 @@ class Model:
         self.modelDef = build_model(vocab_size=len(vocab), num_class=num_classes, embedding_dim=embedding_dim, rnn_units=rnn_units, batch_size=None)
 
         # Restore the model weights for the last checkpoint after training
-        self.modelDef.load_weights(tf.train.latest_checkpoint(checkpoint_dir))
+        # uncomment when you are ready, cant upload these though: self.modelDef.load_weights(tf.train.latest_checkpoint(checkpoint_dir))
         self.modelDef.build(tf.TensorShape([1, None]))
 
         # use to manage concurrent requests
