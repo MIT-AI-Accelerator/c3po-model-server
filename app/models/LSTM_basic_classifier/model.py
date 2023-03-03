@@ -5,8 +5,9 @@ import math
 import pandas as pd
 
 # load the dataset
+# switch to a real dataset like './data/(EROB) MM_Dataset_816_CSVsanitized_flights.csv' when able to be uploaded without entering git history
 chat816 = pd.read_csv(
-    './data/(EROB) MM_Dataset_816_CSVsanitized_flights.csv')
+    './data_open/example_data.csv')
 
 # Make a text-only dataset (without labels), then call adapt
 train_text = tf.constant(chat816['Column12'].astype(str).values)
