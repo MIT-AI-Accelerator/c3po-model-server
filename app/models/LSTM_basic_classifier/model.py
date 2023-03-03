@@ -135,11 +135,17 @@ class Model:
             return output_labels if not single_item else [output_labels[0]]
 
     def classify_label(self, chats):
+        if not isinstance(chats, (list, str)):
+            return [""]
+
         encoded_labels = self.classify(chats)
         labels = ['recycle', 'review', 'action']
         return list(map(lambda label: labels[label], encoded_labels))
 
     def classify_single_label(self, chat):
+        if not isinstance(chat, (str)):
+            return ""
+
         return self.classify_label([chat])[0]
 
 # use for DI
