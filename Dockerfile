@@ -5,7 +5,7 @@ WORKDIR /home/python
 COPY --chown=tensorflow:tensorflow  ./ ./
 COPY --chown=tensorflow:tensorflow  .cache/python-packages ./python-packages
 
-ENV PYTHONPATH=/home/python/app:/home/python/python-packages
+ENV PYTHONPATH=/home/python/app:/home/python/python-packages:/home/python/tests:/root/pip_pkgs
 
 EXPOSE 8080
 
