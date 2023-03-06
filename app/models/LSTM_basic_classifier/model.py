@@ -116,7 +116,8 @@ class Model:
     def __init__(self):
 
         # batch size None for inference, remove statefulness and allow any size input
-        self.model_def = build_model(vocab_size=len(vocab), num_class=num_classes, embedding_dim=embedding_dim_in, rnn_units=rnn_units_in, batch_size=None)
+        self.modelDef = build_model(vocab_size=len(
+            vocab), num_class=num_classes, embedding_dim=embedding_dim, rnn_units=rnn_units, batch_size=None)
 
         # Restore the model weights for the last checkpoint after training
         # uncomment when you are ready, cant upload these though: self.modelDef.load_weights(tf.train.latest_checkpoint(checkpoint_dir))
@@ -203,7 +204,12 @@ class Model:
 
         encoded_labels = self.classify(chats)
         labels = ['recycle', 'review', 'action']
-        return list([labels[label] for label in encoded_labels])
+        output = list(map(lambda label: labels[label], encoded_labels))
+
+        # filter if given None or invalid type in the array
+        output = ["" if chats[index] ==
+                  "" else label for index, label in enumerate(output)]
+        return output
 
     def classify_single_label(self, chat):
         if not isinstance(chat, (str)):
@@ -214,6 +220,7 @@ class Model:
 
 # use for DI
 model = Model()
+
 
 def get_model():
     return model
