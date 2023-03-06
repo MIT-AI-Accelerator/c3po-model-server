@@ -219,7 +219,12 @@ class Model:
 
         encoded_labels = self.classify(chats)
         labels = ['recycle', 'review', 'action']
-        return list([labels[label] for label in encoded_labels])
+        output = list([labels[label] for label in encoded_labels])
+
+        # filter if given None or invalid type in the array
+        output = ["" if chats[index] ==
+                  "" else label for index, label in enumerate(output)]
+        return output
 
     def classify_single_label(self, chat):
         if not isinstance(chat, (str)):
@@ -230,6 +235,7 @@ class Model:
 
 # use for DI
 model = Model()
+
 
 def get_model():
     return model
