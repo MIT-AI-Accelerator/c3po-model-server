@@ -15,6 +15,7 @@ pylint = "*"
 pytest = "*"
 httpx = "*"
 pytest-cov = "*"
+python-multipart = "*"
 
 [dev-packages]
 black = "==19.10b0"
