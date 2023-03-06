@@ -16,6 +16,7 @@ pytest = "*"
 httpx = "*"
 pytest-cov = "*"
 python-multipart = "*"
+aiofiles = "*"
 
 [dev-packages]
 black = "==19.10b0"

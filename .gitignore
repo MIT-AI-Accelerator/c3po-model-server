@@ -1,6 +1,7 @@
 # local ignore items
 /data
 training_checkpoints
+training_checkpoints_archive
 .pylint
 
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.

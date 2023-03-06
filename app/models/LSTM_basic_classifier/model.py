@@ -3,44 +3,49 @@ import tensorflow as tf
 from tensorflow.keras import layers
 import math
 import pandas as pd
+import os
 
-# load the dataset
-# switch to a real dataset like './data/(EROB) MM_Dataset_816_CSVsanitized_flights.csv' when able to be uploaded without entering git history
-chat816 = pd.read_csv(
-    './data_open/example_data.csv')
+def initialize():
+    # load the dataset
+    # switch to a real dataset like './data/(EROB) MM_Dataset_816_CSVsanitized_flights.csv' when able to be uploaded without entering git history
 
-# Make a text-only dataset (without labels), then call adapt
-train_text = tf.constant(chat816['Column12'].astype(str).values)
+    chat_data_path = "./app/models/LSTM_basic_classifier/training_checkpoints/train_data.csv" if os.path.isfile("./app/models/LSTM_basic_classifier/training_checkpoints/train_data.csv") else "./data_open/example_data.csv"
+    chat816 = pd.read_csv(chat_data_path)
 
-# number of unique words in the dataset after punctuation filtering
-word_count_layer = layers.TextVectorization()
-word_count_layer.adapt(train_text)
-num_words = len(word_count_layer.get_vocabulary())
-print(f'There are {num_words} unique words in this dataset')
+    # Make a text-only dataset (without labels), then call adapt
+    train_text = tf.constant(chat816['Column12'].astype(str).values)
 
-# tokenizer
-# https://www.analyticsvidhya.com/blog/2020/05/what-is-tokenization-nlp/
-# https://www.tensorflow.org/api_docs/python/tf/keras/layers/TextVectorization
-# https://www.tensorflow.org/tutorials/keras/text_classification
-max_features = math.floor(num_words * .25)
-sequence_length = 25
+    # number of unique words in the dataset after punctuation filtering
+    word_count_layer = layers.TextVectorization()
+    word_count_layer.adapt(train_text)
+    num_words = len(word_count_layer.get_vocabulary())
+    print(f'There are {num_words} unique words in this dataset')
 
-vectorize_layer = layers.TextVectorization(
-    max_tokens=max_features,
-    output_mode='int',
-    ngrams=3,
-    output_sequence_length=sequence_length)
+    # tokenizer
+    # https://www.analyticsvidhya.com/blog/2020/05/what-is-tokenization-nlp/
+    # https://www.tensorflow.org/api_docs/python/tf/keras/layers/TextVectorization
+    # https://www.tensorflow.org/tutorials/keras/text_classification
+    max_features = math.floor(num_words * .25)
+    sequence_length = 25
 
-# build vocab for this dataset
-vectorize_layer.adapt(train_text)
+    vectorize_layer = layers.TextVectorization(
+        max_tokens=max_features,
+        output_mode='int',
+        ngrams=3,
+        output_sequence_length=sequence_length)
 
-# save the vocabulary as a standard python list
-vocab = vectorize_layer.get_vocabulary()
+    # build vocab for this dataset
+    vectorize_layer.adapt(train_text)
 
-# how far did ngram truly go
-max_ngram_size = 0
-for item in vocab:
-    max_ngram_size = max(max_ngram_size, len(item.split()))
+    # save the vocabulary as a standard python list
+    vocab = vectorize_layer.get_vocabulary()
+
+    # how far did ngram truly go
+    max_ngram_size = 0
+    for item in vocab:
+        max_ngram_size = max(max_ngram_size, len(item.split()))
+
+    return (vocab, vectorize_layer)
 
 
 # define the LSTM
@@ -108,17 +113,24 @@ checkpoint_dir = './app/models/LSTM_basic_classifier/training_checkpoints'
 
 class Model:
     def __init__(self):
+        # use to manage concurrent requests
+        self.lock = Lock()
+
+        # initialize the model without loading weights
+        self.refresh_model()
+
+    def refresh_model(self):
+        self.vocab, self.vectorize_layer = initialize()
 
         # batch size None for inference, remove statefulness and allow any size input
         self.modelDef = build_model(vocab_size=len(
-            vocab), num_class=num_classes, embedding_dim=embedding_dim, rnn_units=rnn_units, batch_size=None)
+            self.vocab), num_class=num_classes, embedding_dim=embedding_dim, rnn_units=rnn_units, batch_size=None)
 
         # Restore the model weights for the last checkpoint after training
-        # uncomment when you are ready, cant upload these though: self.modelDef.load_weights(tf.train.latest_checkpoint(checkpoint_dir))
         self.modelDef.build(tf.TensorShape([1, None]))
 
-        # use to manage concurrent requests
-        self.lock = Lock()
+    def load_weights(self):
+        self.modelDef.load_weights(tf.train.latest_checkpoint(checkpoint_dir))
 
     ## Prediction of a chat class ###
     def classify(self, chats):
@@ -133,7 +145,7 @@ class Model:
                 single_item = True
 
             # Evaluation step (generating ABC text using the learned RNN model)
-            input_eval = vectorize_layer(tf.squeeze(chats))
+            input_eval = self.vectorize_layer(tf.squeeze(chats))
             pred = self.modelDef(input_eval, training=False)
             pred = tf.nn.softmax(tf.squeeze(pred)[:, -1, :])
             output_labels = tf.argmax(pred, axis=1)
@@ -166,7 +178,6 @@ class Model:
 
 # use for DI
 model = Model()
-
 
 def get_model():
     return model
