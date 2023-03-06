@@ -66,4 +66,14 @@ def test_classify_label_when_multi_item_list_received_then_labels_exist():
     assert output_labels_1[0] in ["recycle", "review", "action"]
     assert output_labels_1[1] in ["recycle", "review", "action"]
 
-# TODO: handle case where one item is None but rest are gtg
+# Given: Two chats and a model
+# When: We pass these chat as three-item list plus "None" to classify_label
+# Then: we expect to receive a recycle, action, or review label response and an empty string as a list of length 3
+# TODO: figure out how to mock the model using the TF testing framework eventually
+def test_classify_label_when_multi_item_list_received_and_none_then_labels_exist_and_one_empty():
+    output_labels_1 = model_1.classify_label(["Hello there!", "It is raining", None])
+
+    assert len(output_labels_1) == 3
+    assert output_labels_1[0] in ["recycle", "review", "action"]
+    assert output_labels_1[1] in ["recycle", "review", "action"]
+    assert output_labels_1[2] == ""

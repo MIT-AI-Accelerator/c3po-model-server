@@ -54,12 +54,15 @@ def lstm(rnn_units, stateful=True):
     )
 
 ### Defining the RNN Model ###
+
+
 def build_model(vocab_size, num_class, embedding_dim, rnn_units, batch_size):
 
     first_layer = tf.keras.layers.Embedding(vocab_size, embedding_dim, mask_zero=True) if batch_size is None else tf.keras.layers.Embedding(
         vocab_size, embedding_dim, batch_input_shape=[batch_size, None], mask_zero=True)
 
-    lstm_layer = lstm(rnn_units, stateful=False) if batch_size is None else lstm(rnn_units)
+    lstm_layer = lstm(
+        rnn_units, stateful=False) if batch_size is None else lstm(rnn_units)
 
     model = tf.keras.Sequential([
 
@@ -91,7 +94,7 @@ def build_model(vocab_size, num_class, embedding_dim, rnn_units, batch_size):
 
 
 #################################################################
-### Hyperparameters relevant for inference (make sure they match
+# Hyperparameters relevant for inference (make sure they match
 # those used in training) ###
 # Model parameters:
 num_classes = 3
@@ -101,11 +104,14 @@ rnn_units = 128  # Experiment between 1 and 2048
 # # Checkpoint location:
 checkpoint_dir = './app/models/LSTM_basic_classifier/training_checkpoints'
 ############## Inference ######################
+
+
 class Model:
     def __init__(self):
 
         # batch size None for inference, remove statefulness and allow any size input
-        self.modelDef = build_model(vocab_size=len(vocab), num_class=num_classes, embedding_dim=embedding_dim, rnn_units=rnn_units, batch_size=None)
+        self.modelDef = build_model(vocab_size=len(
+            vocab), num_class=num_classes, embedding_dim=embedding_dim, rnn_units=rnn_units, batch_size=None)
 
         # Restore the model weights for the last checkpoint after training
         # uncomment when you are ready, cant upload these though: self.modelDef.load_weights(tf.train.latest_checkpoint(checkpoint_dir))
@@ -138,9 +144,18 @@ class Model:
         if not isinstance(chats, (list, str)):
             return [""]
 
+        # record if invalid type in array & make it possible to pass to model
+        if isinstance(chats, list):
+            chats = [chat if isinstance(chat, str) else "" for chat in chats]
+
         encoded_labels = self.classify(chats)
         labels = ['recycle', 'review', 'action']
-        return list(map(lambda label: labels[label], encoded_labels))
+        output = list(map(lambda label: labels[label], encoded_labels))
+
+        # filter if given None or invalid type in the array
+        output = ["" if chats[index] ==
+                  "" else label for index, label in enumerate(output)]
+        return output
 
     def classify_single_label(self, chat):
         if not isinstance(chat, (str)):
@@ -148,7 +163,10 @@ class Model:
 
         return self.classify_label([chat])[0]
 
+
 # use for DI
 model = Model()
+
+
 def get_model():
     return model
