@@ -1,15 +1,26 @@
-from types import SimpleNamespace
-from fastapi.testclient import TestClient
-
-from app.models.LSTM_basic_classifier.model import Model
+from app.models.GPT_J_seq2seq.model import get_model, Model
 
 #************Mocks*******************
-# None
+# creates a mock empty object that is structured like the output
+# of get_model for the lstm, at least regarding classify_single_label
+def mock_get_model():
+
+    def classify_single_label(chat):
+        return "recycle"
+
+    return SimpleNamespace(classify_single_label=classify_single_label)
+
+# overrides the dependency for the tests
+app.dependency_overrides[get_model] = mock_get_model
 #*************************************
 
 #************Setup*******************
 model_1 = Model()
 #*************************************
+
+# ensure get_model returns a model
+def test_get_model_returns_model():
+    assert isinstance(get_model(), Model)
 
 # Given: A line of chat--"Hello there!" and a model
 # When: We pass this chat as a string to classify_single_label
