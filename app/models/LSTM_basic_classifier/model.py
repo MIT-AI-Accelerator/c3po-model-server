@@ -11,8 +11,11 @@ def initialize():
     chat_data_path = "./app/models/LSTM_basic_classifier/training_checkpoints/train_data.csv" if os.path.isfile("./app/models/LSTM_basic_classifier/training_checkpoints/train_data.csv") else "./data_open/example_data.csv"
     chat816 = pd.read_csv(chat_data_path)
 
-    # Make a text-only dataset (without labels), then call adapt
-    train_text = tf.constant(chat816['Column12'].astype(str).values)
+# number of unique words in the dataset after punctuation filtering
+word_count_layer = tf.keras.layers.TextVectorization()
+word_count_layer.adapt(train_text)
+num_words = len(word_count_layer.get_vocabulary())
+print(f'There are {num_words} unique words in this dataset')
 
     # number of unique words in the dataset after punctuation filtering
     word_count_layer = layers.TextVectorization()
@@ -20,12 +23,11 @@ def initialize():
     num_words = len(word_count_layer.get_vocabulary())
     print(f'There are {num_words} unique words in this dataset')
 
-    # tokenizer
-    # https://www.analyticsvidhya.com/blog/2020/05/what-is-tokenization-nlp/
-    # https://www.tensorflow.org/api_docs/python/tf/keras/layers/TextVectorization
-    # https://www.tensorflow.org/tutorials/keras/text_classification
-    max_features = math.floor(num_words * .25)
-    sequence_length = 25
+vectorize_layer = tf.keras.layers.TextVectorization(
+    max_tokens=max_features,
+    output_mode='int',
+    ngrams=3,
+    output_sequence_length=sequence_length)
 
     vectorize_layer = layers.TextVectorization(
         max_tokens=max_features,
@@ -112,6 +114,14 @@ checkpoint_dir = './app/models/LSTM_basic_classifier/training_checkpoints'
 
 class Model:
     def __init__(self):
+
+        # batch size None for inference, remove statefulness and allow any size input
+        self.model_def = build_model(vocab_size=len(vocab), num_class=num_classes, embedding_dim=embedding_dim_in, rnn_units=rnn_units_in, batch_size=None)
+
+        # Restore the model weights for the last checkpoint after training
+        # uncomment when you are ready, cant upload these though: self.modelDef.load_weights(tf.train.latest_checkpoint(checkpoint_dir))
+        self.model_def.build(tf.TensorShape([1, None]))
+
         # use to manage concurrent requests
         self.lock = Lock()
 
@@ -176,8 +186,8 @@ class Model:
                 single_item = True
 
             # Evaluation step (generating ABC text using the learned RNN model)
-            input_eval = self.vectorize_layer(tf.squeeze(chats))
-            pred = self.modelDef(input_eval, training=False)
+            input_eval = vectorize_layer(tf.squeeze(chats))
+            pred = self.model_def(input_eval, training=False)
             pred = tf.nn.softmax(tf.squeeze(pred)[:, -1, :])
             output_labels = tf.argmax(pred, axis=1)
 
@@ -193,12 +203,7 @@ class Model:
 
         encoded_labels = self.classify(chats)
         labels = ['recycle', 'review', 'action']
-        output = list(map(lambda label: labels[label], encoded_labels))
-
-        # filter if given None or invalid type in the array
-        output = ["" if chats[index] ==
-                  "" else label for index, label in enumerate(output)]
-        return output
+        return list([labels[label] for label in encoded_labels])
 
     def classify_single_label(self, chat):
         if not isinstance(chat, (str)):
