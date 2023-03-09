@@ -1,6 +1,6 @@
 
 from pydantic import BaseModel
-from fastapi import Depends, FastAPI, File, UploadFile
+from fastapi import Depends, FastAPI, APIRouter, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Union
 from aiofiles import open
@@ -8,8 +8,14 @@ import os
 
 from app.models.LSTM_basic_classifier.model import Model, get_model
 
+# initiate the app and tell it that there is a proxy prefix of /api that gets stripped
+# (only effects the loading of the swagger and redoc UIs)
+app = FastAPI(root_path="/api")
 
-app = FastAPI()
+# set the prefix (see issue here as to why it is at the end of the file), dont apply until end of file
+# https://stackoverflow.com/questions/70219200/python-fastapi-base-path-control
+prefix_router = APIRouter(prefix="v1")
+
 
 origins = [
     "http://localhost",
@@ -130,3 +136,7 @@ def refresh_model(model: Model = Depends(get_model)):
     model.load_weights()
 
     return {"success": True}
+
+# add the prefix (see issue here as to why it is at the end of the file)
+# https://stackoverflow.com/questions/70219200/python-fastapi-base-path-control
+app.include_router(prefix_router)
