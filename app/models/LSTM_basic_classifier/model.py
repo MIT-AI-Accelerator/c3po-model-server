@@ -161,14 +161,11 @@ class Model:
 
         encoded_labels = self.classify(chats)
         labels = ['recycle', 'review', 'action']
-        # output = [labels[label] for label in encoded_labels]
+
+        # convert to label name and filter if given None or invalid type in the array
         output = ["" if chats[index] ==
                   "" else labels[label] for index, label in enumerate(encoded_labels)]
 
-
-        # filter if given None or invalid type in the array
-        # output = ["" if chats[index] ==
-        #           "" else label for index, label in enumerate(output)]
         return output
 
     def classify_single_label(self, chat):
