@@ -63,15 +63,14 @@ def predict(request: PromptRequest, model: Model = Depends(get_model)):
 
 @app.post("/lstm-basic-classifier/upload-checkpoint-metadata/")
 async def upload_checkpoint_metadata(new_file: Union[UploadFile, None] = None):
-    output_dir = "./app/models/LSTM_basic_classifier/training_checkpoints/"
     output_filename = "checkpoint"
-    output_file = output_dir + output_filename
+    output_file = OUTPUT_DIR + output_filename
 
     if not new_file:
-        return {"message": "No upload file sent"}
+        return NO_FILE_ERROR_RESPONSE
     else:
-        if not os.path.isdir(output_dir):
-            os.makedirs(output_dir)
+        if not os.path.isdir(OUTPUT_DIR):
+            os.makedirs(OUTPUT_DIR)
 
         async with open_aio(output_file, 'wb') as out_file:
             while content := await new_file.read(1024):  # async read chunk
@@ -84,15 +83,14 @@ async def upload_checkpoint_metadata(new_file: Union[UploadFile, None] = None):
 
 @app.post("/lstm-basic-classifier/upload-checkpoint-index/")
 async def upload_checkpoint_index(new_file: Union[UploadFile, None] = None):
-    output_dir = "./app/models/LSTM_basic_classifier/training_checkpoints/"
     output_filename = "my_ckpt.index"
-    output_file = output_dir + output_filename
+    output_file = OUTPUT_DIR + output_filename
 
     if not new_file:
-        return {"message": "No upload file sent"}
+        return NO_FILE_ERROR_RESPONSE
     else:
-        if not os.path.isdir(output_dir):
-            os.makedirs(output_dir)
+        if not os.path.isdir(OUTPUT_DIR):
+            os.makedirs(OUTPUT_DIR)
 
         async with open_aio(output_file, 'wb') as out_file:
             while content := await new_file.read(1024):  # async read chunk
@@ -105,15 +103,14 @@ async def upload_checkpoint_index(new_file: Union[UploadFile, None] = None):
 
 @app.post("/lstm-basic-classifier/upload-checkpoint-data/")
 async def upload_checkpoint_data(new_file: Union[UploadFile, None] = None):
-    output_dir = "./app/models/LSTM_basic_classifier/training_checkpoints/"
     output_filename = "my_ckpt.data-00000-of-00001"
-    output_file = output_dir + output_filename
+    output_file = OUTPUT_DIR + output_filename
 
     if not new_file:
-        return {"message": "No upload file sent"}
+        return NO_FILE_ERROR_RESPONSE
     else:
-        if not os.path.isdir(output_dir):
-            os.makedirs(output_dir)
+        if not os.path.isdir(OUTPUT_DIR):
+            os.makedirs(OUTPUT_DIR)
 
         async with open_aio(output_file, 'wb') as out_file:
             while content := await new_file.read(1024):  # async read chunk
@@ -126,15 +123,14 @@ async def upload_checkpoint_data(new_file: Union[UploadFile, None] = None):
 
 @app.post("/lstm-basic-classifier/upload-train-data/")
 async def upload_train_data(new_file: Union[UploadFile, None] = None):
-    output_dir = "./app/models/LSTM_basic_classifier/training_checkpoints/"
     output_filename = "train_data.csv"
-    output_file = output_dir + output_filename
+    output_file = OUTPUT_DIR + output_filename
 
     if not new_file:
-        return {"message": "No upload file sent"}
+        return NO_FILE_ERROR_RESPONSE
     else:
-        if not os.path.isdir(output_dir):
-            os.makedirs(output_dir)
+        if not os.path.isdir(OUTPUT_DIR):
+            os.makedirs(OUTPUT_DIR)
 
         async with open_aio(output_file, 'wb') as out_file:
             while content := await new_file.read(1024):  # async read chunk
