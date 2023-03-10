@@ -18,6 +18,8 @@ pytest-cov = "*"
 python-multipart = "*"
 aiofiles = "*"
 clamd = "*"
+python-dotenv = "*"
+fastapi-versioning = "*"
 
 [dev-packages]
 black = "==19.10b0"
