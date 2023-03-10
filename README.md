@@ -17,7 +17,7 @@ conda activate c3po-os-api
 
 7. Install dependencies and dev dependencies locally from the `Pipfile` by running `pipenv install --dev`.
 
-8. Start the app `pipenv run uvicorn app.api:app`.
+8. Start the app `pipenv run uvicorn app.api:versioned_app`.
 
 9. Post a request in a separate shell!
 ```bash
