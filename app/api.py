@@ -1,5 +1,7 @@
 
 import os
+from logging.config import dictConfig
+import logging
 from typing import Union
 from pydantic import BaseModel
 from fastapi import Depends, FastAPI, UploadFile
@@ -9,6 +11,7 @@ from fastapi_versioning import VersionedFastAPI
 
 from .models.LSTM_basic_classifier.model import Model, get_model
 from .settings.settings import settings
+from .settings.logging_config import LogConfig
 
 # initiate the app and tell it that there is a proxy prefix of /api that gets stripped
 # (only effects the loading of the swagger and redoc UIs)

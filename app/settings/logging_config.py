@@ -1,12 +1,13 @@
 
 from pydantic import BaseModel
+from .settings import settings
 
 class LogConfig(BaseModel):
     """Logging configuration to be set for the server"""
 
-    LOGGER_NAME: str = "mycoolapp"
+    LOGGER_NAME: str = "transformers"
     LOG_FORMAT: str = "%(levelprefix)s | %(asctime)s | %(message)s"
-    LOG_LEVEL: str = "DEBUG"
+    LOG_LEVEL: str = settings.log_level
 
     # Logging config
     version = 1
@@ -26,5 +27,5 @@ class LogConfig(BaseModel):
         },
     }
     loggers = {
-        "mycoolapp": {"handlers": ["default"], "level": LOG_LEVEL},
+        "transformers": {"handlers": ["default"], "level": LOG_LEVEL},
     }
