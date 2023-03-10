@@ -1,7 +1,5 @@
 
 import os
-from logging.config import dictConfig
-import logging
 from typing import Union
 from pydantic import BaseModel
 from fastapi import Depends, FastAPI, UploadFile
