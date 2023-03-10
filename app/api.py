@@ -145,6 +145,6 @@ def refresh_model(model: Model = Depends(get_model)):
 
 # setup for major versioning
 # ensure to copy over all the non-title args to the original FastAPI call...read docs here: https://pypi.org/project/fastapi-versioning/
-app = VersionedFastAPI(app,
+versioned_app = VersionedFastAPI(app,
                        version_format='{major}',
                        prefix_format='/v{major}', default_api_version=1, root_path=settings.docs_ui_root_path)
