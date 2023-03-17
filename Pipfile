@@ -20,11 +20,6 @@ aiofiles = "*"
 clamd = "*"
 python-dotenv = "*"
 fastapi-versioning = "*"
-sqlalchemy = "*"
-psycopg2-binary = "*"
-hdbscan = "*"
-bertopic = "*"
-minio = "*"
 
 [dev-packages]
 black = "==19.10b0"

@@ -17,11 +17,7 @@ conda activate c3po-os-api
 
 7. Install dependencies and dev dependencies locally from the `Pipfile` by running `pipenv install --dev`.
 
-8.  Create a `secrets.env` file and ensure it is on the `.gitignore`.  Add the following for local dev:
-```sh
-MINIO_ACCESS_KEY="<from console>"
-MINIO_SECRET_KEY="<from console>"
-MINIO_ENDPOINT_URL="http://localhost:9000"
+8. Start the app `pipenv run uvicorn app.api:versioned_app`.
 
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=postgres
