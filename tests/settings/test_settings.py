@@ -1,7 +1,7 @@
 import os
-from app.core.config import EnvironmentSettings, Settings, settings, get_env_file
+from app.settings.settings import EnvironmentSettings, Settings, settings, get_env_file
 
-BASEDIR = os.path.join(os.path.abspath(os.path.dirname("./app/core/config.py")), "env_var")
+BASEDIR = os.path.join(os.path.abspath(os.path.dirname("./app/settings/settings.py")), "env_var")
 
 def test_settings_exists():
     assert isinstance(settings, Settings)
@@ -13,7 +13,7 @@ def test_environment_local_default():
 def test_env_file_name_local():
     environment_settings = EnvironmentSettings(environment='local')
     env_file = get_env_file(environment_settings)
-    assert env_file == (os.path.join(BASEDIR, "local.env"), os.path.join(BASEDIR, "secrets.env"))
+    assert env_file == os.path.join(BASEDIR, "local.env")
 
 def test_env_file_name_staging():
     environment_settings = EnvironmentSettings(environment='staging')
