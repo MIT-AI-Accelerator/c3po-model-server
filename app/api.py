@@ -2,21 +2,17 @@
 import os
 from typing import Union
 from pydantic import BaseModel
-from fastapi import Depends, FastAPI, APIRouter, UploadFile
+from fastapi import Depends, FastAPI, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from aiofiles import open as open_aio
+from fastapi_versioning import VersionedFastAPI
 
 from .models.LSTM_basic_classifier.model import Model, get_model
 from .settings.settings import settings
 
-
 # initiate the app and tell it that there is a proxy prefix of /api that gets stripped
 # (only effects the loading of the swagger and redoc UIs)
-app = FastAPI(root_path=settings.docs_ui_root_path)
-
-# set the prefix (see issue here as to why it is at the end of the file), dont apply until end of file
-# https://stackoverflow.com/questions/70219200/python-fastapi-base-path-control
-prefix_router = APIRouter(prefix=settings.api_prefix)
+app = FastAPI(title="Transformers API", root_path=settings.docs_ui_root_path)
 
 origins = [
     "http://localhost",
@@ -147,6 +143,8 @@ def refresh_model(model: Model = Depends(get_model)):
     return {"success": True}
 
 
-# add the prefix (see issue here as to why it is at the end of the file)
-# https://stackoverflow.com/questions/70219200/python-fastapi-base-path-control
-app.include_router(prefix_router)
+# setup for major versioning
+# ensure to copy over all the non-title args to the original FastAPI call...read docs here: https://pypi.org/project/fastapi-versioning/
+versioned_app = VersionedFastAPI(app,
+                       version_format='{major}',
+                       prefix_format='/v{major}', default_api_version=1, root_path=settings.docs_ui_root_path)
