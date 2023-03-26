@@ -1,16 +1,12 @@
-from app.models.LSTM_basic_classifier.model import get_model, Model
+from app.aimodels.lstm_stress_classifier.ai_service.inference.inference_model import LstmStressClassifierModel
 
 #************Mocks*******************
 # None
 #*************************************
 
 #************Setup*******************
-model_1 = Model()
+model_1 = LstmStressClassifierModel()
 #*************************************
-
-# ensure get_model returns a model
-def test_get_model_returns_model():
-    assert isinstance(get_model(), Model)
 
 # Given: A line of chat--"Hello there!" and a model
 # When: We pass this chat as a string to classify_single_label
