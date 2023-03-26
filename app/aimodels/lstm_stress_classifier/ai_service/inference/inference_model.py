@@ -4,11 +4,13 @@ import tensorflow as tf
 import pandas as pd
 import os
 
+BASE_CKPT_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), "training_checkpoints")
 def initialize():
     # load the dataset
     # switch to a real dataset like './data/(EROB) MM_Dataset_816_CSVsanitized_flights.csv' when able to be uploaded without entering git history
 
-    chat_data_path = "./app/models/LSTM_basic_classifier/training_checkpoints/train_data.csv" if os.path.isfile("./app/models/LSTM_basic_classifier/training_checkpoints/train_data.csv") else "./data_open/example_data.csv"
+    training_data_path = os.path.join(BASE_CKPT_DIR, "train_data.csv")
+    chat_data_path = training_data_path if os.path.isfile(training_data_path) else os.path.join(os.path.abspath(os.path.dirname(__file__)), "../data_open/example_data.csv")
     chat816 = pd.read_csv(chat_data_path)
 
     # Make a text-only dataset (without labels), then call adapt
@@ -106,11 +108,10 @@ embedding_dim_in = 8
 rnn_units_in = 128  # Experiment between 1 and 2048
 
 # # Checkpoint location:
-checkpoint_dir = './app/models/LSTM_basic_classifier/training_checkpoints'
+checkpoint_dir = BASE_CKPT_DIR
 ############## Inference ######################
 
-
-class Model:
+class LstmStressClassifierModel:
     def __init__(self):
         # use to manage concurrent requests
         self.lock = Lock()
@@ -173,10 +174,3 @@ class Model:
             return ""
 
         return self.classify_label([chat])[0]
-
-
-# use for DI
-model = Model()
-
-def get_model():
-    return model
