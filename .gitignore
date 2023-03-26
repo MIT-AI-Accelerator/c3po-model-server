@@ -1,5 +1,5 @@
 # local ignore items
-/data
+data
 training_checkpoints
 training_checkpoints_archive
 .pylint
