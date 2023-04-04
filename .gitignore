@@ -1,3 +1,6 @@
+# local secrets
+secrets.env
+
 # local ignore items
 data
 training_checkpoints
