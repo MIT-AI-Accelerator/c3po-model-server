@@ -28,6 +28,11 @@ curl -X POST -H "Content-Type: application/json" \
 
 10. Run tests and get coverage with `pytest --cov=app`
 
+11.  Create a `secrets.env` file and ensure it is on the `.gitignore`.  Add the following for local dev:
+```sh
+MM_TOKEN="<your_preprod_mattermost_token>"
+```
+
 # Notes
 - This codebase assumes that you start from a base tensorflow Docker image or are running tensorflow locally via conda.  We do not install tensorflow via pip.  All other dependencies are install via pip.
 

@@ -27,7 +27,7 @@ def get_env_file(environment_settings_in):
         env_file = os.path.join(BASEDIR, "staging.env")
     else:
         # put local secrets into secrets.env and ensure on .gitignore, K8s injects staging and prod into env vars
-        env_file = os.path.join(BASEDIR, "local.env"), os.path.join(BASEDIR, "secrets.env")
+        env_file = (os.path.join(BASEDIR, "local.env"), os.path.join(BASEDIR, "secrets.env"))
     return env_file
 
 environment_settings = EnvironmentSettings()
