@@ -13,7 +13,7 @@ def test_environment_local_default():
 def test_env_file_name_local():
     environment_settings = EnvironmentSettings(environment='local')
     env_file = get_env_file(environment_settings)
-    assert env_file == os.path.join(BASEDIR, "local.env")
+    assert env_file == (os.path.join(BASEDIR, "local.env"), os.path.join(BASEDIR, "secrets.env"))
 
 def test_env_file_name_staging():
     environment_settings = EnvironmentSettings(environment='staging')
