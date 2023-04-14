@@ -1,8 +1,6 @@
-import json
-import os
 from pydantic import BaseModel
 from fastapi import APIRouter
-# from app.aimodels.bertopic.ai_service.inference import load_model
+from app.aimodels.bertopic.ai_service.inference.inference_model import load_model
 
 router = APIRouter(
     prefix="/teamtrending"
@@ -18,11 +16,9 @@ class VisualizationResponse(BaseModel):
 
 
 @router.post("/visualization/", response_model=VisualizationResponse)
-async def predict(request: VisualizationRequest):
-    path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "data_open.json")
-    with open(path, "r", encoding='utf-8') as file:
-        output = json.load(file)
-
-        return VisualizationResponse(
-            plot_params=output
-        )
+def predict(request: VisualizationRequest):
+    bert_model = load_model('1')
+    print(request.team)
+    return VisualizationResponse(
+        plot_params=bert_model.trained_models[0].visualization_config
+    )
