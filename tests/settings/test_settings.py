@@ -1,7 +1,7 @@
 import os
-from app.settings.settings import EnvironmentSettings, Settings, settings, get_env_file
+from app.core.config import EnvironmentSettings, Settings, settings, get_env_file
 
-BASEDIR = os.path.join(os.path.abspath(os.path.dirname("./app/settings/settings.py")), "env_var")
+BASEDIR = os.path.join(os.path.abspath(os.path.dirname("./app/core/config.py")), "env_var")
 
 def test_settings_exists():
     assert isinstance(settings, Settings)
