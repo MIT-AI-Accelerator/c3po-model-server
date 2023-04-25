@@ -1,0 +1,563 @@
+---
+openapi: 3.0.2
+info:
+  title: Transformers API
+  version: '1'
+servers:
+- url: "/v1"
+paths:
+  "/aimodels/lstmstressclassifier/upload-checkpoint-metadata/":
+    post:
+      tags:
+      - LSTM Stress Classifier
+      summary: Upload metadata
+      description: |-
+        Upload the LSTM checkpoint metadata file.
+
+        - **new_file**: Required.  The file to upload.
+      operationId: upload_checkpoint_metadata_aimodels_lstmstressclassifier_upload_checkpoint_metadata__post
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              "$ref": "#/components/schemas/Body_upload_checkpoint_metadata_aimodels_lstmstressclassifier_upload_checkpoint_metadata__post"
+      responses:
+        '200':
+          description: Filename on success
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: Not found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/HTTPValidationError"
+  "/aimodels/lstmstressclassifier/upload-checkpoint-index/":
+    post:
+      tags:
+      - LSTM Stress Classifier
+      summary: Upload index
+      description: |-
+        Upload the LSTM checkpoint index file.
+
+        - **new_file**: Required.  The file to upload.
+      operationId: upload_checkpoint_index_aimodels_lstmstressclassifier_upload_checkpoint_index__post
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              "$ref": "#/components/schemas/Body_upload_checkpoint_index_aimodels_lstmstressclassifier_upload_checkpoint_index__post"
+      responses:
+        '200':
+          description: Filename on success
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: Not found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/HTTPValidationError"
+  "/aimodels/lstmstressclassifier/upload-checkpoint-data/":
+    post:
+      tags:
+      - LSTM Stress Classifier
+      summary: Upload checkpoint data
+      description: |-
+        Upload the LSTM checkpoint data file.
+
+        - **new_file**: Required.  The file to upload.
+      operationId: upload_checkpoint_data_aimodels_lstmstressclassifier_upload_checkpoint_data__post
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              "$ref": "#/components/schemas/Body_upload_checkpoint_data_aimodels_lstmstressclassifier_upload_checkpoint_data__post"
+      responses:
+        '200':
+          description: Filename on success
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: Not found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/HTTPValidationError"
+  "/aimodels/lstmstressclassifier/upload-train-data/":
+    post:
+      tags:
+      - LSTM Stress Classifier
+      summary: Upload training data
+      description: |-
+        Upload the LSTM checkpoint training data csv file.
+
+        - **new_file**: Required.  The file to upload.
+      operationId: upload_train_data_aimodels_lstmstressclassifier_upload_train_data__post
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              "$ref": "#/components/schemas/Body_upload_train_data_aimodels_lstmstressclassifier_upload_train_data__post"
+      responses:
+        '200':
+          description: Filename on success
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: Not found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/HTTPValidationError"
+  "/aimodels/lstmstressclassifier/refresh-model/":
+    post:
+      tags:
+      - LSTM Stress Classifier
+      summary: Refresh model
+      description: Refresh the model to load new inputs
+      operationId: refresh_model_aimodels_lstmstressclassifier_refresh_model__post
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema: {}
+        '404':
+          description: Not found
+  "/aimodels/bertopic/bertopic-embedding-pretrained/":
+    post:
+      tags:
+      - BERTopic
+      summary: Create BERTopic Embedding Pretrained Model object
+      description: Create BERTopic Embedding Pretrained Model object.
+      operationId: create_bertopic_embedding_pretrained_object_post_aimodels_bertopic_bertopic_embedding_pretrained__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/BertopicEmbeddingPretrainedCreate"
+        required: true
+      responses:
+        '200':
+          description: Created Embedding Pretrained Model object
+          content:
+            application/json:
+              schema:
+                title: Response Create Bertopic Embedding Pretrained Object Post Aimodels
+                  Bertopic Bertopic Embedding Pretrained  Post
+                anyOf:
+                - "$ref": "#/components/schemas/BertopicEmbeddingPretrained"
+                - "$ref": "#/components/schemas/HTTPValidationError"
+        '404':
+          description: Not found
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/HTTPValidationError"
+  "/aimodels/bertopic/bertopic-embedding-pretrained/{id}/upload/":
+    post:
+      tags:
+      - BERTopic
+      summary: Upload BERTopic Embedding Pretrained Model Binary
+      description: |-
+        Upload BERTopic Embedding Pretrained Model Binary.
+
+        - **new_file**: Required.  The file to upload.
+      operationId: upload_bertopic_embedding_post_aimodels_bertopic_bertopic_embedding_pretrained__id__upload__post
+      parameters:
+      - required: true
+        schema:
+          title: Id
+          type: string
+          format: uuid4
+        name: id
+        in: path
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              "$ref": "#/components/schemas/Body_upload_bertopic_embedding_post_aimodels_bertopic_bertopic_embedding_pretrained__id__upload__post"
+        required: true
+      responses:
+        '200':
+          description: Uploaded Embedding Pretrained Model Binary
+          content:
+            application/json:
+              schema:
+                title: Response Upload Bertopic Embedding Post Aimodels Bertopic Bertopic
+                  Embedding Pretrained  Id  Upload  Post
+                anyOf:
+                - "$ref": "#/components/schemas/BertopicEmbeddingPretrained"
+                - "$ref": "#/components/schemas/HTTPValidationError"
+        '404':
+          description: Not found
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/HTTPValidationError"
+  "/aimodels/bertopic/documents/":
+    post:
+      tags:
+      - BERTopic
+      summary: Create documents from list
+      description: List of created document objects.
+      operationId: create_document_objects_post_aimodels_bertopic_documents__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              title: Documents
+              type: array
+              items:
+                "$ref": "#/components/schemas/DocumentCreate"
+        required: true
+      responses:
+        '200':
+          description: List of created document objects
+          content:
+            application/json:
+              schema:
+                title: Response Create Document Objects Post Aimodels Bertopic Documents  Post
+                anyOf:
+                - type: array
+                  items:
+                    "$ref": "#/components/schemas/Document"
+                - "$ref": "#/components/schemas/HTTPValidationError"
+        '404':
+          description: Not found
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/HTTPValidationError"
+  "/aimodels/bertopic/train":
+    post:
+      tags:
+      - BERTopic
+      summary: Train BERTopic on text
+      description: Train a BERTopic model on text.
+      operationId: train_bertopic_post_aimodels_bertopic_train_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/TrainModelRequest"
+        required: true
+      responses:
+        '200':
+          description: Trained Model and Plotly Visualization config
+          content:
+            application/json:
+              schema:
+                title: Response Train Bertopic Post Aimodels Bertopic Train Post
+                anyOf:
+                - "$ref": "#/components/schemas/BertopicTrained"
+                - "$ref": "#/components/schemas/HTTPValidationError"
+        '404':
+          description: Not found
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/HTTPValidationError"
+  "/sentiments/insights/getchatstress/":
+    post:
+      tags:
+      - Sentiment Insights
+      summary: Predict
+      operationId: predict_sentiments_insights_getchatstress__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/PromptRequest"
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/PromptResponse"
+        '404':
+          description: Not found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/HTTPValidationError"
+  "/topics/insights/teamtrending/visualization/":
+    post:
+      tags:
+      - Topics Insights
+      summary: Predict
+      operationId: predict_topics_insights_teamtrending_visualization__post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/VisualizationRequest"
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/VisualizationResponse"
+        '404':
+          description: Not found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/HTTPValidationError"
+components:
+  schemas:
+    BertopicEmbeddingPretrained:
+      title: BertopicEmbeddingPretrained
+      required:
+      - sha256
+      - model_type
+      - id
+      - version
+      type: object
+      properties:
+        sha256:
+          title: Sha256
+          type: string
+        model_type:
+          "$ref": "#/components/schemas/EmbeddingModelTypeEnum"
+        id:
+          title: Id
+          type: string
+          format: uuid4
+        uploaded:
+          title: Uploaded
+          type: boolean
+          default: false
+        version:
+          title: Version
+          type: integer
+    BertopicEmbeddingPretrainedCreate:
+      title: BertopicEmbeddingPretrainedCreate
+      required:
+      - sha256
+      type: object
+      properties:
+        sha256:
+          title: Sha256
+          type: string
+        model_type:
+          "$ref": "#/components/schemas/EmbeddingModelTypeEnum"
+    BertopicTrained:
+      title: BertopicTrained
+      required:
+      - id
+      - embedding_pretrained_id
+      - embedding_pretrained
+      - trained_on_documents
+      type: object
+      properties:
+        uploaded:
+          title: Uploaded
+          type: boolean
+        plotly_bubble_config:
+          title: Plotly Bubble Config
+          type: object
+        id:
+          title: Id
+          type: string
+          format: uuid4
+        embedding_pretrained_id:
+          title: Embedding Pretrained Id
+          type: string
+          format: uuid4
+        embedding_pretrained:
+          "$ref": "#/components/schemas/BertopicEmbeddingPretrained"
+        trained_on_documents:
+          title: Trained On Documents
+          type: array
+          items:
+            "$ref": "#/components/schemas/Document"
+    Body_upload_bertopic_embedding_post_aimodels_bertopic_bertopic_embedding_pretrained__id__upload__post:
+      title: Body_upload_bertopic_embedding_post_aimodels_bertopic_bertopic_embedding_pretrained__id__upload__post
+      required:
+      - new_file
+      type: object
+      properties:
+        new_file:
+          title: New File
+          type: string
+          format: binary
+    Body_upload_checkpoint_data_aimodels_lstmstressclassifier_upload_checkpoint_data__post:
+      title: Body_upload_checkpoint_data_aimodels_lstmstressclassifier_upload_checkpoint_data__post
+      type: object
+      properties:
+        new_file:
+          title: New File
+          type: string
+          format: binary
+    Body_upload_checkpoint_index_aimodels_lstmstressclassifier_upload_checkpoint_index__post:
+      title: Body_upload_checkpoint_index_aimodels_lstmstressclassifier_upload_checkpoint_index__post
+      type: object
+      properties:
+        new_file:
+          title: New File
+          type: string
+          format: binary
+    Body_upload_checkpoint_metadata_aimodels_lstmstressclassifier_upload_checkpoint_metadata__post:
+      title: Body_upload_checkpoint_metadata_aimodels_lstmstressclassifier_upload_checkpoint_metadata__post
+      type: object
+      properties:
+        new_file:
+          title: New File
+          type: string
+          format: binary
+    Body_upload_train_data_aimodels_lstmstressclassifier_upload_train_data__post:
+      title: Body_upload_train_data_aimodels_lstmstressclassifier_upload_train_data__post
+      type: object
+      properties:
+        new_file:
+          title: New File
+          type: string
+          format: binary
+    Document:
+      title: Document
+      required:
+      - text
+      - id
+      - original_created_time
+      type: object
+      properties:
+        text:
+          title: Text
+          type: string
+        id:
+          title: Id
+          type: string
+          format: uuid4
+        original_created_time:
+          title: Original Created Time
+          type: string
+          format: date-time
+    DocumentCreate:
+      title: DocumentCreate
+      required:
+      - text
+      type: object
+      properties:
+        text:
+          title: Text
+          type: string
+    EmbeddingModelTypeEnum:
+      title: EmbeddingModelTypeEnum
+      enum:
+      - sentence_transformers
+      - diff_cse
+      type: string
+      description: An enumeration.
+    HTTPValidationError:
+      title: HTTPValidationError
+      type: object
+      properties:
+        detail:
+          title: Detail
+          type: array
+          items:
+            "$ref": "#/components/schemas/ValidationError"
+    PromptRequest:
+      title: PromptRequest
+      required:
+      - text
+      type: object
+      properties:
+        text:
+          title: Text
+          type: string
+    PromptResponse:
+      title: PromptResponse
+      required:
+      - answer
+      type: object
+      properties:
+        answer:
+          title: Answer
+          type: string
+    TrainModelRequest:
+      title: TrainModelRequest
+      required:
+      - bertopic_embedding_pretrained_id
+      type: object
+      properties:
+        bertopic_embedding_pretrained_id:
+          title: Bertopic Embedding Pretrained Id
+          type: string
+          format: uuid4
+        document_ids:
+          title: Document Ids
+          type: array
+          items:
+            type: string
+            format: uuid4
+          default: []
+    ValidationError:
+      title: ValidationError
+      required:
+      - loc
+      - msg
+      - type
+      type: object
+      properties:
+        loc:
+          title: Location
+          type: array
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+        msg:
+          title: Message
+          type: string
+        type:
+          title: Error Type
+          type: string
+    VisualizationRequest:
+      title: VisualizationRequest
+      required:
+      - team
+      type: object
+      properties:
+        team:
+          title: Team
+          type: string
+    VisualizationResponse:
+      title: VisualizationResponse
+      required:
+      - plot_params
+      type: object
+      properties:
+        plot_params:
+          title: Plot Params
+          type: object
