@@ -1,16 +1,25 @@
 
-from fastapi import Depends, FastAPI
+
+import logging
+from fastapi import FastAPI
+from logging.config import dictConfig
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_versioning import VersionedFastAPI
-
 from .core.config import settings
+from .core.logging import LogConfig
 from .aimodels.router import router as aimodels_router
 from .sentiments.router import router as sentiments_router
 from .topics.router import router as topics_router
-
 from .dependencies import httpx_client
 
-
+dictConfig(LogConfig().dict())
+logger = logging.getLogger("transformers")
+logger.info("Dummy Info")
+logger.error("Dummy Error")
+logger.debug("Dummy Debug")
+logger.warning("Dummy Warning")
+logger.info("UI Root: %s", settings.docs_ui_root_path)
+logger.info("log_level: %s", settings.log_level)
 
 # initiate the app and tell it that there is a proxy prefix of /api that gets stripped
 # (only effects the loading of the swagger and redoc UIs)
@@ -24,6 +33,8 @@ origins = [
     "http://localhost:3000",
     "http://localhost:3001",
     "http://localhost:3004",
+    "https://transformers.staging.dso.mil",
+    "https://transformers.apps.dso.mil",
 ]
 
 app.include_router(aimodels_router)
