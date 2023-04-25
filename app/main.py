@@ -1,12 +1,14 @@
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_versioning import VersionedFastAPI
 
-from .settings.settings import settings
+from .core.config import settings
 from .aimodels.router import router as aimodels_router
 from .sentiments.router import router as sentiments_router
 from .topics.router import router as topics_router
+
+from .dependencies import httpx_client
 
 
 
@@ -20,6 +22,7 @@ origins = [
     "http://localhost:8000",
     "http://localhost:8080",
     "http://localhost:3000",
+    "http://localhost:3001",
     "http://localhost:3004",
 ]
 
@@ -41,3 +44,21 @@ versioned_app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# close the httpx client when app is shutdown
+# see here: https://stackoverflow.com/questions/73721736/what-is-the-proper-way-to-make-downstream-https-requests-inside-of-uvicorn-fasta
+@versioned_app.on_event('shutdown')
+async def shutdown_event():
+    await httpx_client.aclose()
+
+
+
+    import httpx
+from starlette.background import BackgroundTask
+from fastapi.responses import StreamingResponse
+
+# @app.get('/')
+# async def home():
+#     req = httpx_client.build_request('GET', 'https://www.example.com/')
+#     r = await httpx_client.send(req, stream=True)
+#     return StreamingResponse(r.aiter_text(), background=BackgroundTask(r.aclose))
