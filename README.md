@@ -36,7 +36,7 @@ MM_TOKEN="<your_preprod_mattermost_token>"
 
 10. Visit `localhost:9001`.  Login with user:`miniouser` and password:`minioadmin`.  This is the minio console.
 
-11. Visit `localhost:5050`.  Login with email:`user@test.com` and password:`admin`.  This is the pgadmin console.
+11. Visit `localhost:5050`.  Login with email:`user@test.com` and password:`admin`.  This is the pgadmin console.  **See notes below for important details**
 
 12. Run the app db init script `./scripts/prestart.sh`
 
@@ -51,7 +51,7 @@ MM_TOKEN="<your_preprod_mattermost_token>"
 
 # Notes
 - This codebase assumes that you start from a base tensorflow Docker image or are running tensorflow locally via conda.  We do not install tensorflow via pip.  All other dependencies are install via pip.
-- You will see that `POSTGRES_SERVER=localhost` in the above steps, however, make sure that you login with server name `db` in pgAdmin.  This is because the pgAdmin container is launched in the same docker network as the postgres container, so it uses the service name, whereas launching this app from command line uses port forwarding to localhost.
+- You will see that `POSTGRES_SERVER=localhost` in the above steps, however, make sure that you login with server name `db` in pgAdmin.  This is because the pgAdmin container is launched in the same docker network as the postgres container, so it uses the service name, whereas launching this app from command line uses port forwarding to localhost.  The user, password, and db name will all be `postgres`, port `5432`.
 - For basic CRUD, you can follow this format:
 ```
 from .base import CRUDBase
