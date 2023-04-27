@@ -3,15 +3,13 @@ from fastapi.testclient import TestClient
 from app.main import app
 from app.aimodels.lstm_stress_classifier.ai_service.inference.inference_model import BASE_CKPT_DIR
 
-client = TestClient(app)
-
 #***********Module Test Vars***********
 test_file_dir = "./tests/test_files/"
 #**************************************
 
 # completes succesfully when given a file
 # TODO: delete file
-def test_upload_checkpoint_metadata_success():
+def test_upload_checkpoint_metadata_success(client: TestClient):
     response = client.post("/aimodels/lstmstressclassifier/upload-checkpoint-metadata/",
                            files={"new_file": ("filename", open(test_file_dir + "test_ckpt_metadata", "rb"))})
 
@@ -21,7 +19,7 @@ def test_upload_checkpoint_metadata_success():
 
 # completes succesfully when given a file
 # TODO: delete file
-def test_upload_checkpoint_index_success():
+def test_upload_checkpoint_index_success(client: TestClient):
     response = client.post("/aimodels/lstmstressclassifier/upload-checkpoint-index/",
                            files={"new_file": ("filename", open(test_file_dir + "test_ckpt_index", "rb"))})
 
@@ -30,7 +28,7 @@ def test_upload_checkpoint_index_success():
 
 # completes succesfully when given a file
 # TODO: delete file
-def test_upload_checkpoint_data_success():
+def test_upload_checkpoint_data_success(client: TestClient):
     response = client.post("/aimodels/lstmstressclassifier/upload-checkpoint-data/",
                            files={"new_file": ("filename", open(test_file_dir + "test_ckpt_data", "rb"))})
 
@@ -39,7 +37,7 @@ def test_upload_checkpoint_data_success():
 
 # completes succesfully when given a file
 # TODO: delete file
-def test_upload_train_data_success():
+def test_upload_train_data_success(client: TestClient):
     response = client.post("/aimodels/lstmstressclassifier/upload-train-data/",
                            files={"new_file": ("filename", open(test_file_dir + "example_data.csv", "rb"))})
 
