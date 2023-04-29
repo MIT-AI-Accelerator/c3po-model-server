@@ -4,6 +4,7 @@ secrets.env
 # local development and generation
 full-stack-fastapi-postgresql/
 gen_api/
+coverage-re
 
 # local ignore items
 data
