@@ -1,3 +1,4 @@
+from uuid import uuid4
 from typing import Any, Dict, Generic, List, Optional, TypeVar, Union
 
 from fastapi.encoders import jsonable_encoder
@@ -49,6 +50,9 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         obj_in: Union[UpdateSchemaType, Dict[str, Any]]
     ) -> ModelType:
         obj_data = jsonable_encoder(db_obj)
+        if not obj_data:
+            db.refresh(db_obj)
+            obj_data = jsonable_encoder(db_obj)
         if isinstance(obj_in, dict):
             update_data = obj_in
         else:
@@ -80,7 +84,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         return db.execute(stmt).scalars().all()
 
     def create_all_using_id(self, db: Session, *, obj_in_list: list[CreateSchemaType]) -> ModelType:
-        db_obj_list = [self.model(**jsonable_encoder(obj_in)) for obj_in in obj_in_list] # type: ignore
+        db_obj_list = [self.model(**jsonable_encoder(obj_in), id=uuid4()) for obj_in in obj_in_list] # type: ignore
         db_obj_ids = [db_obj.id for db_obj in db_obj_list]
         db.add_all(db_obj_list)
         db.commit()

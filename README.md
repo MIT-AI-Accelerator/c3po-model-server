@@ -45,7 +45,7 @@ MM_TOKEN="<your_preprod_mattermost_token>"
 
 14. Open `localhost:8000/v1/docs` and start interacting with swagger!
 
-15. Run tests and get coverage with `pytest --cov=app`
+15. Run tests and get coverage with `pytest --cov=app`, and get html reports for vs code live server (or any server) with `pytest --cov --cov-report=html:coverage_re`
 
 16.  You can shut down and your db / minio data will persist via docker volumes.
 
