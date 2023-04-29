@@ -2,6 +2,7 @@ from pydantic import UUID4
 
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 
 from app.crud.base import CRUDBase
 from app.aimodels.bertopic.models.bertopic_trained import BertopicTrainedModel
@@ -15,7 +16,11 @@ class CRUDBertopicTrained(CRUDBase[BertopicTrainedModel, BertopicTrainedCreate, 
         obj_in_data = jsonable_encoder(obj_in)
         db_obj = self.model(**obj_in_data, embedding_pretrained_id=embedding_pretrained_id)
         db.add(db_obj)
-        db.commit()
+        try:
+            db.commit()
+        except IntegrityError: #embedding_pretrained_id is not in db
+            db.rollback()
+            return None
         db.refresh(db_obj)
         return db_obj
 
