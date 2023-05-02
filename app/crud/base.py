@@ -5,13 +5,16 @@ from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
 from sqlalchemy import UUID
 from sqlalchemy.orm import Session
-from sqlalchemy.sql.expression import select
+from sqlalchemy.sql.expression import select, update
 
 from app.db.base_class import Base
+from sqlalchemy.exc import InvalidRequestError
+from sqlalchemy.orm.exc import UnmappedInstanceError
 
 ModelType = TypeVar("ModelType", bound=Base)
 CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
 UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
+
 
 class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     def __init__(self, model: type[ModelType]):
@@ -61,14 +64,28 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             if field in update_data:
                 setattr(db_obj, field, update_data[field])
 
-        db.add(db_obj)
-        db.commit()
-        db.refresh(db_obj)
+        stmt = (update(self.model).
+                where(self.model.id == db_obj.id).
+                values(**jsonable_encoder(db_obj))
+        )
+
+        db.execute(stmt)
+
+        try:
+            db.expire_all() # mimic behavior from db.commit() for consistency and safety of data currency
+            db.refresh(db_obj)
+        except InvalidRequestError:  # id is not in db
+            db.rollback()
+            return None
         return db_obj
 
-    def remove(self, db: Session, *, id: int) -> ModelType:
+    def remove(self, db: Session, *, id: Any) -> ModelType:
         obj = db.query(self.model).get(id)
-        db.delete(obj)
+        try:
+            db.delete(obj)
+        except UnmappedInstanceError:
+            db.rollback()
+            return None
         db.commit()
         return obj
 
@@ -76,6 +93,8 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     # see here for using populate_existing for multi-refresh
     # https://docs.sqlalchemy.org/en/20/orm/queryguide/api.html#orm-queryguide-populate-existing
     def refresh_all_by_id(self, db: Session, *, db_obj_ids: list[UUID]) -> ModelType:
+        if not db_obj_ids:
+            return []
         stmt = (
             select(self.model)
             .where(self.model.id.in_(db_obj_ids))
@@ -84,7 +103,10 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         return db.execute(stmt).scalars().all()
 
     def create_all_using_id(self, db: Session, *, obj_in_list: list[CreateSchemaType]) -> ModelType:
-        db_obj_list = [self.model(**jsonable_encoder(obj_in), id=uuid4()) for obj_in in obj_in_list] # type: ignore
+        if not obj_in_list:
+            return []
+        db_obj_list = [self.model(**jsonable_encoder(obj_in), id=uuid4())
+                       for obj_in in obj_in_list]  # type: ignore
         db_obj_ids = [db_obj.id for db_obj in db_obj_list]
         db.add_all(db_obj_list)
         db.commit()
