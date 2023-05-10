@@ -8,4 +8,4 @@
 # alembic upgrade head
 
 # Create initial data in DB
-python3 -m app.initial_data
+python -m app.initial_data
