@@ -16,8 +16,13 @@ conda activate c3po-os-api
 6. Setup `pipenv` to shadow `conda`-installed packages and local env version of python: `pipenv --python=$(which python) --site-packages`
 
 7. Install dependencies and dev dependencies locally from the `Pipfile` by running `pipenv install --dev`.
+**NOTE**: Temporary issue between arm64 and x86...for now, x86 should install via `pip install -r requirements.txt`.
 
-8. Start the app `pipenv run uvicorn app.api:versioned_app`.
+8.  In `c3po-model-server/app/core/env_var`, create a `secrets.env` file and ensure it is on the `.gitignore`.  Add the following for local dev:
+```sh
+MINIO_ACCESS_KEY="<from console>"
+MINIO_SECRET_KEY="<from console>"
+MINIO_ENDPOINT_URL="http://localhost:9000"
 
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=postgres
@@ -32,7 +37,7 @@ MM_TOKEN="<your_preprod_mattermost_token>"
 
 10. Visit `localhost:9001`.  Login with user:`miniouser` and password:`minioadmin`.  This is the minio console.
 
-11. Visit `localhost:5050`.  Login with email:`user@test.com` and password:`admin`.  This is the pgadmin console.
+11. Visit `localhost:5050`.  Login with email:`user@test.com` and password:`admin`.  This is the pgadmin console.  **See notes below for important details**
 
 12. Run the app db init script `./scripts/prestart.sh`
 
@@ -47,7 +52,7 @@ MM_TOKEN="<your_preprod_mattermost_token>"
 
 # Notes
 - This codebase assumes that you start from a base tensorflow Docker image or are running tensorflow locally via conda.  We do not install tensorflow via pip.  All other dependencies are install via pip.
-- You will see that `POSTGRES_SERVER=localhost` in the above steps, however, make sure that you login with server name `db` in pgAdmin.  This is because the pgAdmin container is launched in the same docker network as the postgres container, so it uses the service name, whereas launching this app from command line uses port forwarding to localhost.
+- You will see that `POSTGRES_SERVER=localhost` in the above steps, however, make sure that you login with server name `db` in pgAdmin.  This is because the pgAdmin container is launched in the same docker network as the postgres container, so it uses the service name, whereas launching this app from command line uses port forwarding to localhost.  The user, password, and db name will all be `postgres`, port `5432`.
 - For basic CRUD, you can follow this format:
 ```
 from .base import CRUDBase
