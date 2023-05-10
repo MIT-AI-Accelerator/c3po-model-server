@@ -1,5 +1,12 @@
+# local secrets
+secrets.env
+
+# local development and generation
+full-stack-fastapi-postgresql/
+gen_api/
+
 # local ignore items
-/data
+data
 training_checkpoints
 training_checkpoints_archive
 .pylint

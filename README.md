@@ -16,20 +16,51 @@ conda activate c3po-os-api
 6. Setup `pipenv` to shadow `conda`-installed packages and local env version of python: `pipenv --python=$(which python) --site-packages`
 
 7. Install dependencies and dev dependencies locally from the `Pipfile` by running `pipenv install --dev`.
+**NOTE**: Temporary issue between arm64 and x86...for now, x86 should install via `pip install -r requirements.txt`.
 
-8. Start the app `pipenv run uvicorn app.api:versioned_app`.
+8.  In `c3po-model-server/app/core/env_var`, create a `secrets.env` file and ensure it is on the `.gitignore`.  Add the following for local dev:
+```sh
+MINIO_ACCESS_KEY="<from console>"
+MINIO_SECRET_KEY="<from console>"
+MINIO_ENDPOINT_URL="http://localhost:9000"
 
-9. Post a request in a separate shell!
-```bash
-curl -X POST -H "Content-Type: application/json" \
-    -d '{"text": "A fun little note."}' \
-    http://localhost:8000/predict
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_SERVER=localhost
+POSTGRES_PORT=5432
+POSTGRES_DB=postgres
+
+MM_TOKEN="<your_preprod_mattermost_token>"
 ```
 
-10. Run tests and get coverage with `pytest --cov=app`
+9. Launch postgres, pgadmin, and minio via docker-compose `docker-compose up --build`.
+
+10. Visit `localhost:9001`.  Login with user:`miniouser` and password:`minioadmin`.  This is the minio console.
+
+11. Visit `localhost:5050`.  Login with email:`user@test.com` and password:`admin`.  This is the pgadmin console.  **See notes below for important details**
+
+12. Run the app db init script `./scripts/prestart.sh`
+
+13. Keeping your docker containers running, start the app in a new terminal (activate your conda env first) with `pipenv run uvicorn app.main:versioned_app --reload`.
+
+14. Open `localhost:8000/v1/docs` and start interacting with swagger!
+
+15. Run tests and get coverage with `pytest --cov=app`
+
+16.  You can shut down and your db / minio data will persist via docker volumes.
+
 
 # Notes
 - This codebase assumes that you start from a base tensorflow Docker image or are running tensorflow locally via conda.  We do not install tensorflow via pip.  All other dependencies are install via pip.
+- You will see that `POSTGRES_SERVER=localhost` in the above steps, however, make sure that you login with server name `db` in pgAdmin.  This is because the pgAdmin container is launched in the same docker network as the postgres container, so it uses the service name, whereas launching this app from command line uses port forwarding to localhost.  The user, password, and db name will all be `postgres`, port `5432`.
+- For basic CRUD, you can follow this format:
+```
+from .base import CRUDBase
+from app.models.item import Item
+from app.schemas.item import ItemCreate, ItemUpdate
+
+item = CRUDBase[Item, ItemCreate, ItemUpdate](Item)
+```
 
 # Knowledge and helpful links
 ## Tools for this repo
@@ -52,6 +83,12 @@ In general, tensorflow and pytorch use the underlying `unittest` framework that 
 ## Tools for git
 - [Storing Credentials](https://git-scm.com/docs/git-credential-store)...or just type `git config --global credential.helper store`
 - [GPG Commit Signing](https://confluence.il2.dso.mil/display/afrsba/Setting+up+GPG+for+GitLab+Commit+Signing)
+
+## Tools for Docker
+- [Deleting Volumes](https://forums.docker.com/t/where-are-volumes-located-on-os-x/10488)
+- [Setting up pgAdmin in Docker](https://belowthemalt.com/2021/06/09/run-postgresql-and-pgadmin-in-docker-for-local-development-using-docker-compose/)
+- [Setting up postgreSQL for FastAPI in docker](https://github.com/tiangolo/full-stack-fastapi-postgresql/blob/master/%7B%7Bcookiecutter.project_slug%7D%7D/docker-compose.yml)
+- [Full FastAPI / postgres / docker tutorial](https://www.jeffastor.com/blog/pairing-a-postgresql-db-with-your-dockerized-fastapi-app)
 
 # P1 Links
 ## Basic Links

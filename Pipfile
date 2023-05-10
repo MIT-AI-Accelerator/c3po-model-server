@@ -20,6 +20,11 @@ aiofiles = "*"
 clamd = "*"
 python-dotenv = "*"
 fastapi-versioning = "*"
+sqlalchemy = "*"
+psycopg2-binary = "*"
+hdbscan = "*"
+bertopic = "*"
+minio = "*"
 
 [dev-packages]
 black = "==19.10b0"
@@ -27,6 +32,7 @@ isort = "*"
 flake8 = "*"
 ipykernel = "*"
 autopep8 = "*"
+fastapi-code-generator = "*"
 
 [requires]
 python_version = "3.9"
