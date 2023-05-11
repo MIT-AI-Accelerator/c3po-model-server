@@ -1,12 +1,28 @@
+import re
 from typing import Optional
 
-from pydantic import BaseModel, UUID4
+from pydantic import BaseModel, UUID4, validator
 from ..models.bertopic_embedding_pretrained import EmbeddingModelTypeEnum
 
 # Shared properties
 class BertopicEmbeddingPretrainedBase(BaseModel):
     sha256: Optional[str] = None
     model_type: Optional[EmbeddingModelTypeEnum] = None
+
+    # ensure valid sha256 format
+    @validator('sha256')
+    def sha256_must_be_valid(cls, v):
+        # pylint: disable=no-self-argument
+
+        if v is None:
+            return v
+
+        lower_v = v.lower()
+        if not re.match(r'^[a-f0-9]{64}$', lower_v):
+            raise ValueError(
+                'sha256 must be hexademical and 64 characters long')
+
+        return lower_v
 
 # Properties to receive on BertopicEmbeddingPretrained creation
 class BertopicEmbeddingPretrainedCreate(BertopicEmbeddingPretrainedBase):

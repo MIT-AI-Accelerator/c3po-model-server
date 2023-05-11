@@ -1,4 +1,5 @@
 from collections.abc import Generator
+import random
 from .test_files.db.db_test_session import SessionLocal
 import pytest
 from fastapi.testclient import TestClient
@@ -16,3 +17,7 @@ def db() -> Generator:
 def client() -> Generator:
     with TestClient(app) as c:
         yield c
+
+@pytest.fixture(scope="function")
+def valid_sha256() -> str:
+    return '%032x' % random.getrandbits(256)
