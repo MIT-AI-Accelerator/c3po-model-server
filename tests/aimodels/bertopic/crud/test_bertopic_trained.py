@@ -14,11 +14,11 @@ def test_create_with_bad_embedding_pretrained_id(db: Session):
     obj = bertopic_trained.create_with_embedding_pretrained_id(db, obj_in=obj_in, embedding_pretrained_id="00000000-0000-0000-0000-000000000000")
     assert obj is None
 
-def test_create_with_good_embedding_pretrained_id(db: Session):
+def test_create_with_good_embedding_pretrained_id(db: Session, valid_sha256: str):
     obj_in = BertopicTrainedCreate()
 
     # create a bertopic_embedding_pretrained
-    embedding_pretrained_create = BertopicEmbeddingPretrainedCreate(sha256="abc123")
+    embedding_pretrained_create = BertopicEmbeddingPretrainedCreate(sha256=valid_sha256)
     embedding_pretrained_obj = bertopic_embedding_pretrained.create(db, obj_in=embedding_pretrained_create)
 
     # create a bertopic_trained with the bertopic_embedding_pretrained id
@@ -30,12 +30,12 @@ def test_create_with_good_embedding_pretrained_id(db: Session):
     assert obj.uploaded == False
 
 # test that given two bertopic_trained objects with the same embedding_pretrained_id, when we get_multi_by_embedding_pretrained_id, we get both
-def test_get_multi_by_embedding_pretrained_id(db: Session):
+def test_get_multi_by_embedding_pretrained_id(db: Session, valid_sha256: str):
     obj = BertopicTrainedCreate()
     obj2 = BertopicTrainedCreate()
 
     # create a bertopic_embedding_pretrained
-    embedding_pretrained_create = BertopicEmbeddingPretrainedCreate(sha256="abc123")
+    embedding_pretrained_create = BertopicEmbeddingPretrainedCreate(sha256=valid_sha256)
     embedding_pretrained_obj = bertopic_embedding_pretrained.create(db, obj_in=embedding_pretrained_create)
 
     # create a bertopic_trained with the bertopic_embedding_pretrained id for each bertopic_trained
