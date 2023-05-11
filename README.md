@@ -52,7 +52,7 @@ MM_TOKEN="<your_preprod_mattermost_token>"
 
 # Notes
 - This codebase assumes that you start from a base tensorflow Docker image or are running tensorflow locally via conda.  We do not install tensorflow via pip.  All other dependencies are install via pip.
-- You will see that `POSTGRES_SERVER=localhost` in the above steps, however, make sure that you login with server name `db` in pgAdmin.  This is because the pgAdmin container is launched in the same docker network as the postgres container, so it uses the service name, whereas launching this app from command line uses port forwarding to localhost.  The user, password, and db name will all be `postgres`, port `5432`.
+- You will see that `POSTGRES_SERVER=localhost` in the above steps, however, make sure that you login with hostname `db` in pgAdmin (under the "connection" tab in server properties).  This is because the pgAdmin container is launched in the same docker network as the postgres container, so it uses the service name, whereas launching this app from command line uses port forwarding to localhost.  The user, password, and db name will all be `postgres`, port `5432`.
 - For basic CRUD, you can follow this format:
 ```
 from .base import CRUDBase
