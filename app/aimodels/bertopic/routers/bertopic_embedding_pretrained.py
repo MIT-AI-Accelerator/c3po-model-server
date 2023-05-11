@@ -1,6 +1,9 @@
 import os
 from typing import Union
 from fastapi import Depends, APIRouter, UploadFile
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
 from pydantic import UUID4
 from ..schemas.bertopic_embedding_pretrained import BertopicEmbeddingPretrained, BertopicEmbeddingPretrainedCreate, BertopicEmbeddingPretrainedUpdate
 from app.dependencies import get_db, get_minio
@@ -31,6 +34,16 @@ def create_bertopic_embedding_pretrained_object_post(bertopic_embedding_pretrain
     """
     Create BERTopic Embedding Pretrained Model object.
     """
+
+    # check to make sure sha256 doesn't already exist
+    obj_by_sha: BertopicEmbeddingPretrainedModel = crud.bertopic_embedding_pretrained.get_by_sha256(
+        db, sha256=bertopic_embedding_pretrained_obj.sha256)
+
+    if obj_by_sha:
+        return JSONResponse(
+            status_code=400,
+            content=jsonable_encoder(HTTPValidationError(detail=[ValidationError(loc=['body', 'sha256'], msg='sha256 already exists', type='value_error')]))
+        )
 
     # pydantic handles validation
     new_bertopic_embedding_pretrained_obj: BertopicEmbeddingPretrainedModel = crud.bertopic_embedding_pretrained.create(
