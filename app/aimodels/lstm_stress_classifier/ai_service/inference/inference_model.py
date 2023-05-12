@@ -3,18 +3,18 @@ import math
 import tensorflow as tf
 import pandas as pd
 import os
+from sample_data import CHAT_DATASET_1_PATH
 
 BASE_CKPT_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), "training_checkpoints")
 def initialize():
-    # load the dataset
-    # switch to a real dataset like './data/(EROB) MM_Dataset_816_CSVsanitized_flights.csv' when able to be uploaded without entering git history
 
-    training_data_path = os.path.join(BASE_CKPT_DIR, "train_data.csv")
+    # load the dataset
+    training_data_path = CHAT_DATASET_1_PATH
     chat_data_path = training_data_path if os.path.isfile(training_data_path) else os.path.join(os.path.abspath(os.path.dirname(__file__)), "../data_open/example_data.csv")
     chat816 = pd.read_csv(chat_data_path)
 
     # Make a text-only dataset (without labels), then call adapt
-    train_text = tf.constant(chat816['Column12'].astype(str).values)
+    train_text = tf.constant(chat816['messages'].astype(str).values)
 
     # number of unique words in the dataset after punctuation filtering
     word_count_layer = tf.keras.layers.TextVectorization()
