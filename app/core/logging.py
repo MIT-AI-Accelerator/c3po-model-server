@@ -1,6 +1,8 @@
 
 from pydantic import BaseModel
 from .config import settings
+import logging
+from logging.config import dictConfig
 
 class LogConfig(BaseModel):
     """Logging configuration to be set for the server"""
@@ -29,3 +31,17 @@ class LogConfig(BaseModel):
     loggers = {
         "transformers": {"handlers": ["default"], "level": LOG_LEVEL},
     }
+
+# Define a filter to exclude logs with a specific string
+class SuppressSpecificLogItemFilter(logging.Filter):
+    def __init__(self, filter_string=""):
+        super().__init__()
+        self.filter_string = filter_string
+
+    def filter(self, record):
+        return self.filter_string not in record.getMessage()
+
+
+dictConfig(LogConfig().dict())
+logger = logging.getLogger("transformers")
+logger.addFilter(SuppressSpecificLogItemFilter(filter_string="this_should_be_filtered_out"))

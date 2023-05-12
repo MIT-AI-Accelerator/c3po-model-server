@@ -3,9 +3,11 @@ from pydantic import BaseModel, UUID4
 from fastapi import Depends, APIRouter
 
 from app.aimodels.bertopic.schemas.document_embedding_computation import DocumentEmbeddingComputationCreate
+from minio import Minio
+from app.core.minio import pickle_and_upload_object_to_minio
 from ..ai_services.basic_inference import BasicInference
-from app.dependencies import get_db
-from ..schemas.bertopic_trained import BertopicTrained
+from app.dependencies import get_db, get_minio
+from ..schemas.bertopic_trained import BertopicTrained, BertopicTrainedUpdate
 from sqlalchemy.orm import Session
 from .. import crud
 from ..models.bertopic_trained import BertopicTrainedModel
@@ -30,7 +32,7 @@ class TrainModelRequest(BaseModel):
     summary="Train BERTopic on text",
     response_description="Trained Model and Plotly Visualization config"
 )
-def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db)) -> (
+def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db), s3: Minio = Depends(get_minio)) -> (
     Union[BertopicTrained, HTTPValidationError]
 ):
     """
@@ -69,7 +71,7 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
         precalculated_embeddings.append(next_value)
 
     # train the model
-    basic_inference = BasicInference(bertopic_embedding_pretrained_obj)
+    basic_inference = BasicInference(bertopic_embedding_pretrained_obj, s3)
     inference_output = basic_inference.train_bertopic_on_documents(
         documents, precalculated_embeddings=precalculated_embeddings, num_topics=1)
     new_plotly_bubble_config = inference_output.plotly_bubble_config
@@ -88,18 +90,22 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
     documents = crud.document.refresh_all_by_id(
         db, db_obj_ids=request.document_ids)
 
-    # upload the trained model to minio
-    # save inference_output.topic_model
-    upload_success = True
-
     # create and save a trained model object
     bertopic_trained_obj = BertopicTrainedCreate(
         plotly_bubble_config=new_plotly_bubble_config,
-        uploaded=upload_success
+        uploaded=False
     )
 
+    # save the trained model object in the database
     new_bertopic_trained_obj: BertopicTrainedModel = crud.bertopic_trained.create_with_embedding_pretrained_id(
         db, obj_in=bertopic_trained_obj, embedding_pretrained_id=request.bertopic_embedding_pretrained_id)
+
+    # upload the trained model to minio
+    upload_success = pickle_and_upload_object_to_minio(object=inference_output.topic_model, id=new_bertopic_trained_obj.id, s3=s3)
+
+    # if upload was successful, set the uploaded flag to true in the database using crud.bertopic_trained.update
+    if upload_success:
+        new_bertopic_trained_obj = crud.bertopic_trained.update(db, db_obj=new_bertopic_trained_obj, obj_in=BertopicTrainedUpdate(uploaded=True))
 
     # save the join table between the documents and the trained model
     # see here: https://docs.sqlalchemy.org/en/20/orm/basic_relationships.html#many-to-many

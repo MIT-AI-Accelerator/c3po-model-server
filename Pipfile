@@ -25,6 +25,7 @@ psycopg2-binary = "*"
 hdbscan = "*"
 bertopic = "*"
 minio = "*"
+pytest-asyncio = "*"
 
 [dev-packages]
 black = "==19.10b0"

@@ -18,9 +18,11 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
 
     # minio settings
+    minio_bucket_name: str = ""
     minio_endpoint_url: str = ""
     minio_access_key: str = ""
     minio_secret_key: str = ""
+    minio_secure: bool = True
 
     # postgreSQL settings
     postgres_user: str = ""
