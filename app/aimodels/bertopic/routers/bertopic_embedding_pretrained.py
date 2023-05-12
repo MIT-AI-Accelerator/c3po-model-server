@@ -1,10 +1,16 @@
 import os
+import hashlib
 from typing import Union
 from fastapi import Depends, APIRouter, UploadFile
+
+from fastapi import HTTPException
+
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from pydantic import UUID4
+
+from app.core.minio import upload_file_to_minio
 from ..schemas.bertopic_embedding_pretrained import BertopicEmbeddingPretrained, BertopicEmbeddingPretrainedCreate, BertopicEmbeddingPretrainedUpdate
 from app.dependencies import get_db, get_minio
 from sqlalchemy.orm import Session
@@ -14,6 +20,9 @@ from ..models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedMo
 from app.core.errors import HTTPValidationError, ValidationError
 from aiofiles import open as open_aio
 from minio import Minio
+from minio.error import InvalidResponseError
+
+from app.core.config import settings
 
 
 router = APIRouter(
@@ -51,7 +60,6 @@ def create_bertopic_embedding_pretrained_object_post(bertopic_embedding_pretrain
 
     return new_bertopic_embedding_pretrained_obj
 
-
 @router.post(
     "/{id}/upload/",
     response_model=Union[BertopicEmbeddingPretrained, HTTPValidationError],
@@ -72,18 +80,21 @@ async def upload_bertopic_embedding_post(new_file: UploadFile, id: UUID4, db: Se
     bertopic_embedding_pretrained_obj: BertopicEmbeddingPretrainedModel = crud.bertopic_embedding_pretrained.get(
         db, id)
     if not bertopic_embedding_pretrained_obj:
-        return HTTPValidationError(detail=[ValidationError(loc=['path', 'bertopic model upload'], msg='Invalid pretrained model id', type='value_error')])
+        raise HTTPException(status_code=422, detail="BERTopic Embedding Pretrained Model not found")
+
+    # check for hash
+    if not bertopic_embedding_pretrained_obj.sha256:
+        raise HTTPException(status_code=422, detail="BERTopic Embedding Pretrained Model hash not found")
+
+    # validate sha256 hash against file
+    sha256_hash = hashlib.sha256()
+    while chunk := await new_file.read(8192):
+        sha256_hash.update(chunk)
+    if sha256_hash.hexdigest() != bertopic_embedding_pretrained_obj.sha256:
+        raise HTTPException(status_code=422, detail="SHA256 hash mismatch")
 
     # upload to minio
-    output_filename = "bertopic_embedding.pkl"
-    output_file = os.path.join(BASE_CKPT_DIR, output_filename)
-
-    if not os.path.isdir(BASE_CKPT_DIR):
-        os.makedirs(BASE_CKPT_DIR)
-
-    async with open_aio(output_file, 'wb') as out_file:
-        while content := await new_file.read(1024):  # async read chunk
-            await out_file.write(content)  # async write chunk
+    upload_file_to_minio(file=new_file, id=id, s3=s3)
 
     # update the object in db and return
     new_bertopic_embedding_pretrained_obj: BertopicEmbeddingPretrainedModel = crud.bertopic_embedding_pretrained.update(

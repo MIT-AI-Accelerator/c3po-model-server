@@ -75,25 +75,6 @@ services:
       - minio2
       - minio3
       - minio4
-  # miniosetup:
-  #   <<: *minio-common
-  #   image: minio/mc
-  #   hostname: miniosetup
-  #   depends_on:
-  #     - minio1
-  #     - minio2
-  #     - minio3
-  #     - minio4
-  #     - nginx
-  #   entrypoint: ['']
-  #   command:
-  #     - "sh"
-  #     - "-c"
-  #     - |
-  #       mc alias set localminio http://nginx:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD} ;
-  #       mc admin user add localminio local local ;
-  #       mc mb localminio/testbucket ;
-  #       mc -v
 volumes:
     postgres_data:
     pgadmin-data:

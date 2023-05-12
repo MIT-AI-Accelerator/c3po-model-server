@@ -1,12 +1,15 @@
 import os
 import json
 from typing import Union
+from fastapi import HTTPException
 import numpy as np
 import pandas as pd
-from sentence_transformers import SentenceTransformer
 from sklearn.feature_extraction.text import CountVectorizer
 from bertopic import BERTopic
 from pydantic import BaseModel, StrictFloat, StrictInt, StrictBool, validator
+
+from app.core.minio import download_pickled_object_from_minio
+from minio import Minio
 
 from ..models.document import DocumentModel
 from ..models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedModel
@@ -21,14 +24,19 @@ BASE_CKPT_DIR = os.path.join(os.path.abspath(
 
 class InitInputs(BaseModel):
     embedding_pretrained_model_obj: BertopicEmbeddingPretrainedModel
+    s3: Minio
 
     # ensure that model type is defined
     @validator('embedding_pretrained_model_obj')
-    def embedding_pretrained_model_obj_must_have_model_type(cls, v):
+    def embedding_pretrained_model_obj_must_have_model_type_and_be_uploaded(cls, v):
         # pylint: disable=no-self-argument
         if not v.model_type:
             raise ValueError(
                 'embedding_pretrained_model_obj must have model_type')
+        if not v.uploaded:
+            raise ValueError(
+                'embedding_pretrained_model_obj must be uploaded')
+
         return v
 
     class Config:
@@ -126,25 +134,21 @@ class BuildTopicModelInputs(BaseModel):
 
 class BasicInference:
 
-    def __init__(self, embedding_pretrained_model_obj):
+    def __init__(self, embedding_pretrained_model_obj, s3):
 
         # validate input
         InitInputs(
-            embedding_pretrained_model_obj=embedding_pretrained_model_obj
+            embedding_pretrained_model_obj=embedding_pretrained_model_obj, s3=s3
         )
 
-        # TODO: load from minio and check that it loaded or throw error
-        self.sentence_model = SentenceTransformer("all-MiniLM-L6-v2")
+        # TODO: load from minio--HTTPException gets thrown if not there
+        # would be a server error since the db object should say if it's uploaded or not
+        self.sentence_model = download_pickled_object_from_minio(
+            id=embedding_pretrained_model_obj.id, s3=s3)
+
         self.embedding_pretrained_model_obj = embedding_pretrained_model_obj
 
     def train_bertopic_on_documents(self, documents, precalculated_embeddings, num_topics) -> BasicInferenceOutputs:
-        # TODO: validate min number of documents
-        # df = pd.json_normalize(documents, record_path="posts")
-        # cfile = os.path.join(BASE_CKPT_DIR, "./(EROB) MM_Dataset_816_CSVsanitized_flights.csv")
-        # cdata = pd.read_csv(cfile)
-        # cdata['Column12'] = cdata['Column12'].astype(str)
-        # msgs = cdata['Column12'].values.tolist()[0:10]
-
         # validate input
         TrainBertopicOnDocumentsInput(
             documents=documents, precalculated_embeddings=precalculated_embeddings, num_topics=num_topics)

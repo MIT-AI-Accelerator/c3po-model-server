@@ -28,11 +28,4 @@ def create_document_objects_post(documents: list[DocumentCreate], db: Session = 
     """
 
     # pydantic handles validation
-    output_documents = []
-    for document in documents:
-        new_document_obj: DocumentModel = crud.document.create(
-            db, obj_in=document)
-
-        output_documents.append(new_document_obj)
-
-    return output_documents
+    return crud.document.create_all_using_id(db, obj_in_list=documents)

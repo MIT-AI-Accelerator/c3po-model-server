@@ -1,7 +1,8 @@
+import hashlib
 import os
-from unittest import mock
+import uuid
 from fastapi.testclient import TestClient
-from app.aimodels.bertopic.schemas.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedCreate, BertopicEmbeddingPretrainedUpdate
+from app.aimodels.bertopic.schemas.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedCreate
 
 from app.main import app
 from app.aimodels.bertopic.routers.bertopic_embedding_pretrained import get_db
@@ -100,9 +101,49 @@ def test_create_bertopic_embedding_pretrained_object_post_sha256_converted_to_lo
     assert response.json()['sha256'] == valid_sha256.lower()
 
 # ************ upload ************
+def test_upload_bertopic_embedding_pretrained_object_post_valid_request(client: TestClient):
 
+    # Create a file to upload
+    test_file = "test_file"
+    with open(test_file, "wb") as f:
+        contents = str(uuid.uuid4()) # generate a random string with negligible probability of collision
+        f.write(contents.encode('utf-8'))
 
-def test_upload_bertopic_embedding_pretrained_object_post_valid_request(client: TestClient, valid_sha256: str):
+    sha256_hash = hashlib.sha256()
+    with open(test_file, "rb") as f:
+        # compute the sha256 hash of the file
+        while chunk := f.read(8192):
+            sha256_hash.update(chunk)
+
+    # create the BERTopic Embedding Pretrained Model object
+    body = BertopicEmbeddingPretrainedCreate(sha256=sha256_hash.hexdigest())
+
+    response = client.post(
+        "/aimodels/bertopic/bertopic-embedding-pretrained",
+        headers={},
+        json=jsonable_encoder(body),
+    )
+    embedding_pretrained_id = response.json()["id"]
+
+    # Upload the file to the BERTopic Embedding Pretrained Model object
+    with open(test_file, "rb") as f:
+        response2 = client.post(
+            f"/aimodels/bertopic/bertopic-embedding-pretrained/{embedding_pretrained_id}/upload/", files={"new_file": f})
+
+    os.remove(test_file)
+
+    assert response2.status_code == 200
+    assert response2.json()["uploaded"] is True
+
+# test upload with sha256 not matching the one in the database
+def test_upload_bertopic_embedding_pretrained_object_post_invalid_sha256(client: TestClient, valid_sha256: str):
+    # Create a file to upload
+    test_file = "test_file_invalid_sha256"
+    with open(test_file, "wb") as f:
+        contents = str(uuid.uuid4()) # generate a random string with negligible probability of collision
+        f.write(contents.encode('utf-8'))
+
+    # create the BERTopic Embedding Pretrained Model object
     body = BertopicEmbeddingPretrainedCreate(sha256=valid_sha256)
 
     response = client.post(
@@ -112,22 +153,15 @@ def test_upload_bertopic_embedding_pretrained_object_post_valid_request(client: 
     )
     embedding_pretrained_id = response.json()["id"]
 
-    # Upload a file to the BERTopic Embedding Pretrained Model object
-    test_file = "test_file.pkl"
-    with open(test_file, "wb") as f:
-        f.write(b"test data")
+    # Upload the file to the BERTopic Embedding Pretrained Model object
+    with open(test_file, "rb") as f:
+        response2 = client.post(
+            f"/aimodels/bertopic/bertopic-embedding-pretrained/{embedding_pretrained_id}/upload/", files={"new_file": f})
 
-    with mock.patch("app.aimodels.bertopic.routers.bertopic_embedding_pretrained.BASE_CKPT_DIR", "."):
-        with open(test_file, "rb") as f:
-            response2 = client.post(
-                f"/aimodels/bertopic/bertopic-embedding-pretrained/{embedding_pretrained_id}/upload/", files={"new_file": f})
-
-    # delete the file
     os.remove(test_file)
 
-    assert response2.status_code == 200
-    assert response2.json()["uploaded"] is True
-
+    assert response2.status_code == 422
+    assert response2.json() == {'detail': 'SHA256 hash mismatch'}
 
 def test_upload_bertopic_embedding_pretrained_object_post_empty_file(client: TestClient, valid_sha256: str):
     body = BertopicEmbeddingPretrainedCreate(sha256=valid_sha256)
@@ -146,16 +180,15 @@ def test_upload_bertopic_embedding_pretrained_object_post_empty_file(client: Tes
 
 
 def test_upload_bertopic_embedding_pretrained_object_post_invalid_id(client: TestClient):
-    test_file = "test_file.pkl"
+    test_file = "test_file_invalid_id"
     with open(test_file, "wb") as f:
         f.write(b"test data")
 
-    with mock.patch("app.aimodels.bertopic.routers.bertopic_embedding_pretrained.BASE_CKPT_DIR", "."):
-        with open(test_file, "rb") as f:
-            response = client.post(
-                f"/aimodels/bertopic/bertopic-embedding-pretrained/999/upload/", files={"new_file": f})
+    with open(test_file, "rb") as f:
+        response = client.post(
+            f"/aimodels/bertopic/bertopic-embedding-pretrained/999/upload/", files={"new_file": f})
 
-    # delete the file
     os.remove(test_file)
 
     assert response.status_code == 422
+    assert response.json() == {'detail': [{'loc': ['path', 'id'], 'msg': 'value is not a valid uuid', 'type': 'type_error.uuid'}]}
