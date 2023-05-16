@@ -2,7 +2,6 @@ import json
 import os
 from pydantic import BaseModel
 from fastapi import APIRouter
-# from app.aimodels.bertopic.ai_service.inference import load_model
 
 router = APIRouter(
     prefix="/teamtrending"

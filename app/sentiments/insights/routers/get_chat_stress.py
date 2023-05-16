@@ -19,7 +19,13 @@ def predict(request: PromptRequest, model: LstmStressClassifierModel = Depends(g
     answer = model.classify_single_label(request.text)
 
     # convert to low / medium / high labels
-    response_answer = "low" if answer == "recycle" else "medium" if answer == "review" else "high" if answer == "action" else answer
+    response_answer = answer
+    if answer == "review":
+        response_answer = "medium"
+    elif answer == "action":
+        response_answer = "high"
+    elif answer == "recycle":
+        response_answer = "low"
 
     return PromptResponse(
         answer=response_answer
