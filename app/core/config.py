@@ -1,6 +1,6 @@
 import secrets
 import os
-from typing import Optional, Any, Union
+from typing import Optional, Any
 from pydantic import BaseSettings, PostgresDsn, EmailStr, validator
 
 # load the environment name, local, staging, or production
@@ -28,7 +28,6 @@ class Settings(BaseSettings):
     postgres_user: str = ""
     postgres_password: str
     postgres_server: str = "db"
-    postgres_host: Union[str, None] = None
     postgres_port: str = "5432"
     postgres_db: str
     sqlalchemy_database_uri: Optional[PostgresDsn] = None
@@ -39,16 +38,11 @@ class Settings(BaseSettings):
 
         if isinstance(v, str):
             return v
-
-        host = values.get("postgres_host")
-        if not host:
-            host = values.get("postgres_server")
-
         return PostgresDsn.build(
             scheme="postgresql",
             user=values.get("postgres_user"),
             password=values.get("postgres_password"),
-            host=host,
+            host=values.get("postgres_server"),
             port=values.get("postgres_port"),
             path=f"/{values.get('postgres_db') or ''}",
         )
