@@ -27,8 +27,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def init(db) -> None:
-    init_db(db)
+def init() -> None:
+    init_db()
 
 
 def init_minio_bucket(s3: Minio) -> None:

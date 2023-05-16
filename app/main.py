@@ -58,15 +58,3 @@ versioned_app.add_middleware(
 @versioned_app.on_event('shutdown')
 async def shutdown_event():
     await httpx_client.aclose()
-
-
-
-#     import httpx
-# from starlette.background import BackgroundTask
-# from fastapi.responses import StreamingResponse
-
-# @app.get('/')
-# async def home():
-#     req = httpx_client.build_request('GET', 'https://www.example.com/')
-#     r = await httpx_client.send(req, stream=True)
-#     return StreamingResponse(r.aiter_text(), background=BackgroundTask(r.aclose))
