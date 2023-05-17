@@ -6,7 +6,8 @@ COPY --chown=python:python  ./ ./
 COPY --chown=python:python  .cache/python-packages ./python-packages
 
 ENV PYTHONPATH=/home/python/app:/home/python/python-packages:/home/python/tests
+ENV ENVIRONMENT=staging
 
 EXPOSE 8080
 
-CMD ["sh", "-c", "cd /home/python && ENVIRONMENT='staging' python3 -m uvicorn app.main:versioned_app --host 0.0.0.0 --port 8080"]
+CMD ["sh", "-c", "cd /home/python && ./scripts/init.sh && python3 -m uvicorn app.main:versioned_app --host 0.0.0.0 --port 8080"]

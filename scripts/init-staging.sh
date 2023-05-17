@@ -8,4 +8,4 @@
 # alembic upgrade head
 
 # Create initial data in DB
-python -m app.initial_data
+ENVIRONMENT=staging python -m app.initial_data
