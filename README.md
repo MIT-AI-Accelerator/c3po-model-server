@@ -41,11 +41,11 @@ MM_TOKEN="<your_preprod_mattermost_token>"
 
 12. Run the app db init script `./scripts/prestart.sh`
 
-13. Keeping your docker containers running, start the app in a new terminal (activate your conda env first) with `pipenv run uvicorn app.main:versioned_app --reload`.
+13. Keeping your docker containers running, start the app in a new terminal (activate your conda env first) with `ENVIRONMENT=local pipenv run uvicorn app.main:versioned_app --reload`.
 
 14. Open `localhost:8000/v1/docs` and start interacting with swagger!
 
-15. Run tests and get coverage with `pytest --cov=app`, and get html reports for vs code live server (or any server) with `pytest --cov --cov-report=html:coverage_re`
+15. Run tests and get coverage with `ENVIRONMENT=local pytest --cov=app`, and get html reports for vs code live server (or any server) with `ENVIRONMENT=local pytest --cov --cov-report=html:coverage_re`
 
 16.  You can shut down and your db / minio data will persist via docker volumes.
 
@@ -53,6 +53,7 @@ MM_TOKEN="<your_preprod_mattermost_token>"
 # Notes
 - This codebase assumes that you start from a base tensorflow Docker image or are running tensorflow locally via conda.  We do not install tensorflow via pip.  All other dependencies are install via pip.
 - You will see that `POSTGRES_SERVER=localhost` in the above steps, however, make sure that you login with hostname `db` in pgAdmin (under the "connection" tab in server properties).  This is because the pgAdmin container is launched in the same docker network as the postgres container, so it uses the service name, whereas launching this app from command line uses port forwarding to localhost.  The user, password, and db name will all be `postgres`, port `5432`.
+- We specificy `ENVIRONMENT=local` because the test stage needs the default to be its variables
 - For basic CRUD, you can follow this format:
 ```
 from .base import CRUDBase
