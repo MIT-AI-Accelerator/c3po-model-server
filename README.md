@@ -20,16 +20,6 @@ conda activate c3po-os-api
 
 8.  In `c3po-model-server/app/core/env_var`, create a `secrets.env` file and ensure it is on the `.gitignore`.  Add the following for local dev:
 ```sh
-MINIO_ACCESS_KEY="<from console>"
-MINIO_SECRET_KEY="<from console>"
-MINIO_ENDPOINT_URL="http://localhost:9000"
-
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres
-POSTGRES_SERVER=localhost
-POSTGRES_PORT=5432
-POSTGRES_DB=postgres
-
 MM_TOKEN="<your_preprod_mattermost_token>"
 ```
 
@@ -39,7 +29,7 @@ MM_TOKEN="<your_preprod_mattermost_token>"
 
 11. Visit `localhost:5050`.  Login with email:`user@test.com` and password:`admin`.  This is the pgadmin console.  **See notes below for important details**
 
-12. Run the app db init script `./scripts/prestart.sh`
+12. Run the app db init script `./scripts/init.sh`
 
 13. Keeping your docker containers running, start the app in a new terminal (activate your conda env first) with `ENVIRONMENT=local pipenv run uvicorn app.main:versioned_app --reload`.
 

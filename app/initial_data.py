@@ -1,3 +1,4 @@
+import sys
 import hashlib
 import io
 import pickle
@@ -14,7 +15,7 @@ from app.db.init_db import init_db
 from app.db.session import SessionLocal
 from app.core.minio import build_client, upload_file_to_minio
 
-from app.core.config import settings
+from app.core.config import settings, environment_settings
 from app.aimodels.bertopic import crud
 from sentence_transformers import SentenceTransformer
 
@@ -73,7 +74,7 @@ def init_sentence_embedding_object(s3: Minio, db: Session) -> None:
 
         # utilize id from above to upload file to minio
         upload_file_to_minio(UploadFile(file_obj),
-                               new_bertopic_embedding_pretrained_obj.id, s3)
+                             new_bertopic_embedding_pretrained_obj.id, s3)
 
         # update the object to reflect uploaded status
         updated_object = BertopicEmbeddingPretrainedUpdate(uploaded=True)
@@ -104,23 +105,46 @@ def init_documents_from_chats(db: Session) -> str:
 
 
 def main() -> None:
-    logger.info("Creating initial data")
-    db = SessionLocal()
-    init(db)
-    logger.info("Initial data created.")
-    logger.info("Setting up MinIO bucket")
-    s3 = build_client()
-    init_minio_bucket(s3)
-    logger.info("MinIO bucket set up.")
-    logger.info("Uploading SentenceTransformer object to MinIO")
-    embedding_pretrained_obj = init_sentence_embedding_object(s3, db)
-    logger.info("SentenceTransformer object uploaded to MinIO.")
-    logger.info(
-        f"Embedding Pretrained Object ID: {embedding_pretrained_obj.id}, SHA256: {embedding_pretrained_obj.sha256}")
-    logger.info("Creating documents from chats")
-    swagger_string = init_documents_from_chats(db)
-    logger.info("Documents created.")
-    logger.info(f"Documents: {swagger_string}")
+    args = sys.argv[1:]
+
+    migration_toggle = False
+    if len(args) == 1 and args[0] == '--toggle-migration':
+        migration_toggle = True
+
+    # environment can be one of 'local', 'test', 'staging', 'production'
+    environment = environment_settings.environment
+
+    logger.info(f"Using initialization environment: {environment}")
+    logger.info(f"Using migration toggle: {migration_toggle}")
+
+    # all environments need to initialize the database
+    # prod only if migration toggle is on
+    if (environment in ['local', 'test', 'staging'] or (environment == 'production' and migration_toggle is True)):
+        logger.info("Creating database schema and tables")
+        db = SessionLocal()
+        init()
+        logger.info("Initial database schema and tables created.")
+    else:
+        logger.info("Skipping database initialization")
+
+    if (environment == 'local'):
+        logger.info("Setting up MinIO bucket")
+        s3 = build_client()
+        init_minio_bucket(s3)
+        logger.info("MinIO bucket set up.")
+
+    if (environment == 'local'):
+        logger.info("Uploading SentenceTransformer object to MinIO")
+        embedding_pretrained_obj = init_sentence_embedding_object(s3, db)
+        logger.info("SentenceTransformer object uploaded to MinIO.")
+        logger.info(
+            f"Embedding Pretrained Object ID: {embedding_pretrained_obj.id}, SHA256: {embedding_pretrained_obj.sha256}")
+
+    if (environment != 'production'):
+        logger.info("Creating documents from chats")
+        swagger_string = init_documents_from_chats(db)
+        logger.info("Documents created.")
+        logger.info(f"Documents: {swagger_string}")
 
 
 if __name__ == "__main__":
