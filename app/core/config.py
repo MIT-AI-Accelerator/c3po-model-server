@@ -1,17 +1,12 @@
-import secrets
 import os
 from typing import Optional, Any
-from pydantic import BaseSettings, PostgresDsn, EmailStr, validator
+from pydantic import BaseSettings, PostgresDsn, validator
 
 # load the environment name, local, staging, or production
-
-
 class EnvironmentSettings(BaseSettings):
-    environment: str = "local"
+    environment: str = "test"
 
 # object to get other env vars
-
-
 class Settings(BaseSettings):
     # general settings
     docs_ui_root_path: str = ""
@@ -54,6 +49,7 @@ class Settings(BaseSettings):
     mm_nitmre_base_url: str = ""
 
 def get_env_file(environment_settings_in):
+    # get the base directory
     BASEDIR = os.path.join(os.path.abspath(
         os.path.dirname(__file__)), "env_var")
 
@@ -64,10 +60,13 @@ def get_env_file(environment_settings_in):
         env_file = os.path.join(BASEDIR, "production.env")
     elif environment_settings_in.environment == 'staging':
         env_file = os.path.join(BASEDIR, "staging.env")
-    else:
+    elif environment_settings_in.environment == 'local':
         # put local secrets into secrets.env and ensure on .gitignore, K8s injects staging and prod into env vars
         env_file = (os.path.join(BASEDIR, "local.env"),
                     os.path.join(BASEDIR, "secrets.env"))
+    else:
+        env_file = os.path.join(BASEDIR, "test.env")
+
     return env_file
 
 
