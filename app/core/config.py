@@ -2,7 +2,7 @@ import os
 from typing import Optional, Any
 from pydantic import BaseSettings, PostgresDsn, validator
 
-# load the environment name, local, staging, or production
+# load the environment name, local, test, staging, or production
 class EnvironmentSettings(BaseSettings):
     environment: str = "test"
 
