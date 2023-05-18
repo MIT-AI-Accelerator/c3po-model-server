@@ -13,7 +13,7 @@ router = APIRouter(
 
 
 """get a list of channels by mattermost user name"""
-@router.get("/user-info/", summary="Mattermost User Info", response_description="")
+@router.get("/mattermost/user-info/", summary="Mattermost User Info", response_description="")
 async def get_mm_user_info(user_name):
     """
     Get Mattermost user info.
@@ -28,7 +28,7 @@ async def get_mm_user_info(user_name):
 
 
 """get a list of posts from a list of channel ids"""
-@router.get("/documents/", summary="Mattermost Documents", response_description="")
+@router.get("/mattermost/documents/", summary="Mattermost Documents", response_description="")
 async def get_mm_channel_docs(channels):
     """
     Get Mattermost documents.
