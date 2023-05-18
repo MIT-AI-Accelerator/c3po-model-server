@@ -2,6 +2,8 @@
 import pandas as pd
 import requests
 
+
+"""iterate through pages of an http request"""
 def get_all_pages(url, mm_token, is_channel=False):
     
     per_page = 200
@@ -30,6 +32,7 @@ def get_all_pages(url, mm_token, is_channel=False):
     return rdf
     
     
+"""get a list of teams by user"""
 def get_user_info(mm_base_url, mm_token, mm_user):
     
     # user info
@@ -46,6 +49,7 @@ def get_user_info(mm_base_url, mm_token, mm_user):
     return (buser, get_all_pages(url, mm_token))
 
 
+"""get a list of channels by team"""
 def get_team_channels(mm_base_url, mm_token, user_id, team_id, team_name):
 
     url = f'{mm_base_url}/api/v4/users/%s/teams/%s/channels' % (user_id, team_id)
@@ -53,6 +57,7 @@ def get_team_channels(mm_base_url, mm_token, user_id, team_id, team_name):
     return df[df.total_msg_count > 1]
 
 
+"""get a list of channels by user"""
 def get_all_user_channels(mm_base_url, mm_token, mm_user):
 
     (user, bdf) = get_user_info(mm_base_url, mm_token, mm_user)
@@ -63,12 +68,14 @@ def get_all_user_channels(mm_base_url, mm_token, mm_user):
     return cdf
 
 
+"""get a list of posts for a single channel"""
 def get_channel_posts(mm_base_url, mm_token, channel_id):
     
     url = f'{mm_base_url}/api/v4/channels/%s/posts' % channel_id
     return get_all_pages(url, mm_token, is_channel=True)
 
 
+"""get a list of posts for a list of channels"""
 def get_all_user_channel_posts(mm_base_url, mm_token, channel_ids):
     
     df = pd.DataFrame()
@@ -76,14 +83,15 @@ def get_all_user_channel_posts(mm_base_url, mm_token, channel_ids):
         df = pd.concat([df, get_channel_posts(mm_base_url, mm_token, cid)])
     return df
     
+"""get a list of all users"""
 def get_all_users(mm_base_url, mm_token):
 
     url = f'{mm_base_url}/api/v4/users'
     return get_all_pages(url, mm_token).set_index('username')
 
 
+"""get a list of all public teams"""
 def get_all_public_teams(mm_base_url, mm_token):
 
     url = f'{mm_base_url}/api/v4/teams'
     return get_all_pages(url, mm_token).set_index('name')
-
