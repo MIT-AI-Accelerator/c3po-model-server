@@ -8,6 +8,7 @@ from .core.logging import logger
 from .aimodels.router import router as aimodels_router
 from .sentiments.router import router as sentiments_router
 from .topics.router import router as topics_router
+from .mattermost.router import router as mattermost_router
 from .dependencies import httpx_client
 
 logger.info("Dummy Info")
@@ -37,6 +38,7 @@ origins = [
 app.include_router(aimodels_router)
 app.include_router(sentiments_router)
 app.include_router(topics_router)
+app.include_router(mattermost_router)
 
 # setup for major versioning
 # ensure to copy over all the non-title args to the original FastAPI call...read docs here: https://pypi.org/project/fastapi-versioning/
