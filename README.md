@@ -20,9 +20,11 @@ conda activate c3po-os-api
 
 8.  In `c3po-model-server/app/core/env_var`, create a `secrets.env` file and ensure it is on the `.gitignore`.  Add the following for local dev:
 ```sh
-MINIO_ACCESS_KEY="<from console>"
-MINIO_SECRET_KEY="<from console>"
-MINIO_ENDPOINT_URL="http://localhost:9000"
+MINIO_BUCKET_NAME=test
+MINIO_ACCESS_KEY=miniouser
+MINIO_SECRET_KEY=minioadmin
+MINIO_ENDPOINT_URL=localhost:9000
+MINIO_SECURE=False
 
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=postgres
