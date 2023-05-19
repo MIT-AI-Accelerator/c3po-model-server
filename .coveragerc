@@ -1,0 +1,3 @@
+[run]
+source = app
+omit = __init__.py, initial_data.py, init_db.py
