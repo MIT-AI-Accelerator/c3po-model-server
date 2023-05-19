@@ -1,3 +1,4 @@
+from typing import Union
 from pydantic import UUID4
 
 from fastapi.encoders import jsonable_encoder
@@ -12,7 +13,7 @@ from app.aimodels.bertopic.schemas.bertopic_trained import BertopicTrainedCreate
 class CRUDBertopicTrained(CRUDBase[BertopicTrainedModel, BertopicTrainedCreate, BertopicTrainedUpdate]  ):
     def create_with_embedding_pretrained_id(
         self, db: Session, *, obj_in: BertopicTrainedCreate, embedding_pretrained_id: UUID4
-    ) -> BertopicTrainedModel:
+    ) -> Union[BertopicTrainedModel, None]:
         obj_in_data = jsonable_encoder(obj_in)
         db_obj = self.model(**obj_in_data, embedding_pretrained_id=embedding_pretrained_id)
         db.add(db_obj)
