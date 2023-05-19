@@ -1,19 +1,19 @@
 from sqlalchemy.orm import Session
 import uuid
 from tests.test_files import crud
-from tests.test_files.crud.crud_test_model import TestModel
-from tests.test_files.crud.crud_test_schema import TestCreate, TestUpdate
+from tests.test_files.crud.crud_test_model import EmptyTestModel
+from tests.test_files.crud.crud_test_schema import EmptyTestCreate, EmptyTestUpdate
 from fastapi.encoders import jsonable_encoder
 
 def test_create_obj(db: Session) -> None:
-    obj_in = TestCreate()
+    obj_in = EmptyTestCreate()
     obj = crud.crud_test.create(db=db, obj_in=obj_in)
     assert obj.bool_field is False
     assert obj.title == "title"
     assert isinstance(obj.id, uuid.UUID)
 
 def test_get_obj(db: Session) -> None:
-    obj_in = TestCreate()
+    obj_in = EmptyTestCreate()
     obj = crud.crud_test.create(db=db, obj_in=obj_in)
     stored_obj = crud.crud_test.get(db=db, id=obj.id)
     assert stored_obj
@@ -26,8 +26,8 @@ def test_get_obj_bad_id(db: Session) -> None:
     assert stored_obj is None
 
 def test_get_multi(db: Session) -> None:
-    obj_in = TestCreate()
-    obj_in_2 = TestCreate()
+    obj_in = EmptyTestCreate()
+    obj_in_2 = EmptyTestCreate()
     obj = crud.crud_test.create(db=db, obj_in=obj_in)
     obj_2 = crud.crud_test.create(db=db, obj_in=obj_in_2)
     all_objs = crud.crud_test.get_multi(db=db, skip=0, limit=10000)
@@ -36,12 +36,12 @@ def test_get_multi(db: Session) -> None:
     assert obj_2 in all_objs
 
 def test_update_obj(db: Session) -> None:
-    obj_in = TestCreate()
+    obj_in = EmptyTestCreate()
     obj = crud.crud_test.create(db=db, obj_in=obj_in)
 
     # update the obj
     new_bool_field = True
-    obj_update = TestUpdate(bool_field=new_bool_field)
+    obj_update = EmptyTestUpdate(bool_field=new_bool_field)
     obj2 = crud.crud_test.update(db=db, db_obj=obj, obj_in=obj_update)
 
     # assert objs are same id but bool_field updated, and other fields unchanged
@@ -50,10 +50,10 @@ def test_update_obj(db: Session) -> None:
     assert obj.title == obj2.title
 
 def test_update_obj_bad_id(db: Session) -> None:
-    obj = TestModel(id=uuid.uuid4(), bool_field=False, title="title")
+    obj = EmptyTestModel(id=uuid.uuid4(), bool_field=False, title="title")
 
     # update the obj that doesn't exist
-    obj_update = TestUpdate(bool_field=True)
+    obj_update = EmptyTestUpdate(bool_field=True)
     obj2 = crud.crud_test.update(db=db, db_obj=obj, obj_in=obj_update)
 
     # assert objs are same id but bool_field updated, and other fields unchanged
@@ -62,8 +62,8 @@ def test_update_obj_bad_id(db: Session) -> None:
 # given two objects in the same table, when the second is created, assert json encoding is empty
 # then assert that updating refreshes the first object by changing a field
 def test_update_obj_refreshes_if_expired(db: Session) -> None:
-    obj_in = TestCreate()
-    obj_in_2 = TestCreate()
+    obj_in = EmptyTestCreate()
+    obj_in_2 = EmptyTestCreate()
     obj = crud.crud_test.create(db=db, obj_in=obj_in)
 
     # object created just fine
@@ -80,7 +80,7 @@ def test_update_obj_refreshes_if_expired(db: Session) -> None:
     # update the obj
     new_bool_field = True
     new_title = "t2"
-    obj_update = TestUpdate(bool_field=new_bool_field, title=new_title)
+    obj_update = EmptyTestUpdate(bool_field=new_bool_field, title=new_title)
     new_obj = crud.crud_test.update(db=db, db_obj=obj, obj_in=obj_update)
 
     # assert objs are same id and both original db object and new one have been refreshed
@@ -91,7 +91,7 @@ def test_update_obj_refreshes_if_expired(db: Session) -> None:
 
 
 def test_delete_obj(db: Session) -> None:
-    obj_in = TestCreate()
+    obj_in = EmptyTestCreate()
 
     # create, delete, and get obj
     obj = crud.crud_test.create(db=db, obj_in=obj_in)
@@ -109,9 +109,9 @@ def test_delete_obj_bad_id(db: Session) -> None:
 
 # given three objects, update two of them, then refresh all three, assert that the two updated objects are updated and the third is unchanged
 def test_refresh_all_by_id(db: Session) -> None:
-    obj_in_1 = TestCreate()
-    obj_in_2 = TestCreate()
-    obj_in_3 = TestCreate()
+    obj_in_1 = EmptyTestCreate()
+    obj_in_2 = EmptyTestCreate()
+    obj_in_3 = EmptyTestCreate()
     obj = crud.crud_test.create(db=db, obj_in=obj_in_1)
     obj2 = crud.crud_test.create(db=db, obj_in=obj_in_2)
     obj3 = crud.crud_test.create(db=db, obj_in=obj_in_3)
@@ -122,8 +122,8 @@ def test_refresh_all_by_id(db: Session) -> None:
 
     # update obj2 and 3
     new_bool_field = True
-    obj2_update = TestUpdate(bool_field=new_bool_field)
-    obj3_update = TestUpdate(bool_field=new_bool_field)
+    obj2_update = EmptyTestUpdate(bool_field=new_bool_field)
+    obj3_update = EmptyTestUpdate(bool_field=new_bool_field)
 
     # update and assert that fields were refreshed appropriately
     crud.crud_test.update(db=db, db_obj=obj2, obj_in=obj2_update)
@@ -159,7 +159,7 @@ def test_refresh_all_by_id_empty_or_none_id_list(db: Session) -> None:
 
 # given three objects to create, create them and assert they are not None and have the correct custom fields
 def test_create_all_using_id(db: Session) -> None:
-    obj_in_list = [TestCreate(title="1st"), TestCreate(title="2nd"), TestCreate(title="3rd")]
+    obj_in_list = [EmptyTestCreate(title="1st"), EmptyTestCreate(title="2nd"), EmptyTestCreate(title="3rd")]
     objs = crud.crud_test.create_all_using_id(db=db, obj_in_list=obj_in_list)
 
     # assert objs are not None

@@ -26,6 +26,7 @@ hdbscan = "*"
 bertopic = "*"
 minio = "*"
 pytest-asyncio = "*"
+pytest-mock = "*"
 
 [dev-packages]
 black = "==19.10b0"

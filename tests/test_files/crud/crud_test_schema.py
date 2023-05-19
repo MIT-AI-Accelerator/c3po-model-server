@@ -1,24 +1,23 @@
-# this is a basic schema file for "Test" entity
+# this is a basic schema file for "EmptyTest" entity
 from typing import Optional
-
 from pydantic import BaseModel, UUID4
 
 
 # Shared properties
-class TestBase(BaseModel):
+class EmptyTestBase(BaseModel):
     bool_field: Optional[bool] = None
     title: Optional[str] = None
 
-# Properties to receive on Test creation
-class TestCreate(TestBase):
+# Properties to receive on EmptyTest creation
+class EmptyTestCreate(EmptyTestBase):
     pass
 
-# Properties to receive on Test update
-class TestUpdate(TestBase):
+# Properties to receive on EmptyTest update
+class EmptyTestUpdate(EmptyTestBase):
     pass
 
 # Properties shared by models stored in DB
-class TestInDBBase(TestBase):
+class EmptyTestInDBBase(EmptyTestBase):
     id: UUID4
     bool_field: bool
     title: str
@@ -27,9 +26,9 @@ class TestInDBBase(TestBase):
         orm_mode = True
 
 # Properties to return to client
-class Test(TestInDBBase):
+class EmptyTest(EmptyTestInDBBase):
     pass
 
 # Properties properties stored in DB
-class TestInDB(TestInDBBase):
+class EmptyTestInDB(EmptyTestInDBBase):
     pass
