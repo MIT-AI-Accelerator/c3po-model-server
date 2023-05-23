@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer
 from bertopic import BERTopic
+import hdbscan
 from pydantic import BaseModel, StrictFloat, StrictInt, StrictBool, validator
 
 from app.core.minio import download_pickled_object_from_minio
@@ -148,7 +149,7 @@ class BasicInference:
 
         self.embedding_pretrained_model_obj = embedding_pretrained_model_obj
 
-    def train_bertopic_on_documents(self, documents, precalculated_embeddings, num_topics) -> BasicInferenceOutputs:
+    def train_bertopic_on_documents(self, documents, precalculated_embeddings, num_topics, seed_topic_list = []) -> BasicInferenceOutputs:
         # validate input
         TrainBertopicOnDocumentsInput(
             documents=documents, precalculated_embeddings=precalculated_embeddings, num_topics=num_topics)
@@ -159,7 +160,7 @@ class BasicInference:
             documents_text_list, precalculated_embeddings)
 
         topic_model = self.build_topic_model(
-            documents_text_list, embeddings, num_topics)
+            documents_text_list, embeddings, num_topics, seed_topic_list)
 
         plotly_visualization = topic_model.visualize_documents(
             documents_text_list, embeddings=embeddings, title='Topic Analysis')
@@ -205,15 +206,16 @@ class BasicInference:
 
         return (np.array(embeddings), updated_indices)
 
-    def build_topic_model(self, documents_text_list, embeddings, num_topics) -> BERTopic:
+    def build_topic_model(self, documents_text_list, embeddings, num_topics, seed_topic_list) -> BERTopic:
 
         # validate input
         BuildTopicModelInputs(
             documents_text_list=documents_text_list, embeddings=embeddings, num_topics=num_topics)
 
-        vectorizer_model = CountVectorizer(
-            stop_words="english", ngram_range=(1, 2))
-        topic_model = BERTopic(nr_topics=num_topics, vectorizer_model=vectorizer_model).fit(
-            documents_text_list, embeddings)
+        vectorizer_model = CountVectorizer(stop_words="english")
+        hdbscan_model = hdbscan.HDBSCAN(min_cluster_size=10, min_samples=10,
+            metric='euclidean', prediction_data=True)
+        topic_model = BERTopic(seed_topic_list=seed_topic_list, hdbscan_model=hdbscan_model,
+            vectorizer_model=vectorizer_model).fit(documents_text_list, embeddings)
 
         return topic_model
