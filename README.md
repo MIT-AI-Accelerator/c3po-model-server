@@ -53,6 +53,17 @@ from app.schemas.item import ItemCreate, ItemUpdate
 item = CRUDBase[Item, ItemCreate, ItemUpdate](Item)
 ```
 
+# Patching a CVE
+Usually CVEs can be addressed by easily updating a release, realizing it is a false-positive, or finding a new package.  Sometimes though you need to patch before a new release comes up.  You can do this by `pip install` with a specific commit addressing the patch.  For example, before 4.30.0 was released, [this transformers CVE](https://nvd.nist.gov/vuln/detail/CVE-2023-2800) could be patched via
+
+`pip install git+https://github.com/huggingface/transformers.git@80ca92470938bbcc348e2d9cf4734c7c25cb1c43#egg=transformers`
+
+and adding
+
+`transformers @ git+https://github.com/huggingface/transformers.git@80ca92470938bbcc348e2d9cf4734c7c25cb1c43`
+
+to the requirements.txt in place of the previous `transformers` installation.
+
 # Knowledge and helpful links
 ## Tools for this repo
 - [Tutorial followed-ish for this repo](https://curiousily.com/posts/deploy-bert-for-sentiment-analysis-as-rest-api-using-pytorch-transformers-by-hugging-face-and-fastapi/)
