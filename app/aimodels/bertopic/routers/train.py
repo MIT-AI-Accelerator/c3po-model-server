@@ -23,6 +23,7 @@ router = APIRouter(
 class TrainModelRequest(BaseModel):
     bertopic_embedding_pretrained_id: UUID4
     document_ids: list[UUID4] = []
+    seed_topics: list[str] = []
 
 
 @router.post(
@@ -73,7 +74,7 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
     # train the model
     basic_inference = BasicInference(bertopic_embedding_pretrained_obj, s3)
     inference_output = basic_inference.train_bertopic_on_documents(
-        documents, precalculated_embeddings=precalculated_embeddings, num_topics=1)
+        documents, precalculated_embeddings=precalculated_embeddings, num_topics=1, seed_topic_list=request.seed_topics)
     new_plotly_bubble_config = inference_output.plotly_bubble_config
 
     # save calculated embeddings computations
