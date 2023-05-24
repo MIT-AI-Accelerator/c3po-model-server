@@ -114,7 +114,7 @@ def init_gpt4all_pretrained_model(s3: Minio, db: Session) -> None:
             if chunk:
                 f.write(chunk)
                 hash_object.update(chunk)
-            
+
     hex_dig = hash_object.hexdigest()
 
     # check to make sure sha256 doesn't already exist
