@@ -1,47 +1,35 @@
 # Getting Started Locally
-1. Make sure that you have `conda` installed.  [Recommend this article](https://caffeinedev.medium.com/how-to-install-tensorflow-on-m1-mac-8e9b91d93706) if you are using an M1-based Mac for development.
+1. Install `poetry`: `pip install poetry`
 
-2. Create and activate a new conda environment `c3po-os-api` with python 3.9
-```bash
-conda create --name c3po-os-api python=3.9
-conda activate c3po-os-api
-```
+2. Create and enter the virtual environment: `poetry shell`
 
-3. Install tensorflow 2.X into your `conda` environment.  Again, [follow the steps at this article](https://caffeinedev.medium.com/how-to-install-tensorflow-on-m1-mac-8e9b91d93706) if you are using an M1-based Mac.
+3. Install the dependencies `pip install -r requirements.txt`
 
-4. Run `which pip` and `which python` to verify path to make sure that your `python` and `pip` binaries are coming from your `conda` virtual environment.  Note that the order in which you install conda vs. pip matters to set virtual env priorities.
-
-5. Install `pipenv`: `pip install pipenv`
-
-6. Setup `pipenv` to shadow `conda`-installed packages and local env version of python: `pipenv --python=$(which python) --site-packages`
-
-7. Install dependencies and dev dependencies locally from the `Pipfile` by running `pipenv install --dev`.
-**NOTE**: Temporary issue between arm64 and x86...for now, x86 should install via `pip install -r requirements.txt`.
-
-8.  In `c3po-model-server/app/core/env_var`, create a `secrets.env` file and ensure it is on the `.gitignore`.  Add the following for local dev:
+4.  In `c3po-model-server/app/core/env_var`, create a `secrets.env` file and ensure it is on the `.gitignore`.  Add the following for local dev:
 ```sh
 MM_TOKEN="<your_preprod_mattermost_token>"
 ```
 
-9. Launch postgres, pgadmin, and minio via docker-compose `docker-compose up --build`.
+5. Launch postgres, pgadmin, and minio via docker-compose `docker-compose up --build`.
 
-10. Visit `localhost:9001`.  Login with user:`miniouser` and password:`minioadmin`.  This is the minio console.
+6. Visit `localhost:9001`.  Login with user:`miniouser` and password:`minioadmin`.  This is the minio console.
 
-11. Visit `localhost:5050`.  Login with email:`user@test.com` and password:`admin`.  This is the pgadmin console.  **See notes below for important details**
+7. Visit `localhost:5050`.  Login with email:`user@test.com` and password:`admin`.  This is the pgadmin console.  **See notes below for important details**
 
-12. Run the app db init script `./scripts/init.sh`
+8. Run the app db init script `./scripts/init.sh`
 
-13. Keeping your docker containers running, start the app in a new terminal (activate your conda env first) with `ENVIRONMENT=local pipenv run uvicorn app.main:versioned_app --reload`.
+9. Keeping your docker containers running, start the app in a new terminal (activate your conda env first) with `ENVIRONMENT=local uvicorn app.main:versioned_app --reload`.
 
-14. Open `localhost:8000/v1/docs` and start interacting with swagger!
+10. Open `localhost:8000/v1/docs` and start interacting with swagger!
 
-15. Run tests and get coverage with `ENVIRONMENT=local pytest --cov`, and get html reports for vs code live server (or any server) with `ENVIRONMENT=local pytest --cov --cov-report=html:coverage_re`
+11. Run tests and get coverage with `ENVIRONMENT=local pytest --cov`, and get html reports for vs code live server (or any server) with `ENVIRONMENT=local pytest --cov --cov-report=html:coverage_re`
 
-16.  You can shut down and your db / minio data will persist via docker volumes.
+12.  You can shut down and your db / minio data will persist via docker volumes.
+
+13. Set up the precommit hook with `pre-commit install`.
 
 
 # Notes
-- This codebase assumes that you start from a base tensorflow Docker image or are running tensorflow locally via conda.  We do not install tensorflow via pip.  All other dependencies are install via pip.
 - You will see that `POSTGRES_SERVER=localhost` in the above steps, however, make sure that you login with hostname `db` in pgAdmin (under the "connection" tab in server properties).  This is because the pgAdmin container is launched in the same docker network as the postgres container, so it uses the service name, whereas launching this app from command line uses port forwarding to localhost.  The user, password, and db name will all be `postgres`, port `5432`.
 - We specificy `ENVIRONMENT=local` because the test stage needs the default to be its variables
 - For basic CRUD, you can follow this format:
