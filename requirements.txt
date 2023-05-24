@@ -86,7 +86,7 @@ tomlkit==0.11.8 ; python_version >= '3.7'
 torch==2.0.1 ; python_full_version >= '3.8.0'
 torchvision==0.15.2 ; python_version >= '3.8'
 tqdm==4.65.0 ; python_version >= '3.7'
-transformers==4.29.2
+transformers==4.30.0.dev0
 typing-extensions==4.5.0 ; python_version >= '3.7'
 tzdata==2023.3 ; python_version >= '2'
 umap-learn==0.5.3
