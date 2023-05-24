@@ -10,12 +10,12 @@ repos:
     -   id: check-added-large-files
 -   repo: local
     hooks:
-    - id: pipfile-to-requirements-txt
-      name: Pipfile to Requirements.txt
-      description: Output requirements.txt based on Pipfile.lock
+    - id: poetry-to-requirements-txt
+      name: Poetry to Requirements.txt
+      description: Output requirements.txt based on poetry.lock
       entry: ./hooks/output-requirements-txt.sh
       language: script
-      files: ^Pipfile(\.lock)?$
+      files: ^poetry(\.lock)?$
       types: [file]
     - id: pylint
       name: pylint
