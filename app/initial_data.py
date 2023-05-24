@@ -89,6 +89,78 @@ def init_sentence_embedding_object(s3: Minio, db: Session) -> None:
 
     return obj_by_sha
 
+def init_gpt4all_pretrained_model(s3: Minio, db: Session) -> None:
+    import requests
+    from pathlib import Path
+    from tqdm import tqdm
+
+    local_path = './models/ggml-gpt4all-l13b-snoozy.bin'  # replace with your desired local file path
+
+    Path(local_path).parent.mkdir(parents=True, exist_ok=True)
+
+    # Example model. Check https://github.com/nomic-ai/gpt4all for the latest models.
+    url = 'http://gpt4all.io/models/ggml-gpt4all-l13b-snoozy.bin'
+
+    # send a GET request to the URL to download the file. Stream since it's large
+    response = requests.get(url, stream=True)
+
+    # open the file in binary mode and write the contents of the response to it in chunks
+    # This is a large file, so be prepared to wait.
+    with open(local_path, 'wb') as f:
+        for chunk in tqdm(response.iter_content(chunk_size=8192)):
+            if chunk:
+                f.write(chunk)
+
+
+
+
+
+    # Create the SentenceTransformer object
+    embedding_pretrained_model_obj = SentenceTransformer("all-MiniLM-L6-v2")
+
+    # Serialize the object
+    serialized_obj = pickle.dumps(embedding_pretrained_model_obj)
+
+    # Calculate the SHA256 hash of the serialized object
+    hash_object = hashlib.sha256(serialized_obj)
+    hex_dig = hash_object.hexdigest()
+
+    # check to make sure sha256 doesn't already exist
+    obj_by_sha: BertopicEmbeddingPretrainedModel = crud.bertopic_embedding_pretrained.get_by_sha256(
+        db, sha256=hex_dig)
+
+    if not obj_by_sha:
+        # Create an in-memory file object
+        file_obj = io.BytesIO()
+
+        # Dump the object to the file object
+        pickle.dump(embedding_pretrained_model_obj, file_obj)
+
+        # Move the file cursor to the beginning of the file
+        file_obj.seek(0)
+
+        bertopic_embedding_pretrained_obj = BertopicEmbeddingPretrainedCreate(
+            sha256=hex_dig)
+
+        new_bertopic_embedding_pretrained_obj: BertopicEmbeddingPretrainedModel = crud.bertopic_embedding_pretrained.create(
+            db, obj_in=bertopic_embedding_pretrained_obj)
+
+        # utilize id from above to upload file to minio
+        upload_file_to_minio(UploadFile(file_obj),
+                             new_bertopic_embedding_pretrained_obj.id, s3)
+
+        # update the object to reflect uploaded status
+        updated_object = BertopicEmbeddingPretrainedUpdate(uploaded=True)
+        new_bertopic_embedding_pretrained_obj: BertopicEmbeddingPretrainedModel = crud.bertopic_embedding_pretrained.update(
+            db, db_obj=new_bertopic_embedding_pretrained_obj, obj_in=updated_object)
+
+        return new_bertopic_embedding_pretrained_obj
+
+
+
+
+
+
 
 def init_weak_learning_object(s3: Minio, db: Session) -> None:
     # Create the weak learner object
