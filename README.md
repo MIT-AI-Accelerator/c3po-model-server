@@ -12,7 +12,7 @@ conda activate c3po-os-api
 4. Run `which pip` and `which python` to verify path to make sure that your `python` and `pip` binaries are coming from your `conda` virtual environment.  Note that the order in which you install conda vs. pip matters to set virtual env priorities.
 
 # Getting Started Locally
-1. Install `poetry`: `pip install poetry`
+1. Install `poetry`: `pip install poetry` (or use `pipx` [on link here](https://python-poetry.org/docs/1.4#installing-with-pipx) if you prefer isolated envs and you don't have `conda` managing your env)
 
 2. Create and enter the virtual environment: `poetry shell`
 
@@ -43,9 +43,9 @@ MM_TOKEN="<your_preprod_mattermost_token>"
 
 # Adding a package
 Note: instructions included in [tutorial linked here](https://realpython.com/dependency-management-python-poetry/)
-1. Add the package, e.g., `poetry add transformers` or `poetry add transformers --dev`.
+1. Add the package, e.g., `poetry add transformers` or `poetry add transformers --group <group_name>` where `<group_name>` is the dependency group name, e.g., `test` or `dev`.
 2. Update the lockfile with `poetry lock` or `poetry lock --no-update` if you don't want poetry to try to update other deps within your existing versioning constraints
-3. Install the packages with `poetry install`
+3. Install the packages with `poetry install`, exclude certain groups if desired via adding `--without <group_name>`.
 
 # Updating packages
 `poetry update` or for a specific package, `poetry update transformers`
