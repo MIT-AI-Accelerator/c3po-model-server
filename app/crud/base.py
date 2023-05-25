@@ -100,7 +100,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             .where(self.model.id.in_(db_obj_ids))
             .execution_options(populate_existing=True)
         )
-        return db.execute(stmt).scalars().all()
+        return db.execute(stmt).scalars().all() # no mutation so no need to commit
 
     def create_all_using_id(self, db: Session, *, obj_in_list: list[CreateSchemaType]) -> ModelType:
         if not obj_in_list:
