@@ -1,10 +1,10 @@
 [tool.poetry]
 name = "c3po-model-server"
 version = "0.1.0"
-description = ""
-authors = ["Your Name <you@example.com>"]
+description = "An AI service for language-based models"
+authors = ["Eric Robinson","Emilie Cowen","Mark Howard","Pat Kelly"]
 readme = "README.md"
-packages = [{include = "c3po_model_server"}]
+packages = [{include = "app"}]
 
 [tool.poetry.dependencies]
 python = "~3.9"
@@ -42,7 +42,7 @@ fastapi-code-generator = "^0.4.2"
 pipdeptree = "^2.7.1"
 
 [tool.coverage.run]
-source = "app"
+source = ["app"]
 omit = ["__init__.py", "initial_data.py", "init_db.py"]
 
 [build-system]

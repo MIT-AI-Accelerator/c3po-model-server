@@ -1,10 +1,10 @@
 # Pre-reqs if you use an ARM-based machine (e.g., Apple M1)--skip if x86 unless you want conda to manage python env, then just skip the tensorflow steps
 1. Make sure that you have `conda` installed.  [Recommend this article](https://caffeinedev.medium.com/how-to-install-tensorflow-on-m1-mac-8e9b91d93706).
 
-2. Create and activate a new conda environment, e.g., `c3po-os-api` with python 3.9
+2. Create and activate a new conda environment, e.g., `transformers-api` with python 3.9
 ```bash
-conda create --name c3po-os-api python=3.9
-conda activate c3po-os-api
+conda create --name transformers-api python=3.9
+conda activate transformers-api
 ```
 
 3. Install tensorflow 2.X into your `conda` environment.  Again, [follow the steps at this article](https://caffeinedev.medium.com/how-to-install-tensorflow-on-m1-mac-8e9b91d93706) if you are using an M1-based Mac.
