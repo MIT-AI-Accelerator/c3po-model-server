@@ -42,7 +42,10 @@ def test_update_obj(db: Session) -> None:
     # update the obj
     new_bool_field = True
     obj_update = EmptyTestUpdate(bool_field=new_bool_field)
-    obj2 = crud.crud_test.update(db=db, db_obj=obj, obj_in=obj_update)
+    crud.crud_test.update(db=db, db_obj=obj, obj_in=obj_update)
+
+    # get the obj again
+    obj2 = crud.crud_test.get(db=db, id=obj.id)
 
     # assert objs are same id but bool_field updated, and other fields unchanged
     assert obj.id == obj2.id
@@ -54,7 +57,10 @@ def test_update_obj_bad_id(db: Session) -> None:
 
     # update the obj that doesn't exist
     obj_update = EmptyTestUpdate(bool_field=True)
-    obj2 = crud.crud_test.update(db=db, db_obj=obj, obj_in=obj_update)
+    crud.crud_test.update(db=db, db_obj=obj, obj_in=obj_update)
+
+    # get the obj again
+    obj2 = crud.crud_test.get(db=db, id=obj.id)
 
     # assert objs are same id but bool_field updated, and other fields unchanged
     assert obj2 is None
@@ -81,7 +87,10 @@ def test_update_obj_refreshes_if_expired(db: Session) -> None:
     new_bool_field = True
     new_title = "t2"
     obj_update = EmptyTestUpdate(bool_field=new_bool_field, title=new_title)
-    new_obj = crud.crud_test.update(db=db, db_obj=obj, obj_in=obj_update)
+    crud.crud_test.update(db=db, db_obj=obj, obj_in=obj_update)
+
+    # get the obj again
+    new_obj = crud.crud_test.get(db=db, id=obj.id)
 
     # assert objs are same id and both original db object and new one have been refreshed
     assert obj.id == new_obj.id
