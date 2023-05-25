@@ -72,7 +72,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         db.execute(stmt)
 
         try:
-            db.expire_all() # mimic behavior from db.commit() for consistency and safety of data currency
+            db.commit() # see here for why we use commit: https://stackoverflow.com/questions/41624316/when-do-commits-happen-with-sqlalchemy-core
             db.refresh(db_obj)
         except InvalidRequestError:  # id is not in db
             db.rollback()
