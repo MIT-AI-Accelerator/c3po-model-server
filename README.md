@@ -1,9 +1,22 @@
+# Pre-reqs if you use an ARM-based machine (e.g., Apple M1)--skip if x86 unless you want conda to manage python env, then just skip the tensorflow steps
+1. Make sure that you have `conda` installed.  [Recommend this article](https://caffeinedev.medium.com/how-to-install-tensorflow-on-m1-mac-8e9b91d93706).
+
+2. Create and activate a new conda environment, e.g., `c3po-os-api` with python 3.9
+```bash
+conda create --name c3po-os-api python=3.9
+conda activate c3po-os-api
+```
+
+3. Install tensorflow 2.X into your `conda` environment.  Again, [follow the steps at this article](https://caffeinedev.medium.com/how-to-install-tensorflow-on-m1-mac-8e9b91d93706) if you are using an M1-based Mac.
+
+4. Run `which pip` and `which python` to verify path to make sure that your `python` and `pip` binaries are coming from your `conda` virtual environment.  Note that the order in which you install conda vs. pip matters to set virtual env priorities.
+
 # Getting Started Locally
 1. Install `poetry`: `pip install poetry`
 
 2. Create and enter the virtual environment: `poetry shell`
 
-3. Install the dependencies `pip install -r requirements.txt`
+3. Install the dependencies `poetry install`
 
 4.  In `c3po-model-server/app/core/env_var`, create a `secrets.env` file and ensure it is on the `.gitignore`.  Add the following for local dev:
 ```sh
@@ -27,6 +40,15 @@ MM_TOKEN="<your_preprod_mattermost_token>"
 12.  You can shut down and your db / minio data will persist via docker volumes.
 
 13. Set up the precommit hook with `pre-commit install`.
+
+# Adding a package
+Note: instructions included in [tutorial linked here](https://realpython.com/dependency-management-python-poetry/)
+1. Add the package, e.g., `poetry add transformers` or `poetry add transformers --dev`.
+2. Update the lockfile with `poetry lock` or `poetry lock --no-update` if you don't want poetry to try to update other deps within your existing versioning constraints
+3. Install the packages with `poetry install`
+
+# Updating packages
+`poetry update` or for a specific package, `poetry update transformers`
 
 
 # Notes
