@@ -7,7 +7,7 @@ readme = "README.md"
 packages = [{include = "c3po_model_server"}]
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "~3.9"
 fastapi = "^0.95.2"
 uvicorn = "^0.22.0"
 pydantic = "^1.10.8"
@@ -25,10 +25,9 @@ python-multipart = "^0.0.6"
 minio = "^7.1.15"
 bertopic = "^0.14.1"
 transformers = "^4.29.2"
+tensorflow = {version = "2.11.1", markers = "platform.machine == 'x86_64'"}
 
-
-[tool.poetry.group.dev.dependencies]
-pre-commit = "^3.3.2"
+[tool.poetry.group.test.dependencies]
 pylint = "^2.17.4"
 pytest = "^7.3.1"
 pytest-cov = "^4.1.0"
@@ -36,6 +35,9 @@ pytest-asyncio = "^0.21.0"
 pytest-mock = "^3.10.0"
 black = "^23.3.0"
 isort = "^5.12.0"
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = "^3.3.2"
 fastapi-code-generator = "^0.4.2"
 pipdeptree = "^2.7.1"
 
@@ -46,3 +48,50 @@ omit = ["__init__.py", "initial_data.py", "init_db.py"]
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+
+
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+fastapi = "*"
+uvicorn = "*"
+pydantic = "*"
+transformers = "*"
+matplotlib = "*"
+pandas = "*"
+pre-commit = "*"
+pylint = "*"
+pytest = "*"
+httpx = "*"
+pytest-cov = "*"
+python-multipart = "*"
+aiofiles = "*"
+clamd = "*"
+python-dotenv = "*"
+fastapi-versioning = "*"
+sqlalchemy = "*"
+psycopg2-binary = "*"
+hdbscan = "*"
+bertopic = "*"
+minio = "*"
+pytest-asyncio = "*"
+pytest-mock = "*"
+
+[dev-packages]
+black = "==19.10b0"
+isort = "*"
+flake8 = "*"
+ipykernel = "*"
+autopep8 = "*"
+fastapi-code-generator = "*"
+pipdeptree = "*"
+
+[requires]
+python_version = "3.9"
+
+[pipenv]
+allow_prereleases = true
