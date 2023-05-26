@@ -212,10 +212,11 @@ class BasicInference:
         BuildTopicModelInputs(
             documents_text_list=documents_text_list, embeddings=embeddings, num_topics=num_topics)
 
-        vectorizer_model = CountVectorizer(stop_words="english")
+        vectorizer_model = CountVectorizer(stop_words="english", ngram_range=(1, 2))
         hdbscan_model = hdbscan.HDBSCAN(min_cluster_size=10, min_samples=10,
-            metric='euclidean', prediction_data=True)
-        topic_model = BERTopic(seed_topic_list=seed_topic_list, hdbscan_model=hdbscan_model,
-            vectorizer_model=vectorizer_model).fit(documents_text_list, embeddings)
+                                        metric='euclidean', prediction_data=True)
+        topic_model = BERTopic(nr_topics=num_topics, seed_topic_list=seed_topic_list,
+                               hdbscan_model=hdbscan_model,vectorizer_model=vectorizer_model).\
+                                fit(documents_text_list, embeddings)
 
         return topic_model

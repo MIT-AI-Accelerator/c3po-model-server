@@ -18,7 +18,7 @@ def test_create_with_good_embedding_pretrained_id(db: Session, valid_sha256: str
     obj_in = BertopicTrainedCreate()
 
     # create a bertopic_embedding_pretrained
-    embedding_pretrained_create = BertopicEmbeddingPretrainedCreate(sha256=valid_sha256)
+    embedding_pretrained_create = BertopicEmbeddingPretrainedCreate(sha256=valid_sha256, model_name='test')
     embedding_pretrained_obj = bertopic_embedding_pretrained.create(db, obj_in=embedding_pretrained_create)
 
     # create a bertopic_trained with the bertopic_embedding_pretrained id
@@ -35,7 +35,7 @@ def test_get_multi_by_embedding_pretrained_id(db: Session, valid_sha256: str):
     obj2 = BertopicTrainedCreate()
 
     # create a bertopic_embedding_pretrained
-    embedding_pretrained_create = BertopicEmbeddingPretrainedCreate(sha256=valid_sha256)
+    embedding_pretrained_create = BertopicEmbeddingPretrainedCreate(sha256=valid_sha256, model_name='test')
     embedding_pretrained_obj = bertopic_embedding_pretrained.create(db, obj_in=embedding_pretrained_create)
 
     # create a bertopic_trained with the bertopic_embedding_pretrained id for each bertopic_trained

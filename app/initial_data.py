@@ -43,7 +43,8 @@ def init_minio_bucket(s3: Minio) -> None:
 
 def init_sentence_embedding_object(s3: Minio, db: Session) -> None:
     # Create the SentenceTransformer object
-    embedding_pretrained_model_obj = SentenceTransformer("all-MiniLM-L6-v2")
+    model_name = "all-MiniLM-L6-v2"
+    embedding_pretrained_model_obj = SentenceTransformer(model_name)
 
     # Serialize the object
     serialized_obj = pickle.dumps(embedding_pretrained_model_obj)
@@ -67,7 +68,7 @@ def init_sentence_embedding_object(s3: Minio, db: Session) -> None:
         file_obj.seek(0)
 
         bertopic_embedding_pretrained_obj = BertopicEmbeddingPretrainedCreate(
-            sha256=hex_dig)
+            sha256=hex_dig, model_name=model_name)
 
         new_bertopic_embedding_pretrained_obj: BertopicEmbeddingPretrainedModel = crud.bertopic_embedding_pretrained.create(
             db, obj_in=bertopic_embedding_pretrained_obj)
