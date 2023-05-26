@@ -8,6 +8,7 @@ from ..models.bertopic_embedding_pretrained import EmbeddingModelTypeEnum
 class BertopicEmbeddingPretrainedBase(BaseModel):
     sha256: Optional[str] = None
     model_type: Optional[EmbeddingModelTypeEnum] = None
+    model_name: Optional[str] = None
 
     # ensure valid sha256 format
     @validator('sha256')
@@ -27,6 +28,7 @@ class BertopicEmbeddingPretrainedBase(BaseModel):
 # Properties to receive on BertopicEmbeddingPretrained creation
 class BertopicEmbeddingPretrainedCreate(BertopicEmbeddingPretrainedBase):
     sha256: str
+    model_name: str = ''
 
 # Properties to receive on BertopicEmbeddingPretrained update
 class BertopicEmbeddingPretrainedUpdate(BertopicEmbeddingPretrainedBase):
@@ -36,6 +38,7 @@ class BertopicEmbeddingPretrainedUpdate(BertopicEmbeddingPretrainedBase):
 class BertopicEmbeddingPretrainedInDBBase(BertopicEmbeddingPretrainedBase):
     id: UUID4
     model_type: EmbeddingModelTypeEnum
+    model_name: str = ''
     uploaded: bool = False
     version: int
     sha256: str

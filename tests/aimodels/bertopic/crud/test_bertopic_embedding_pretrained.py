@@ -11,7 +11,7 @@ def test_bertopic_embedding_pretrained():
 # get_by_sha256 with existing sha256
 def test_get_by_sha256_existing_sha256(db: Session, valid_sha256: str):
     # create a bertopic_embedding_pretrained
-    embedding_pretrained_create = BertopicEmbeddingPretrainedCreate(sha256=valid_sha256)
+    embedding_pretrained_create = BertopicEmbeddingPretrainedCreate(sha256=valid_sha256, model_name='test')
     bertopic_embedding_pretrained.create(db, obj_in=embedding_pretrained_create)
 
     # get object from db

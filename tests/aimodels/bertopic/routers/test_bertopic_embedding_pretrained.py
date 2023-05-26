@@ -29,7 +29,7 @@ app.dependency_overrides = {get_db: mock_db, get_minio: mock_get_minio}
 
 
 def test_create_bertopic_embedding_pretrained_object_post_valid_request(client: TestClient, valid_sha256: str):
-    body = BertopicEmbeddingPretrainedCreate(sha256=valid_sha256)
+    body = BertopicEmbeddingPretrainedCreate(sha256=valid_sha256, model_name='test')
 
     response = client.post(
         "/aimodels/bertopic/bertopic-embedding-pretrained",
@@ -57,7 +57,7 @@ def test_create_bertopic_embedding_pretrained_object_post_invalid_request(client
 
 
 def test_create_bertopic_embedding_pretrained_object_post_invalid_request_sha256(client: TestClient):
-    body = {'sha256': ''}
+    body = {'sha256': '', 'model_name': 'test'}
 
     response = client.post(
         "/aimodels/bertopic/bertopic-embedding-pretrained",
@@ -71,7 +71,7 @@ def test_create_bertopic_embedding_pretrained_object_post_invalid_request_sha256
 
 
 def test_create_bertopic_embedding_pretrained_object_post_already_existing_sha256(client: TestClient, valid_sha256: str):
-    body = BertopicEmbeddingPretrainedCreate(sha256=valid_sha256)
+    body = BertopicEmbeddingPretrainedCreate(sha256=valid_sha256, model_name='test')
 
     response = client.post(
         "/aimodels/bertopic/bertopic-embedding-pretrained",
@@ -93,7 +93,7 @@ def test_create_bertopic_embedding_pretrained_object_post_already_existing_sha25
 
 
 def test_create_bertopic_embedding_pretrained_object_post_sha256_converted_to_lowercase(client: TestClient, valid_sha256: str):
-    body = BertopicEmbeddingPretrainedCreate(sha256=valid_sha256.upper())
+    body = BertopicEmbeddingPretrainedCreate(sha256=valid_sha256.upper(), model_name='test')
 
     response = client.post(
         "/aimodels/bertopic/bertopic-embedding-pretrained",
@@ -123,7 +123,7 @@ def test_upload_bertopic_embedding_pretrained_object_post_valid_request(client: 
             sha256_hash.update(chunk)
 
     # create the BERTopic Embedding Pretrained Model object
-    body = BertopicEmbeddingPretrainedCreate(sha256=sha256_hash.hexdigest())
+    body = BertopicEmbeddingPretrainedCreate(sha256=sha256_hash.hexdigest(), model_name='test')
 
     response = client.post(
         "/aimodels/bertopic/bertopic-embedding-pretrained",
@@ -158,7 +158,7 @@ def test_upload_bertopic_embedding_pretrained_object_post_invalid_sha256(client:
         f.write(contents.encode('utf-8'))
 
     # create the BERTopic Embedding Pretrained Model object
-    body = BertopicEmbeddingPretrainedCreate(sha256=valid_sha256)
+    body = BertopicEmbeddingPretrainedCreate(sha256=valid_sha256, model_name='test')
 
     response = client.post(
         "/aimodels/bertopic/bertopic-embedding-pretrained",
@@ -185,7 +185,7 @@ def test_upload_bertopic_embedding_pretrained_object_post_invalid_sha256(client:
 
 
 def test_upload_bertopic_embedding_pretrained_object_post_empty_file(client: TestClient, valid_sha256: str):
-    body = BertopicEmbeddingPretrainedCreate(sha256=valid_sha256)
+    body = BertopicEmbeddingPretrainedCreate(sha256=valid_sha256, model_name='test')
 
     response = client.post(
         "/aimodels/bertopic/bertopic-embedding-pretrained",
