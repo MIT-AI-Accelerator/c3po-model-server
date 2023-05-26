@@ -16,6 +16,7 @@ class EmbeddingModelTypeEnum(str, enum.Enum):
 class BertopicEmbeddingPretrainedModel(Base):
     id = Column(UUID, primary_key=True, unique=True, default=uuid.uuid4)
     model_type = Column(Enum(EmbeddingModelTypeEnum), default=EmbeddingModelTypeEnum.SENTENCE_TRANSFORMERS)
+    model_name = Column(String())
     version_sequence = Sequence(__qualname__.lower() + "_version_sequence") # see here for autoincrementing versioning: https://copyprogramming.com/howto/using-sqlalchemy-orm-for-a-non-primary-key-unique-auto-incrementing-id
     version = Column(Integer, version_sequence, server_default=version_sequence.next_value(), index=True, unique=True, nullable=False)
     sha256 = Column(String(64))
