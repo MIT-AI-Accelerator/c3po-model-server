@@ -11,6 +11,7 @@ if TYPE_CHECKING:
 
 class EmbeddingModelTypeEnum(str, enum.Enum):
     SENTENCE_TRANSFORMERS = "sentence_transformers"
+    WEAK_LEARNERS = "weak_learners"
     DIFF_CSE = "diff_cse"
 
 class BertopicEmbeddingPretrainedModel(Base):
