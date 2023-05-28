@@ -21,7 +21,8 @@ router = APIRouter(
 
 
 class TrainModelRequest(BaseModel):
-    bertopic_embedding_pretrained_id: UUID4
+    sentence_transformer_id: UUID4
+    weak_learner_id: UUID4 = None
     document_ids: list[UUID4] = []
     num_topics: int
     seed_topics: list[str] = []
@@ -41,14 +42,27 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
     Train a BERTopic model on text.
     """
     # check to make sure id exists
-    bertopic_embedding_pretrained_obj: BertopicEmbeddingPretrainedModel = crud.bertopic_embedding_pretrained.get(
-        db, request.bertopic_embedding_pretrained_id)
-    if not bertopic_embedding_pretrained_obj:
-        return HTTPValidationError(detail=[ValidationError(loc=['path', 'bertopic model upload'], msg='Invalid pretrained model id', type='value_error')])
+    bertopic_sentence_transformer_obj: BertopicEmbeddingPretrainedModel = crud.bertopic_embedding_pretrained.get(
+        db, request.sentence_transformer_id)
+    if not bertopic_sentence_transformer_obj:
+        return HTTPValidationError(detail=[ValidationError(loc=['path', 'bertopic model upload'], msg='Invalid sentence transformer id', type='value_error')])
 
     # check to make sure bertopic_obj has and embedding layer
-    if not bertopic_embedding_pretrained_obj.uploaded:
+    if not bertopic_sentence_transformer_obj.uploaded:
         return HTTPValidationError(detail=[ValidationError(loc=['path', 'bertopic_id'], msg='BERTopic model has no embedding layer', type='value_error')])
+
+    if request.weak_learner_id:
+        # check to make sure id exists
+        bertopic_weak_learner_obj: BertopicEmbeddingPretrainedModel = crud.bertopic_embedding_pretrained.get(
+            db, request.weak_learner_id)
+        if not bertopic_weak_learner_obj:
+            return HTTPValidationError(detail=[ValidationError(loc=['path', 'bertopic model upload'], msg='Invalid weak learner id', type='value_error')])
+
+        # check to make sure bertopic_obj has and embedding layer
+        if not bertopic_weak_learner_obj.uploaded:
+            return HTTPValidationError(detail=[ValidationError(loc=['path', 'bertopic_id'], msg='BERTopic model has no embedding layer', type='value_error')])
+    else:
+        bertopic_weak_learner_obj = None
 
     # get the documents
     documents = []
@@ -66,14 +80,14 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
 
         next_value = None
         for embedding_computation in document.embedding_computations:
-            if embedding_computation.bertopic_embedding_pretrained_id == request.bertopic_embedding_pretrained_id:
+            if embedding_computation.bertopic_embedding_pretrained_id == request.sentence_transformer_id:
                 next_value = embedding_computation.embedding_vector
                 break
 
         precalculated_embeddings.append(next_value)
 
     # train the model
-    basic_inference = BasicInference(bertopic_embedding_pretrained_obj, s3)
+    basic_inference = BasicInference(bertopic_sentence_transformer_obj, s3, bertopic_weak_learner_obj)
     inference_output = basic_inference.train_bertopic_on_documents(
         documents, precalculated_embeddings=precalculated_embeddings, num_topics=request.num_topics,
         seed_topic_list=request.seed_topics)
@@ -82,7 +96,7 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
     # save calculated embeddings computations
     new_embedding_computation_obj_list = [DocumentEmbeddingComputationCreate(
         document_id=documents[i].id,
-        bertopic_embedding_pretrained_id=request.bertopic_embedding_pretrained_id,
+        bertopic_embedding_pretrained_id=request.sentence_transformer_id,
         embedding_vector=inference_output.embeddings[i]
     ) for i, wasUpdated in enumerate(inference_output.updated_document_indicies) if wasUpdated]
 
@@ -101,7 +115,7 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
 
     # save the trained model object in the database
     new_bertopic_trained_obj: BertopicTrainedModel = crud.bertopic_trained.create_with_embedding_pretrained_id(
-        db, obj_in=bertopic_trained_obj, embedding_pretrained_id=request.bertopic_embedding_pretrained_id)
+        db, obj_in=bertopic_trained_obj, embedding_pretrained_id=request.sentence_transformer_id)
 
     # upload the trained model to minio
     upload_success = pickle_and_upload_object_to_minio(object=inference_output.topic_model, id=new_bertopic_trained_obj.id, s3=s3)

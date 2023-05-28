@@ -14,6 +14,7 @@ from minio import Minio
 
 from ..models.document import DocumentModel
 from ..models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedModel
+from .weak_learning import WeakLearner
 
 BASE_CKPT_DIR = os.path.join(os.path.abspath(
     os.path.dirname(__file__)), "./data")
@@ -135,21 +136,32 @@ class BuildTopicModelInputs(BaseModel):
 
 class BasicInference:
 
-    def __init__(self, embedding_pretrained_model_obj, s3):
+    def __init__(self, sentence_transformer_obj, s3, weak_learner_obj = None):
 
         # validate input
         InitInputs(
-            embedding_pretrained_model_obj=embedding_pretrained_model_obj, s3=s3
+            embedding_pretrained_model_obj=sentence_transformer_obj, s3=s3
         )
 
         # TODO: load from minio--HTTPException gets thrown if not there
         # would be a server error since the db object should say if it's uploaded or not
         self.sentence_model = download_pickled_object_from_minio(
-            id=embedding_pretrained_model_obj.id, s3=s3)
+            id=sentence_transformer_obj.id, s3=s3)
 
-        self.embedding_pretrained_model_obj = embedding_pretrained_model_obj
+        self.sentence_transformer_obj = sentence_transformer_obj
 
-    def train_bertopic_on_documents(self, documents, precalculated_embeddings, num_topics, seed_topic_list = []) -> BasicInferenceOutputs:
+        self.weak_learner_obj = weak_learner_obj
+        self.label_model = None
+        if weak_learner_obj:
+            weak_models = download_pickled_object_from_minio(id=weak_learner_obj.id, s3=s3)
+            self.vectorizer = weak_models[0]
+            self.svm = weak_models[1]
+            self.mlp = weak_models[2]
+            self.label_model = weak_models[3]
+            self.weak_learner = WeakLearner(self.vectorizer, self.svm, self.mlp, self.label_model)
+            labeling_functions, self.label_applier = self.weak_learner.create_label_applier()
+        
+    def train_bertopic_on_documents(self, documents, precalculated_embeddings, num_topics = 1, seed_topic_list = []) -> BasicInferenceOutputs:
         # validate input
         TrainBertopicOnDocumentsInput(
             documents=documents, precalculated_embeddings=precalculated_embeddings, num_topics=num_topics)
@@ -215,8 +227,20 @@ class BasicInference:
         vectorizer_model = CountVectorizer(stop_words="english", ngram_range=(1, 2))
         hdbscan_model = hdbscan.HDBSCAN(min_cluster_size=10, min_samples=10,
                                         metric='euclidean', prediction_data=True)
-        topic_model = BERTopic(nr_topics=num_topics, seed_topic_list=seed_topic_list,
-                               hdbscan_model=hdbscan_model,vectorizer_model=vectorizer_model).\
-                                fit(documents_text_list, embeddings)
+
+        if self.weak_learner_obj:
+            data_test = pd.DataFrame({'message': documents_text_list})
+            l_test = self.label_applier.apply(pd.DataFrame(data_test['message']))
+            y_pred = self.label_model.predict(l_test)
+            test_messages = data_test['message'][y_pred<2]
+            test_messages.index = list(range(test_messages.shape[0]))
+            topic_model = BERTopic(nr_topics=num_topics, # seed_topic_list=seed_topic_list, TODO fix seed topic list
+                                hdbscan_model=hdbscan_model, vectorizer_model=self.vectorizer,
+                                embedding_model=self.sentence_model).fit(test_messages)
+  
+        else:
+            topic_model = BERTopic(nr_topics=num_topics, seed_topic_list=seed_topic_list,
+                                hdbscan_model=hdbscan_model, vectorizer_model=vectorizer_model).\
+                                    fit(documents_text_list, embeddings)
 
         return topic_model
