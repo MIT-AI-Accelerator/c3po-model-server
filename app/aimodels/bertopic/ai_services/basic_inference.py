@@ -150,6 +150,8 @@ class BasicInference:
 
         self.sentence_transformer_obj = sentence_transformer_obj
 
+        self.vectorizer = CountVectorizer(stop_words="english", ngram_range=(1, 2))
+
         self.weak_learner_obj = weak_learner_obj
         self.label_model = None
         if weak_learner_obj:
@@ -224,23 +226,18 @@ class BasicInference:
         BuildTopicModelInputs(
             documents_text_list=documents_text_list, embeddings=embeddings, num_topics=num_topics)
 
-        vectorizer_model = CountVectorizer(stop_words="english", ngram_range=(1, 2))
-        hdbscan_model = hdbscan.HDBSCAN(min_cluster_size=10, min_samples=10,
-                                        metric='euclidean', prediction_data=True)
-
         if self.weak_learner_obj:
             data_test = pd.DataFrame({'message': documents_text_list})
             l_test = self.label_applier.apply(pd.DataFrame(data_test['message']))
-            y_pred = self.label_model.predict(l_test)
-            test_messages = data_test['message'][y_pred<2]
-            test_messages.index = list(range(test_messages.shape[0]))
-            topic_model = BERTopic(nr_topics=num_topics, # seed_topic_list=seed_topic_list, TODO fix seed topic list
-                                hdbscan_model=hdbscan_model, vectorizer_model=self.vectorizer,
-                                embedding_model=self.sentence_model).fit(test_messages)
-  
-        else:
-            topic_model = BERTopic(nr_topics=num_topics, seed_topic_list=seed_topic_list,
-                                hdbscan_model=hdbscan_model, vectorizer_model=vectorizer_model).\
-                                    fit(documents_text_list, embeddings)
+            data_test['y_pred'] = self.label_model.predict(l_test)
+            embeddings = embeddings[data_test['y_pred'] < 2]
+            data_test = data_test[data_test['y_pred'] < 2]
+            documents_text_list = list(data_test['message'])
+
+        hdbscan_model = hdbscan.HDBSCAN(min_cluster_size=10, min_samples=10,
+                                        metric='euclidean', prediction_data=True)
+        topic_model = BERTopic(nr_topics=num_topics, seed_topic_list=seed_topic_list, 
+                            hdbscan_model=hdbscan_model, vectorizer_model=self.vectorizer)
+        topic_model = topic_model.fit(documents_text_list, embeddings)
 
         return topic_model
