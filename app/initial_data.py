@@ -87,6 +87,10 @@ def init_sentence_embedding_object(s3: Minio, db: Session) -> None:
     return obj_by_sha
 
 
+# TODO
+# def init_weak_learning_object(s3: Minio, db: Session) -> None:
+
+
 def init_documents_from_chats(db: Session) -> str:
     cfile = CHAT_DATASET_1_PATH
     cdata = pd.read_csv(cfile)
