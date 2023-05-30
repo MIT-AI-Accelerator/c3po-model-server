@@ -25,7 +25,7 @@ class TrainModelRequest(BaseModel):
     weak_learner_id: UUID4 = None
     document_ids: list[UUID4] = []
     num_topics: int
-    seed_topics: list[str] = []
+    seed_topics: list[list] = []
 
 
 @router.post(
