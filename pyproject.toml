@@ -8,6 +8,7 @@ packages = [{include = "app"}]
 
 [tool.poetry.dependencies]
 python = "~3.9"
+urllib3 = "^1.26.16"
 fastapi = "^0.95.2"
 uvicorn = "^0.22.0"
 pydantic = "^1.10.8"
@@ -26,6 +27,8 @@ minio = "^7.1.15"
 bertopic = "^0.14.1"
 transformers = "^4.29.2"
 tensorflow = {version = "2.11.1", markers = "platform.machine == 'x86_64'"}
+tensorflow-macos = {version = "2.11.0", platform = "darwin", markers = "platform.machine == 'arm64'"}
+snorkel = "^0.9.9"
 
 [tool.poetry.group.test.dependencies]
 pylint = "^2.17.4"
