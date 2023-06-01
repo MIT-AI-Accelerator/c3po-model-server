@@ -10,4 +10,4 @@ ENV ENVIRONMENT=staging
 
 EXPOSE 8080
 
-CMD ["sh", "-c", "cd /home/python && ./scripts/init.sh && python3 -m uvicorn app.main:versioned_app --host 0.0.0.0 --port 8080"]
+CMD ["sh", "-c", "cd /home/python && python3 -m app.initial_data && python3 -m uvicorn app.main:versioned_app --host 0.0.0.0 --port 8080"]
