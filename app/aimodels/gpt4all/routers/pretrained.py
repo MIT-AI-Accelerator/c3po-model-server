@@ -15,7 +15,6 @@ from ..schemas import Gpt4AllPretrained, Gpt4AllPretrainedCreate, Gpt4AllPretrai
 from app.dependencies import get_db, get_minio
 from sqlalchemy.orm import Session
 from .. import crud
-from ..ai_services.basic_inference import BASE_CKPT_DIR
 from ..models.gpt4all_pretrained import Gpt4AllPretrainedModel
 from app.core.errors import HTTPValidationError, ValidationError
 from aiofiles import open as open_aio
@@ -37,7 +36,7 @@ router = APIRouter(
     summary="Create gpt4all Pretrained Model object",
     response_description="Created Pretrained Model object"
 )
-def create_gpt4all__pretrained_object_post(gpt4all_pretrained_obj: Gpt4AllPretrainedCreate, db: Session = Depends(get_db)) -> (
+def create_gpt4all_pretrained_object_post(gpt4all_pretrained_obj: Gpt4AllPretrainedCreate, db: Session = Depends(get_db)) -> (
     Union[Gpt4AllPretrained, HTTPValidationError]
 ):
     """

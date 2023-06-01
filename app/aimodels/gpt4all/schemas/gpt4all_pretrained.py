@@ -2,12 +2,12 @@ import re
 from typing import Optional
 
 from pydantic import BaseModel, UUID4, validator
-from ..models.gpt4all_pretrained import Gpt4AllModelTypeEnum
+from ..models.gpt4all_pretrained import Gpt4AllModelFilenameEnum
 
 # Shared properties
 class Gpt4AllPretrainedBase(BaseModel):
     sha256: Optional[str] = None
-    model_type: Optional[Gpt4AllModelTypeEnum] = None
+    model_type: Optional[Gpt4AllModelFilenameEnum] = None
 
     # ensure valid sha256 format
     @validator('sha256')
@@ -35,7 +35,7 @@ class Gpt4AllPretrainedUpdate(Gpt4AllPretrainedBase):
 # Properties shared by models stored in DB
 class Gpt4AllPretrainedInDBBase(Gpt4AllPretrainedBase):
     id: UUID4
-    model_type: Gpt4AllModelTypeEnum
+    model_type: Gpt4AllModelFilenameEnum
     uploaded: bool = False
     version: int
     sha256: str

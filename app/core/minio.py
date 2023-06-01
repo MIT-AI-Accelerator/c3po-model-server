@@ -1,6 +1,6 @@
 import io
 import pickle
-from typing import Any
+from typing import Any, Optional
 from .config import settings
 from .logging import logger
 from fastapi import UploadFile, HTTPException
@@ -65,7 +65,7 @@ def pickle_and_upload_object_to_minio(object: Any, id: UUID4, s3: Minio) -> bool
 
     return True
 
-def download_file_from_minio(id: UUID4, s3: Minio) -> io.BytesIO:
+def download_file_from_minio(id: UUID4, s3: Minio, filename: Optional[str] = None) -> io.BytesIO:
     output_filename = f"{id}"
 
     try:
@@ -73,11 +73,22 @@ def download_file_from_minio(id: UUID4, s3: Minio) -> io.BytesIO:
             bucket_name=settings.minio_bucket_name,
             object_name=output_filename
         )
-        file_obj = io.BytesIO()
+
+        file_obj = None
+        write_to_memory = not filename
+        if write_to_memory:
+            file_obj = io.BytesIO()
+        else:
+            file_obj = open(filename, 'wb')
+
         for d in data.stream(32*1024):
             file_obj.write(d)
 
         file_obj.seek(0)
+
+        if not write_to_memory:
+            file_obj.close()
+
         return file_obj
     except InvalidResponseError as e:
         logger.error(f"Failed to download file from Minio: {e}")
@@ -88,4 +99,7 @@ def download_file_from_minio(id: UUID4, s3: Minio) -> io.BytesIO:
 
 def download_pickled_object_from_minio(id: UUID4, s3: Minio) -> Any:
     file_obj = download_file_from_minio(id, s3)
-    return pickle.load(file_obj)
+    output = pickle.load(file_obj)
+
+    file_obj.close()
+    return output

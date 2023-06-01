@@ -125,14 +125,6 @@ def init_gpt4all_pretrained_model(s3: Minio, db: Session) -> None:
         db, sha256=hex_dig)
 
     if not obj_by_sha:
-        # Create an in-memory file object
-        # file_obj = io.BytesIO()
-
-        # # Dump the object to the file object
-        # pickle.dump(embedding_pretrained_model_obj, file_obj)
-
-        # # Move the file cursor to the beginning of the file
-        # file_obj.seek(0)
 
         gpt4all_pretrained_obj = Gpt4AllPretrainedCreate(
             sha256=hex_dig)
@@ -149,6 +141,8 @@ def init_gpt4all_pretrained_model(s3: Minio, db: Session) -> None:
         updated_object = Gpt4AllPretrainedUpdate(uploaded=True)
         new_gpt4all_pretrained_obj: Gpt4AllPretrainedModel = gpt4all_crud.gpt4all_pretrained.update(
             db, db_obj=new_gpt4all_pretrained_obj, obj_in=updated_object)
+
+        os.remove(local_path)
 
         return new_gpt4all_pretrained_obj
 

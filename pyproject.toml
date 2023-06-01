@@ -29,6 +29,8 @@ transformers = "^4.29.2"
 tensorflow = {version = "2.11.1", markers = "platform.machine == 'x86_64'"}
 tensorflow-macos = {version = "2.11.0", platform = "darwin", markers = "platform.machine == 'arm64'"}
 snorkel = "^0.9.9"
+gpt4all = "^0.2.3"
+langchain = "^0.0.188"
 
 [tool.poetry.group.test.dependencies]
 pylint = "^2.17.4"
