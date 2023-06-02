@@ -23,6 +23,7 @@ from sqlalchemy.orm import Session
 from minio import Minio
 import pandas as pd
 from sample_data import CHAT_DATASET_1_PATH
+import sys
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -105,6 +106,7 @@ def init_documents_from_chats(db: Session) -> str:
 
 
 def main() -> None:
+    print('Main called', file=sys.stderr)
     args = sys.argv[1:]
 
     migration_toggle = False
@@ -114,6 +116,7 @@ def main() -> None:
     # environment can be one of 'local', 'test', 'staging', 'production'
     environment = environment_settings.environment
 
+    print('Environment vars loaded', file=sys.stderr)
     logger.info(f"Using initialization environment: {environment}")
     logger.info(f"Using migration toggle: {migration_toggle}")
 
@@ -121,10 +124,14 @@ def main() -> None:
     # prod only if migration toggle is on
     if (environment in ['local', 'test', 'staging'] or (environment == 'production' and migration_toggle is True)):
         logger.info("Creating database schema and tables")
+        print('Creating database schema and tables', file=sys.stderr)
         db = SessionLocal()
+        print('session created', file=sys.stderr)
         init()
+        print('db init done', file=sys.stderr)
         logger.info("Initial database schema and tables created.")
     else:
+        print('Skipping database initialization', file=sys.stderr)
         logger.info("Skipping database initialization")
 
     if (environment == 'local'):
@@ -142,7 +149,9 @@ def main() -> None:
 
     if (environment != 'production'):
         logger.info("Creating documents from chats")
+        print('creating documents from chats', file=sys.stderr)
         swagger_string = init_documents_from_chats(db)
+        print('Documents created', file=sys.stderr)
         logger.info("Documents created.")
         logger.info(f"Documents: {swagger_string}")
 
