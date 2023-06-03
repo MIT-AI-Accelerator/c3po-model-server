@@ -108,7 +108,6 @@ def init_documents_from_chats(db: Session) -> str:
 def main() -> None:
     print('Main called', file=sys.stderr)
     args = sys.argv[1:]
-    import asdf
     
     migration_toggle = False
     if len(args) == 1 and args[0] == '--toggle-migration':
