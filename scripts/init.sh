@@ -15,3 +15,5 @@ then
 else
     echo "Invalid environment"
 fi
+echo "init script finished"
+exit 0
