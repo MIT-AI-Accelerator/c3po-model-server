@@ -19,6 +19,16 @@ class Settings(BaseSettings):
     minio_secret_key: str = ""
     minio_secure: bool = True
 
+    # validator to remove http:// or https:// from the minio_undpoint_url
+    @validator("minio_endpoint_url", pre=True)
+    def remove_http_or_https(cls, v: str) -> str:
+        # pylint: disable=no-self-argument
+        if v.startswith("http://"):
+            return v[len("http://"):]
+        if v.startswith("https://"):
+            return v[len("https://"):]
+        return v
+
     # postgreSQL settings
     postgres_user: str = ""
     postgres_password: str
