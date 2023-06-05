@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     minio_endpoint_url: str = ""
     minio_access_key: str = ""
     minio_secret_key: str = ""
+    minio_region: str = ""
     minio_secure: bool = True
 
     # validator to remove http:// or https:// from the minio_undpoint_url
