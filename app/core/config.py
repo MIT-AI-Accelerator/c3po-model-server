@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     @validator("minio_endpoint_url", pre=True)
     def remove_http_or_https(cls, v: str) -> str:
         # pylint: disable=no-self-argument
+        if v.startswith("http://"):
+            return v[len("http://"):]
         if v.startswith("https://"):
             return v[len("https://"):]
         return v

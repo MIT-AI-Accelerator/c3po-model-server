@@ -117,11 +117,6 @@ def main() -> None:
     logger.info(f"Using initialization environment: {environment}")
     logger.info(f"Using migration toggle: {migration_toggle}")
 
-    #minio env var values
-    logger.info(f"minio_endpoint_url: {settings.minio_endpoint_url}")
-    logger.info(f"minio_bucket_name: {settings.minio_bucket_name}")
-    logger.info(f"minio_secure: {settings.minio_secure}")
-
     # all environments need to initialize the database
     # prod only if migration toggle is on
     if (environment in ['local', 'test', 'staging'] or (environment == 'production' and migration_toggle is True)):
