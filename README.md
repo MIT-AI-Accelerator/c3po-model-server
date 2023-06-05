@@ -62,6 +62,7 @@ from app.schemas.item import ItemCreate, ItemUpdate
 
 item = CRUDBase[Item, ItemCreate, ItemUpdate](Item)
 ```
+- the `env_vars` for `minio` in P1 say secure False, but that is only because the intra-namespace comms between pods get automatically mTLS encrypted via istio, so they keep `http://minio.minio:9000` as the URL inside the namespace.
 
 # Patching a CVE
 Usually CVEs can be addressed by easily updating a release, realizing it is a false-positive, or finding a new package.  Inside of P1, if there is a fix and the CVE is low-threat, you can request a whitelist and wait for the official version.  However, if that does not work, you can request that `git` be installed in the pipeline `pip install` runner and use `pip install` with a specific commit addressing the patch.  For example, before 4.30.0 was released, [this transformers CVE](https://nvd.nist.gov/vuln/detail/CVE-2023-2800) could be patched via
