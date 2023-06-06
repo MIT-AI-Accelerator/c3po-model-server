@@ -4,6 +4,10 @@ if [ "$ENVIRONMENT" = "local" ] || [ "$ENVIRONMENT" = "test" ] || [ -z $ENVIRONM
 then
     echo "running local script"
     ./scripts/init-local.sh
+elif [ "$ENVIRONMENT" = "development" ]
+then
+    echo "running development script"
+    ./scripts/init-development.sh
 elif [ "$ENVIRONMENT" = "staging" ]
 then
     echo "running staging script"
