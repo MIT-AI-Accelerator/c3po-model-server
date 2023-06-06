@@ -78,17 +78,6 @@ and adding
 
 to the requirements.txt in place of the previous `transformers` installation.
 
-# Patching a CVE
-Usually CVEs can be addressed by easily updating a release, realizing it is a false-positive, or finding a new package.  Inside of P1, if there is a fix and the CVE is low-threat, you can request a whitelist and wait for the official version.  However, if that does not work, you can request that `git` be installed in the pipeline `pip install` runner and use `pip install` with a specific commit addressing the patch.  For example, before 4.30.0 was released, [this transformers CVE](https://nvd.nist.gov/vuln/detail/CVE-2023-2800) could be patched via
-
-`pip install git+https://github.com/huggingface/transformers.git@80ca92470938bbcc348e2d9cf4734c7c25cb1c43#egg=transformers`
-
-and adding
-
-`transformers @ git+https://github.com/huggingface/transformers.git@80ca92470938bbcc348e2d9cf4734c7c25cb1c43`
-
-to the requirements.txt in place of the previous `transformers` installation.
-
 # Knowledge and helpful links
 ## Tools for this repo
 - [Tutorial followed-ish for this repo](https://curiousily.com/posts/deploy-bert-for-sentiment-analysis-as-rest-api-using-pytorch-transformers-by-hugging-face-and-fastapi/)
