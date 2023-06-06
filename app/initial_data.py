@@ -38,7 +38,7 @@ def init_minio_bucket(s3: Minio) -> None:
         if not s3.bucket_exists(bucket_name):
             s3.make_bucket(bucket_name)
     except InvalidResponseError as err:
-        print(err)
+        logger.error(err)
 
 
 def init_sentence_embedding_object(s3: Minio, db: Session) -> None:
