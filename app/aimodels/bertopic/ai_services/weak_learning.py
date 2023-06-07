@@ -111,6 +111,7 @@ class WeakLearner:
 
         # train the classifiers
         data_train = pd.read_csv(filepath_train)
+        data_train['message'] = data_train['message'].astype(str)
         data_train = data_train[data_train['createat'].notnull()]
         self.vectorizer = CountVectorizer(stop_words="english")
         x_train = self.vectorizer.fit_transform(data_train['message'])
