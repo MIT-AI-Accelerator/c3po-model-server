@@ -5,9 +5,7 @@ from sqlalchemy.orm import relationship
 from app.db.base_class import Base
 import uuid
 
-# if TYPE_CHECKING:
-#     from .document_embedding_computation import DocumentEmbeddingComputationModel  # noqa: F401
-#     from .bertopic_trained import BertopicTrainedModel  # noqa: F401
+# add in the TYPE_CHECKING check here if relationships are created
 
 class Gpt4AllModelFilenameEnum(str, enum.Enum):
     L13B_SNOOZY = "ggml-gpt4all-l13b-snoozy.bin"
