@@ -12,6 +12,7 @@ conda activate transformers-api
 conda install -c apple tensorflow-deps
 ```
 
+
 4. Run `which pip` and `which python` to verify path to make sure that your `python` and `pip` binaries are coming from your `conda` virtual environment.  Note that the order in which you install conda vs. pip matters to set virtual env priorities.
 
 # Getting Started Locally
