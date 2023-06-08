@@ -1,13 +1,8 @@
-import os
+
 import hashlib
 from typing import Union
-from fastapi import Depends, APIRouter, UploadFile
+from fastapi import Depends, APIRouter, UploadFile, HTTPException
 
-from fastapi import HTTPException
-
-from fastapi.encoders import jsonable_encoder
-from fastapi.responses import JSONResponse
-from fastapi.exceptions import RequestValidationError
 from pydantic import UUID4
 
 from app.core.minio import upload_file_to_minio
@@ -16,12 +11,10 @@ from app.dependencies import get_db, get_minio
 from sqlalchemy.orm import Session
 from .. import crud
 from ..models.gpt4all_pretrained import Gpt4AllPretrainedModel
-from app.core.errors import HTTPValidationError, ValidationError
+from app.core.errors import HTTPValidationError
 from aiofiles import open as open_aio
 from minio import Minio
-from minio.error import InvalidResponseError
 
-from app.core.config import settings
 
 
 router = APIRouter(
@@ -48,10 +41,7 @@ def create_gpt4all_pretrained_object_post(gpt4all_pretrained_obj: Gpt4AllPretrai
         db, sha256=gpt4all_pretrained_obj.sha256)
 
     if obj_by_sha:
-        return JSONResponse(
-            status_code=400,
-            content=jsonable_encoder(HTTPValidationError(detail=[ValidationError(loc=['body', 'sha256'], msg='sha256 already exists', type='value_error')]))
-        )
+        raise HTTPException(status_code=400, detail="sha256 already exists")
 
     # pydantic handles validation
     new_gpt4all_pretrained_obj: Gpt4AllPretrainedModel = crud.gpt4all_pretrained.create(

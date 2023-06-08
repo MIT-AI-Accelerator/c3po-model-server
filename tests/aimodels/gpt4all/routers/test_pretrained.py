@@ -29,7 +29,7 @@ app.dependency_overrides = {get_db: mock_db, get_minio: mock_get_minio}
 
 
 def test_create_gpt4all_pretrained_object_post_valid_request(client: TestClient, valid_sha256: str):
-    body = Gpt4AllPretrainedCreate(sha256=valid_sha256, model_name='test')
+    body = Gpt4AllPretrainedCreate(sha256=valid_sha256)
 
     response = client.post(
         "/aimodels/gpt4all/pretrained",
@@ -71,7 +71,7 @@ def test_create_gpt4all_pretrained_object_post_invalid_request_sha256(client: Te
 
 
 def test_create_gpt4all_pretrained_object_post_already_existing_sha256(client: TestClient, valid_sha256: str):
-    body = Gpt4AllPretrainedCreate(sha256=valid_sha256, model_name='test')
+    body = Gpt4AllPretrainedCreate(sha256=valid_sha256)
 
     response = client.post(
         "/aimodels/gpt4all/pretrained",
@@ -88,12 +88,11 @@ def test_create_gpt4all_pretrained_object_post_already_existing_sha256(client: T
     )
 
     assert response.status_code == 400
-    assert response.json() == {'detail': [
-        {'loc': ['body', 'sha256'], 'msg': 'sha256 already exists', 'type': 'value_error'}]}
+    assert response.json() == {'detail': 'sha256 already exists'}
 
 
 def test_create_gpt4all_pretrained_object_post_sha256_converted_to_lowercase(client: TestClient, valid_sha256: str):
-    body = Gpt4AllPretrainedCreate(sha256=valid_sha256.upper(), model_name='test')
+    body = Gpt4AllPretrainedCreate(sha256=valid_sha256.upper())
 
     response = client.post(
         "/aimodels/gpt4all/pretrained",
@@ -123,7 +122,7 @@ def test_upload_gpt4all_pretrained_object_post_valid_request(client: TestClient,
             sha256_hash.update(chunk)
 
     # create the gpt4all Embedding Pretrained Model object
-    body = Gpt4AllPretrainedCreate(sha256=sha256_hash.hexdigest(), model_name='test')
+    body = Gpt4AllPretrainedCreate(sha256=sha256_hash.hexdigest())
 
     response = client.post(
         "/aimodels/gpt4all/pretrained",
@@ -158,7 +157,7 @@ def test_upload_gpt4all_pretrained_object_post_invalid_sha256(client: TestClient
         f.write(contents.encode('utf-8'))
 
     # create the gpt4all Embedding Pretrained Model object
-    body = Gpt4AllPretrainedCreate(sha256=valid_sha256, model_name='test')
+    body = Gpt4AllPretrainedCreate(sha256=valid_sha256)
 
     response = client.post(
         "/aimodels/gpt4all/pretrained",
@@ -185,7 +184,7 @@ def test_upload_gpt4all_pretrained_object_post_invalid_sha256(client: TestClient
 
 
 def test_upload_gpt4all_pretrained_object_post_empty_file(client: TestClient, valid_sha256: str):
-    body = Gpt4AllPretrainedCreate(sha256=valid_sha256, model_name='test')
+    body = Gpt4AllPretrainedCreate(sha256=valid_sha256)
 
     response = client.post(
         "/aimodels/gpt4all/pretrained",
