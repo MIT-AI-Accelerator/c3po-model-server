@@ -12,7 +12,6 @@ conda activate transformers-api
 conda install -c apple tensorflow-deps
 ```
 
-
 4. Run `which pip` and `which python` to verify path to make sure that your `python` and `pip` binaries are coming from your `conda` virtual environment.  Note that the order in which you install conda vs. pip matters to set virtual env priorities.
 
 # Getting Started Locally
@@ -50,6 +49,7 @@ Note: instructions included in [tutorial linked here](https://realpython.com/dep
 1. Add the package, e.g., `poetry add transformers` or `poetry add transformers --group <group_name>` where `<group_name>` is the dependency group name, e.g., `test` or `dev`.
 2. Update the lockfile with `poetry lock` or `poetry lock --no-update` if you don't want poetry to try to update other deps within your existing versioning constraints
 3. Install the packages with `poetry install`, exclude certain groups if desired via adding `--without <group_name>`.
+
 
 # Updating packages
 `poetry update` or for a specific package, `poetry update transformers`
