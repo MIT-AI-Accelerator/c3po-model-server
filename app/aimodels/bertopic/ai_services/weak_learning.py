@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import snorkel
 from enum import IntEnum
 from snorkel.labeling import labeling_function
 from snorkel.labeling import PandasLFApplier
@@ -9,6 +8,8 @@ from snorkel.labeling.model import LabelModel
 from sklearn.svm import SVC
 from sklearn.neural_network import MLPClassifier
 from sklearn.feature_extraction.text import CountVectorizer
+from pydantic import BaseModel
+
 
 class ChatLabel(IntEnum):
     ACTION = 0
@@ -16,28 +17,34 @@ class ChatLabel(IntEnum):
     RECYCLE = 2
     ABSTAIN = -1
 
+
+class ValuesNotEmpty(BaseModel):
+    vectorizer: CountVectorizer
+    svm: SVC
+    mlp: MLPClassifier
+
+    class Config:
+        arbitrary_types_allowed = True
+
+
 class WeakLearner:
 
-    def __init__(self, vectorizer = None, svm = None, mlp = None, label_model = None):
+    def __init__(self, vectorizer=None, svm=None, mlp=None, label_model=None):
         self.vectorizer = vectorizer
         self.svm = svm
         self.mlp = mlp
         self.label_model = label_model
 
     def create_label_applier(self):
-        
-        # TODO raise error
-        if self.vectorizer is None or self.svm is None or self.mlp is None:
-            print('must train or retrieve models first')
-            return
-            
+        ValuesNotEmpty(vectorizer=self.vectorizer, svm=self.svm, mlp=self.mlp)
+
         # create the weak learners
         @labeling_function()
         def lf_svm_rbf(x):
             x = self.vectorizer.transform(x).toarray()
             y_pred = self.svm.predict(x)
             y_prob = self.svm.predict_proba(x)
-            mx = np.max(y_prob,axis=1)
+            mx = np.max(y_prob, axis=1)
             idx = np.where(mx < 0.75)
             y_pred[idx[0]] = int(ChatLabel.ABSTAIN)
             return y_pred[0]
@@ -45,65 +52,66 @@ class WeakLearner:
         @labeling_function()
         def lf_mlp(x):
             x = self.vectorizer.transform(x)
-            if(x.shape[0]> 1):
+            if (x.shape[0] > 1):
                 return None
-            else:
-                y_pred = self.mlp.predict(x)
-                y_prob = self.mlp.predict_proba(x)
-                y_pred = y_pred[0]
-                mx = np.max(y_prob,axis=1)
-                if(mx[0] < 0.75):
-                    y_pred = int(ChatLabel.ABSTAIN)
-                return y_pred
-            
+
+            y_pred = self.mlp.predict(x)
+            y_prob = self.mlp.predict_proba(x)
+            y_pred = y_pred[0]
+            mx = np.max(y_prob, axis=1)
+            if (mx[0] < 0.75):
+                y_pred = int(ChatLabel.ABSTAIN)
+            return y_pred
+
         @labeling_function()
         def lf_channel(x):
             x = x['message']
-            if(x.find('joined the channel') >= 0):
-                return ChatLabel.RECYCLE
-            elif(x.find('added to the channel') >= 0):
+            if any([
+                (x.find('joined the channel') >= 0),
+                (x.find('added to the channel') >= 0)
+            ]):
                 return ChatLabel.RECYCLE
             return ChatLabel.ABSTAIN
 
         @labeling_function()
         def lf_length(x):
-            if(len(x['message']) < 6):
+            if (len(x['message']) < 6):
                 return ChatLabel.RECYCLE
             return ChatLabel.ABSTAIN
 
         @labeling_function()
         def lf_hello(x):
-            if(x['message'].find('hello') >= 0):
-                return ChatLabel.RECYCLE
-            elif(x['message'].find('hola') >= 0):
-                return ChatLabel.RECYCLE
-            elif(x['message'].find('good morning') >= 0):
-                return ChatLabel.RECYCLE
-            elif(x['message'].find('good evening') >= 0):
-                return ChatLabel.RECYCLE
-            elif(x['message'].find('good night') >= 0):
+            if any([
+                (x['message'].find('hello') >= 0),
+                (x['message'].find('hola') >= 0),
+                (x['message'].find('good morning') >= 0),
+                (x['message'].find('good evening') >= 0),
+                (x['message'].find('good night') >= 0)
+            ]):
                 return ChatLabel.RECYCLE
             return ChatLabel.ABSTAIN
 
         @labeling_function()
         def lf_roger(x):
-            if(x['message'].find('rgr') >= 0):
-                return ChatLabel.RECYCLE
-            elif(x['message'].find('roger') >= 0):
+            if any([
+                (x['message'].find('rgr') >= 0),
+                (x['message'].find('roger') >= 0)
+            ]):
                 return ChatLabel.RECYCLE
             return ChatLabel.ABSTAIN
 
         @labeling_function()
         def lf_lunch(x):
-            if(x['message'].find('lunch') >= 0):
-                return ChatLabel.RECYCLE
-            elif(x['message'].find('dinner') >= 0):
-                return ChatLabel.RECYCLE
-            elif(x['message'].find('food') >= 0):
+            if any([
+                (x['message'].find('lunch') >= 0),
+                (x['message'].find('dinner') >= 0),
+                (x['message'].find('food') >= 0)
+            ]):
                 return ChatLabel.RECYCLE
             return ChatLabel.ABSTAIN
 
-        labeling_functions = [lf_svm_rbf, lf_mlp, lf_channel, lf_length, lf_hello, lf_roger, lf_lunch]
+        labeling_functions = [lf_svm_rbf, lf_mlp, lf_channel,
+                              lf_length, lf_hello, lf_roger, lf_lunch]
         label_applier = PandasLFApplier(labeling_functions)
         return labeling_functions, label_applier
 
@@ -128,9 +136,9 @@ class WeakLearner:
         # train the weak learner and apply it to the dataset
         LFAnalysis(L=L_train, lfs=labeling_functions).lf_summary()
         self.label_model = LabelModel(cardinality=6, verbose=True)
-        self.label_model.fit(L_train=L_train, n_epochs=500, log_freq=100, seed=123)
+        self.label_model.fit(L_train=L_train, n_epochs=500,
+                             log_freq=100, seed=123)
         return (self.vectorizer, self.svm, self.mlp, self.label_model)
-        
+
     def get_label_model(self):
         return self.label_model
-    
