@@ -1,6 +1,6 @@
 from typing import Union
 from pydantic import BaseModel, UUID4
-from fastapi import Depends, APIRouter
+from fastapi import Depends, APIRouter, HTTPException
 
 from app.aimodels.bertopic.schemas.document_embedding_computation import DocumentEmbeddingComputationCreate
 from minio import Minio
@@ -44,25 +44,16 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
     # check to make sure id exists
     bertopic_sentence_transformer_obj: BertopicEmbeddingPretrainedModel = crud.bertopic_embedding_pretrained.get(
         db, request.sentence_transformer_id)
-    if not bertopic_sentence_transformer_obj:
-        return HTTPValidationError(detail=[ValidationError(loc=['path', 'bertopic model upload'], msg='Invalid sentence transformer id', type='value_error')])
 
-    # check to make sure bertopic_obj has and embedding layer
-    if not bertopic_sentence_transformer_obj.uploaded:
-        return HTTPValidationError(detail=[ValidationError(loc=['path', 'bertopic_id'], msg='BERTopic model has no embedding layer', type='value_error')])
+    validate_obj(bertopic_sentence_transformer_obj)
 
+    bertopic_weak_learner_obj = None
     if request.weak_learner_id:
         # check to make sure id exists
         bertopic_weak_learner_obj: BertopicEmbeddingPretrainedModel = crud.bertopic_embedding_pretrained.get(
             db, request.weak_learner_id)
-        if not bertopic_weak_learner_obj:
-            return HTTPValidationError(detail=[ValidationError(loc=['path', 'bertopic model upload'], msg='Invalid weak learner id', type='value_error')])
 
-        # check to make sure bertopic_obj has and embedding layer
-        if not bertopic_weak_learner_obj.uploaded:
-            return HTTPValidationError(detail=[ValidationError(loc=['path', 'bertopic_id'], msg='BERTopic model has no embedding layer', type='value_error')])
-    else:
-        bertopic_weak_learner_obj = None
+        validate_obj(bertopic_weak_learner_obj)
 
     # get the documents
     documents = []
@@ -136,3 +127,10 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
     db.refresh(new_bertopic_trained_obj)
 
     return new_bertopic_trained_obj
+
+def validate_obj(obj: Union[BertopicEmbeddingPretrainedModel, None]):
+    if not obj:
+        raise HTTPException(status_code=422, detail=f"Invalid {str(obj.model_type)} id")
+
+    if not obj.uploaded:
+        raise HTTPException(status_code=422, detail=f"{str(obj.model_type)} pretrained model not uploaded")
