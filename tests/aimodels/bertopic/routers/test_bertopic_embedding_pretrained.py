@@ -1,15 +1,9 @@
 import hashlib
 import os
-import io
 from unittest.mock import MagicMock
 import uuid
-import pickle
-import string
-import random
-import pandas as pd
 from fastapi.testclient import TestClient
 from app.aimodels.bertopic.schemas.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedCreate
-from app.aimodels.bertopic.ai_services.weak_learning import WeakLearner
 
 from app.main import app
 from app.aimodels.bertopic.routers.bertopic_embedding_pretrained import get_db, get_minio, upload_file_to_minio
@@ -226,55 +220,3 @@ def test_upload_bertopic_embedding_pretrained_object_post_invalid_id(client: Tes
     assert response.status_code == 422
     assert response.json() == {'detail': [{'loc': [
         'path', 'id'], 'msg': 'value is not a valid uuid', 'type': 'type_error.uuid'}]}
-
-
-def test_upload_bertopic_embedding_pretrained_weak_learner_object_post_valid_request(client: TestClient):
-    
-    # Create a file to upload
-    test_file = "test_file.csv"
-    tdf = pd.DataFrame({'createat': [0,0,0,0,0,0,0,0,0,0],
-                    'message': [''.join(random.choices(string.ascii_lowercase, k=10)),
-                                ''.join(random.choices(string.ascii_lowercase, k=10)),
-                                ''.join(random.choices(string.ascii_lowercase, k=10)),
-                                ''.join(random.choices(string.ascii_lowercase, k=10)),
-                                ''.join(random.choices(string.ascii_lowercase, k=10)),
-                                ''.join(random.choices(string.ascii_lowercase, k=10)),
-                                ''.join(random.choices(string.ascii_lowercase, k=10)),
-                                ''.join(random.choices(string.ascii_lowercase, k=10)),
-                                ''.join(random.choices(string.ascii_lowercase, k=10)),
-                                ''.join(random.choices(string.ascii_lowercase, k=10))],
-                    'labels': [0,1,2,0,1,2,0,1,2,0]})
-    tdf.to_csv(test_file)
-
-    weak_learner_model_obj = WeakLearner().train_weak_learners(test_file)
-
-    # Serialize the object
-    serialized_obj = pickle.dumps(weak_learner_model_obj)
-
-    # Calculate the SHA256 hash of the serialized object
-    hash_object = hashlib.sha256(serialized_obj)
-    hex_dig = hash_object.hexdigest()
-
-    # create the BERTopic Embedding Pretrained Model object
-    body = BertopicEmbeddingPretrainedCreate(sha256=hex_dig, model_name='test', model_type='weak_learners')
-
-    response = client.post(
-        "/aimodels/bertopic/bertopic-embedding-pretrained",
-        headers={},
-        json=jsonable_encoder(body),
-    )
-    embedding_pretrained_id = response.json()["id"]
-
-    # Dump the object to the file object
-    file_obj = io.BytesIO()
-    pickle.dump(weak_learner_model_obj, file_obj)
-    file_obj.seek(0)
-
-    # Upload the file to the BERTopic Embedding Pretrained Model object
-    response2 = client.post(
-        f"/aimodels/bertopic/bertopic-embedding-pretrained/{embedding_pretrained_id}/upload/", files={"new_file": file_obj})
-
-    os.remove(test_file)
-
-    assert response2.status_code == 200
-    assert response2.json()["uploaded"] is True

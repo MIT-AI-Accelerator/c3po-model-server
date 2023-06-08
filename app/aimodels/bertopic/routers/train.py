@@ -24,7 +24,7 @@ class TrainModelRequest(BaseModel):
     sentence_transformer_id: UUID4
     weak_learner_id: UUID4 = None
     document_ids: list[UUID4] = []
-    num_topics: int = 1
+    num_topics: int
     seed_topics: list[list] = []
 
 

@@ -1,21 +1,19 @@
 import os
-from unittest.mock import MagicMock
+from unittest import mock
 import uuid
 from fastapi.testclient import TestClient
-from app.aimodels.bertopic.models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedModel, EmbeddingModelTypeEnum
-from app.aimodels.bertopic.models.document import DocumentModel
+from app.aimodels.bertopic.models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedModel
+from app.aimodels.bertopic.schemas.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedCreate, BertopicEmbeddingPretrainedUpdate
 
 from app.main import app
-from app.aimodels.bertopic.routers.train import get_db, get_minio
+from app.aimodels.bertopic.routers.bertopic_embedding_pretrained import get_db
 from tests.test_files.db.db_test_session import SessionLocal
 
 from fastapi.encoders import jsonable_encoder
 
-from sqlalchemy.orm import Session
-from minio import Minio
-
-
 # ************Mocks*******************
+
+
 def mock_db():
     try:
         db = SessionLocal()
@@ -23,32 +21,13 @@ def mock_db():
     finally:
         db.close()
 
-mock_s3 = MagicMock()
-def mock_get_minio():
-    return mock_s3
 
-app.dependency_overrides = {get_db: mock_db, get_minio: mock_get_minio}
+app.dependency_overrides[get_db] = mock_db
 # *************************************
 
 
-# test train endpoint with invalid request
-def test_train_invalid_request(client: TestClient):
-
-    body = {
-        "wrong_param": '',
-    }
-
-    response = client.post(
-        "/aimodels/bertopic/train",
-        headers={},
-        json=jsonable_encoder(body),
-    )
-
-    assert response.status_code == 422
-
-
 # test train endpoint with valid request
-def test_train_valid_request(client: TestClient, db: Session):
+def test_train_valid_request(client: TestClient, valid_sha256: str):
     pass
 
     # # create bertopic embedding pretrained object
@@ -58,53 +37,17 @@ def test_train_valid_request(client: TestClient, db: Session):
     # with mock.patch('app.aimodels.bertopic.crud.crud_bertopic_embedding_pretrained.bertopic_embedding_pretrained.get') as mock_get:
     #     mock_get.return_value = embedding_pretrained_obj
 
-    # sentence_transformer_db = db.query(BertopicEmbeddingPretrainedModel).filter(
-    #     BertopicEmbeddingPretrainedModel.model_type == EmbeddingModelTypeEnum.SENTENCE_TRANSFORMERS,
-    #     BertopicEmbeddingPretrainedModel.uploaded == True).first()
+    #     body = {
+    #         "bertopic_embedding_pretrained_id": "1",
+    #         "document_ids": ["1", "2"]
+    #     }
 
-    # documents_db = db.query(DocumentModel).limit(10).all()
+    #     response = client.post(
+    #         "/aimodels/bertopic/train",
+    #         headers={},
+    #         json=jsonable_encoder(body),
+    #     )
 
-    # body = {
-    #     "sentence_transformer_id": sentence_transformer_db.id,
-    #     "document_ids": [d.id for d in documents_db]
-    # }
-
-    # response = client.post(
-    #     "/aimodels/bertopic/train",
-    #     headers={},
-    #     json=jsonable_encoder(body),
-    # )
-
-    # assert response.status_code == 200
-    # assert response.json()['id'] is not None
-
-
-# test train endpoint with valid request
-def test_train_valid_request_weak_learning(client: TestClient, db: Session):
-    pass
-
-    # sentence_transformer_db = db.query(BertopicEmbeddingPretrainedModel).filter(
-    #     BertopicEmbeddingPretrainedModel.model_type == EmbeddingModelTypeEnum.SENTENCE_TRANSFORMERS,
-    #     BertopicEmbeddingPretrainedModel.uploaded == True).first()
-
-    # weak_learner_db = db.query(BertopicEmbeddingPretrainedModel).filter(
-    #     BertopicEmbeddingPretrainedModel.model_type == EmbeddingModelTypeEnum.WEAK_LEARNERS,
-    #     BertopicEmbeddingPretrainedModel.uploaded == True).first()
-
-    # documents_db = db.query(DocumentModel).limit(10).all()
-
-    # body = {
-    #     "sentence_transformer_id": sentence_transformer_db.id,
-    #     "weak_learner_id": weak_learner_db.id,
-    #     "document_ids": [d.id for d in documents_db]
-    # }
-
-    # response = client.post(
-    #     "/aimodels/bertopic/train",
-    #     headers={},
-    #     json=jsonable_encoder(body),
-    # )
-
-    # assert response.status_code == 200
-    # assert response.json()['id'] is not None
-    # assert response.json() == {}
+    #     assert response.status_code == 200
+    #     assert response.json()['id'] is not None
+    #     assert response.json() == {}

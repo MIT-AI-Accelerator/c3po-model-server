@@ -6,7 +6,7 @@ import logging
 from fastapi import UploadFile
 from fastapi.encoders import jsonable_encoder
 from minio.error import InvalidResponseError
-from app.aimodels.bertopic.models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedModel, EmbeddingModelTypeEnum
+from app.aimodels.bertopic.models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedModel
 from app.aimodels.bertopic.models.document import DocumentModel
 from app.aimodels.bertopic.schemas.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedCreate, BertopicEmbeddingPretrainedUpdate
 from app.aimodels.bertopic.schemas.document import DocumentCreate
@@ -23,9 +23,6 @@ from sqlalchemy.orm import Session
 from minio import Minio
 import pandas as pd
 from sample_data import CHAT_DATASET_1_PATH
-
-from app.aimodels.bertopic.ai_services.weak_learning import WeakLearner
-from sample_data import CHAT_DATASET_4_PATH
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -90,50 +87,8 @@ def init_sentence_embedding_object(s3: Minio, db: Session) -> None:
     return obj_by_sha
 
 
-def init_weak_learning_object(s3: Minio, db: Session) -> None:
-    # Create the weak learner object
-    model_name = CHAT_DATASET_4_PATH.split('/')[-1]
-    weak_learner_model_obj = WeakLearner().train_weak_learners(CHAT_DATASET_4_PATH)
-
-    # Serialize the object
-    serialized_obj = pickle.dumps(weak_learner_model_obj)
-
-    # Calculate the SHA256 hash of the serialized object
-    hash_object = hashlib.sha256(serialized_obj)
-    hex_dig = hash_object.hexdigest()
-
-    # check to make sure sha256 doesn't already exist
-    obj_by_sha: BertopicEmbeddingPretrainedModel = crud.bertopic_embedding_pretrained.get_by_sha256(
-        db, sha256=hex_dig)
-
-    if not obj_by_sha:
-        # Create an in-memory file object
-        file_obj = io.BytesIO()
-
-        # Dump the object to the file object
-        pickle.dump(weak_learner_model_obj, file_obj)
-
-        # Move the file cursor to the beginning of the file
-        file_obj.seek(0)
-
-        bertopic_embedding_pretrained_obj = BertopicEmbeddingPretrainedCreate(
-            sha256=hex_dig, model_name=model_name, model_type=EmbeddingModelTypeEnum.WEAK_LEARNERS)
-
-        new_bertopic_embedding_pretrained_obj: BertopicEmbeddingPretrainedModel = crud.bertopic_embedding_pretrained.create(
-            db, obj_in=bertopic_embedding_pretrained_obj)
-
-        # utilize id from above to upload file to minio
-        upload_file_to_minio(UploadFile(file_obj),
-                             new_bertopic_embedding_pretrained_obj.id, s3)
-
-        # update the object to reflect uploaded status
-        updated_object = BertopicEmbeddingPretrainedUpdate(uploaded=True)
-        new_bertopic_embedding_pretrained_obj: BertopicEmbeddingPretrainedModel = crud.bertopic_embedding_pretrained.update(
-            db, db_obj=new_bertopic_embedding_pretrained_obj, obj_in=updated_object)
-
-        return new_bertopic_embedding_pretrained_obj
-
-    return obj_by_sha
+# TODO
+# def init_weak_learning_object(s3: Minio, db: Session) -> None:
 
 
 def init_documents_from_chats(db: Session) -> str:
@@ -187,13 +142,6 @@ def main() -> None:
         logger.info("Uploading SentenceTransformer object to MinIO")
         embedding_pretrained_obj = init_sentence_embedding_object(s3, db)
         logger.info("SentenceTransformer object uploaded to MinIO.")
-        logger.info(
-            f"Embedding Pretrained Object ID: {embedding_pretrained_obj.id}, SHA256: {embedding_pretrained_obj.sha256}")
-
-    if (environment == 'local'):
-        logger.info("Uploading WeakLearner object to MinIO")
-        embedding_pretrained_obj = init_weak_learning_object(s3, db)
-        logger.info("WeakLearner object uploaded to MinIO.")
         logger.info(
             f"Embedding Pretrained Object ID: {embedding_pretrained_obj.id}, SHA256: {embedding_pretrained_obj.sha256}")
 

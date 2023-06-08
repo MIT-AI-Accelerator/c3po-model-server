@@ -4,7 +4,6 @@ from sqlalchemy.orm import Session
 from app.aimodels.bertopic.crud.crud_bertopic_embedding_pretrained import bertopic_embedding_pretrained
 from app.aimodels.bertopic.schemas.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedCreate
 from app.aimodels.bertopic.schemas.bertopic_trained import BertopicTrainedCreate
-from app.aimodels.bertopic.models.bertopic_embedding_pretrained import EmbeddingModelTypeEnum
 
 # assert bertopic_trained was built with correct model
 def test_bertopic_trained():
@@ -18,7 +17,7 @@ def test_create_with_bad_embedding_pretrained_id(db: Session):
 def test_create_with_good_embedding_pretrained_id(db: Session, valid_sha256: str):
     obj_in = BertopicTrainedCreate()
 
-    # create a bertopic_embedding_pretrained sentence transformer
+    # create a bertopic_embedding_pretrained
     embedding_pretrained_create = BertopicEmbeddingPretrainedCreate(sha256=valid_sha256, model_name='test')
     embedding_pretrained_obj = bertopic_embedding_pretrained.create(db, obj_in=embedding_pretrained_create)
 
@@ -28,20 +27,6 @@ def test_create_with_good_embedding_pretrained_id(db: Session, valid_sha256: str
     assert obj is not None
     assert obj.embedding_pretrained_id == embedding_pretrained_obj.id
     assert obj.embedding_pretrained.sha256 == embedding_pretrained_obj.sha256
-    assert obj.uploaded == False
-
-    # create a bertopic_embedding_pretrained weak learner
-    embedding_pretrained_create = BertopicEmbeddingPretrainedCreate(sha256=valid_sha256, model_name='test',
-                                                                    model_type=EmbeddingModelTypeEnum.WEAK_LEARNERS)
-    embedding_pretrained_obj = bertopic_embedding_pretrained.create(db, obj_in=embedding_pretrained_create)
-
-    # create a bertopic_trained with the bertopic_embedding_pretrained id
-    obj = bertopic_trained.create_with_embedding_pretrained_id(db, obj_in=obj_in, embedding_pretrained_id=embedding_pretrained_obj.id)
-
-    assert obj is not None
-    assert obj.embedding_pretrained_id == embedding_pretrained_obj.id
-    assert obj.embedding_pretrained.sha256 == embedding_pretrained_obj.sha256
-    assert obj.embedding_pretrained.model_type == embedding_pretrained_obj.model_type
     assert obj.uploaded == False
 
 # test that given two bertopic_trained objects with the same embedding_pretrained_id, when we get_multi_by_embedding_pretrained_id, we get both
