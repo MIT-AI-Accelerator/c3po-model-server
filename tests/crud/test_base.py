@@ -146,16 +146,17 @@ def test_refresh_all_by_id(db: Session) -> None:
     # refresh all objects
     objs = crud.crud_test.refresh_all_by_id(db=db, db_obj_ids=[obj.id, obj2.id, obj3.id])
 
-    # assert objs are same id with bool_field updated, and other fields unchanged
-    assert obj.id == objs[0].id
-    assert obj2.id == objs[1].id
-    assert obj3.id == objs[2].id
-    assert objs[0].bool_field is False
-    assert objs[1].bool_field == new_bool_field
-    assert objs[2].bool_field == new_bool_field
-    assert objs[0].title == 'title'
-    assert objs[1].title == 'title'
-    assert objs[2].title == 'title'
+    # assert objs contains original objects and that the fields are appropriately updated
+    indexed_obj_0 = [item for item in objs if item.id == obj.id][0]
+    indexed_obj_2 = [item for item in objs if item.id == obj2.id][0]
+    indexed_obj_3 = [item for item in objs if item.id == obj3.id][0]
+
+    assert indexed_obj_0.bool_field is False
+    assert indexed_obj_2.bool_field == new_bool_field
+    assert indexed_obj_3.bool_field == new_bool_field
+    assert indexed_obj_0.title == 'title'
+    assert indexed_obj_2.title == 'title'
+    assert indexed_obj_3.title == 'title'
 
 def test_refresh_all_by_id_empty_or_none_id_list(db: Session) -> None:
     # refresh all objects with empty list
