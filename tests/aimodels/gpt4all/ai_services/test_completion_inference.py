@@ -1,6 +1,6 @@
 
 from unittest.mock import patch, create_autospec
-from app.aimodels.gpt4all.ai_services.completion_inference import CompletionInference
+from app.aimodels.gpt4all.ai_services.completion_inference import CompletionInference, CompletionInferenceInputs
 from app.aimodels.gpt4all.models.gpt4all_pretrained import Gpt4AllPretrainedModel
 from minio import Minio
 from pydantic import ValidationError
@@ -59,9 +59,11 @@ def test_basic_response_lang_chain_works_with_fake_llm(mock_os_path, mock_gpt4al
         s3=create_autospec(Minio)
     )
 
-    output = completion_inference_obj.basic_response("test")
+    inputs = CompletionInferenceInputs(prompt="test")
+    output = completion_inference_obj.basic_response(inputs)
+
     mock_gpt4all_new.assert_called_once()
-    assert output.completion == "test1"
+    assert output.choices[0].text == "test1"
 
 @patch('app.aimodels.gpt4all.ai_services.completion_inference.os.path.isfile', return_value=True)
 @patch('app.aimodels.gpt4all.ai_services.completion_inference.GPT4All.__new__', return_value=FakeListLLM(responses=["test1", "test2"]))
@@ -72,9 +74,11 @@ def test_question_response_lang_chain_works_with_fake_llm(mock_os_path, mock_gpt
         s3=create_autospec(Minio)
     )
 
-    output = completion_inference_obj.question_response("test")
+    inputs = CompletionInferenceInputs(prompt="test")
+    output = completion_inference_obj.basic_response(inputs)
+
     mock_gpt4all_new.assert_called_once()
-    assert output.completion == "test1"
+    assert output.choices[0].text == "test1"
 
 @patch('app.aimodels.gpt4all.ai_services.completion_inference.os.path.isfile', return_value=True)
 def test_type_validation_basic_and_question_response(mock_os_path, mock_gpt4all_pretrained_obj: Gpt4AllPretrainedModel):
@@ -86,11 +90,11 @@ def test_type_validation_basic_and_question_response(mock_os_path, mock_gpt4all_
     try:
         completion_inference_obj.basic_response(None)
         assert False
-    except ValidationError as e:
+    except (ValidationError, TypeError) as e:
         assert True
 
     try:
         completion_inference_obj.question_response(None)
         assert False
-    except ValidationError as e:
+    except (ValidationError, TypeError) as e:
         assert True

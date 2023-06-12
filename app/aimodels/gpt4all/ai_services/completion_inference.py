@@ -1,5 +1,9 @@
 import os
-from pydantic import BaseModel, validator
+from time import time
+from uuid import uuid4
+from enum import Enum
+from typing import Optional
+from pydantic import BaseModel, validator, Field, ValidationError
 from langchain import PromptTemplate, LLMChain
 from langchain.llms import GPT4All
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
@@ -37,19 +41,139 @@ class InitInputs(BaseModel):
         arbitrary_types_allowed = True
 
 
+class FinishReasonEnum(str, Enum):
+    """
+    Possible Reasons for how the Completion finished (same as OpenAI)
+        stop: API returned complete model output
+        length: Incomplete model output due to max_tokens parameter or token limit
+        content_filter: Omitted content due to a flag from our content filters
+        null: API response still in progress or incomplete
+
+    """
+    STOP = "stop"
+    LENGTH = "length"
+    CONTENT_FILTER = "content_filter"
+    NULL = "null"
+
+class CompletionInferenceOutputChoices(BaseModel):
+    """
+    Choices object for models output by the OpenAI SDK.  Example below:
+    {
+        "text": "\n\nThis is indeed a test",
+        "index": 0,
+        "logprobs": null,
+        "finish_reason": "length"
+    }
+    """
+
+    text: str
+    index: int = 0
+    logprobs: Optional[list[float]] = None
+    finish_reason: FinishReasonEnum = FinishReasonEnum.LENGTH
+
+class CompletionInferenceOutputUsage(BaseModel):
+    prompt_tokens: int
+    completion_tokens: int
+    total_tokens: int
+
 class CompletionInferenceOutputs(BaseModel):
-    completion: str = ""
+    """
+    Models the outputs expected by the OpenAI SDK.  Example below:
+    {
+        "id": "cmpl-uqkvlQyYK7bGYrRHQ0eXlWi7",
+        "object": "text_completion",
+        "created": 1589478378,
+        "model": "text-davinci-003",
+        "choices": [
+            {
+            "text": "\n\nThis is indeed a test",
+            "index": 0,
+            "logprobs": null,
+            "finish_reason": "length"
+            }
+        ],
+        "usage": {
+            "prompt_tokens": 5,
+            "completion_tokens": 7,
+            "total_tokens": 12
+        }
+    }
+
+    Note: Right now usage is not implemented, only types are stubbed out in code.
+    """
+    id: str = str(uuid4())
+    object: str = "text_completion"
+    created: int = int(time())
+    model: str
+    choices: list[CompletionInferenceOutputChoices]
+    usage: Optional[CompletionInferenceOutputUsage] = None
 
     class Config:
         arbitrary_types_allowed = True
 
+class CompletionInferenceInputs(BaseModel):
+    """
+    Basic pydantic verification class for collecting inputs that map
+    to the OpenAI SDK.  Unless otherwise stated,
+    the names are the same between both Gpt4All and OpenAI.
+    Currently, the following items from the OpenAI API are not supported:
+    - suffix
+    - logprobs
+    - frequency_penalty
+    - best_of
+    - logit_bias
+    - user
+    """
 
-class BasicResponseInputs(BaseModel):
-    input: str
+    model: Optional[str] = None
+    """Name of the GPT4All model file.
+    NOTE 1: While this does map to model on Gpt4All, the meaning is slightly different.
+    Here it is the name of the model; there it is the full model path.
+    NOTE 2: This is defined here for use in the API, however, by the time the
+    CompletionInference object is initialized, this is already set"""
+
+    prompt: str
+    """The prompt for the completions."""
+
+    max_tokens: Optional[int] = 256
+    """The maximum number of tokens to generate.
+    NOTE: maps to n_predict on Gpt4All"""
+
+    temperature: Optional[float] = 0.8
+    """The temperature to use for sampling.
+    NOTE: maps to temp on Gpt4All"""
+
+    top_p: Optional[float] = 0.95
+    """The top-p value to use for sampling. Uses
+    nucleus sampling, where the model considers the results
+    of the tokens with top_p probability mass. So 0.1 means
+    only the tokens comprising the top 10% probability mass
+    are considered.
+    """
+
+    n: int = Field(1, alias="n_batch")
+    """Batch size for prompt processing, i.e., number of
+    times to replicate this prompt and generate a unique
+    output.
+    NOTE: maps to n_batch on Gpt4All"""
+
+    stream: bool = False
+    """Whether to stream the results or not.
+    NOTE: maps to streaming on Gpt4All, however we allow LangChain
+    to handle this via callbacks."""
+
+    echo: Optional[bool] = False
+    """Whether to echo the prompt."""
+
+    stop: Optional[list[str]] = []
+    """A list of strings to stop generation when encountered."""
+
+    presence_penalty: Optional[float] = 1.3
+    """The penalty to apply to repeated tokens.
+    NOTE: maps to repeat_penalty on Gpt4All"""
 
     class Config:
         arbitrary_types_allowed = True
-
 
 class CompletionInference:
 
@@ -60,6 +184,7 @@ class CompletionInference:
             gpt4all_pretrained_model_obj=gpt4all_pretrained_model_obj, s3=s3
         )
 
+        self.gpt4all_pretrained_model_obj = gpt4all_pretrained_model_obj
         self.llm_path = os.path.join(MODEL_CACHE_BASEDIR, gpt4all_pretrained_model_obj.model_type)
 
         if not os.path.isfile(self.llm_path):
@@ -71,52 +196,75 @@ class CompletionInference:
             download_file_from_minio(gpt4all_pretrained_model_obj.id, s3, filename=self.llm_path)
             logger.info(f"Downloaded model from Minio to {self.llm_path}")
 
-    def basic_response(self, input):
 
-        # validate input
-        BasicResponseInputs(input=input)
+    def basic_response(self, api_inputs: CompletionInferenceInputs):
+        return self._general_completion_base(api_inputs)
 
-        # build the template
-        template = """Input: {input}
-
-        Response: """
-        prompt = PromptTemplate(template=template, input_variables=["input"])
-
-        # Callbacks support token-wise streaming
-        callbacks = [StreamingStdOutCallbackHandler()]
-
-        # Verbose is required to pass to the callback manager
-        # TODO If you want to use a custom model add the backend parameter (e.g., backend='gptj'),
-        # see https://docs.gpt4all.io/gpt4all_python.html
-        llm = GPT4All(model=self.llm_path, callbacks=callbacks, verbose=False)
-
-        # run inference
-        llm_chain = LLMChain(prompt=prompt, llm=llm)
-        completion = llm_chain.run(input)
-
-        return CompletionInferenceOutputs(completion=completion)
-
-    def question_response(self, input):
-
-        # validate input
-        BasicResponseInputs(input=input)
-
-        # build the template
-        template = """Question: {input}
+    def question_response(self, api_inputs: CompletionInferenceInputs):
+        template = """Question: {api_prompt}
 
         Answer: Let's think step by step."""
-        prompt = PromptTemplate(template=template, input_variables=["input"])
+        prompt_input_variables=["api_prompt"]
 
+        return self._general_completion_base(api_inputs, template=template, prompt_input_variables=prompt_input_variables)
+
+    def _general_completion_base(self,
+                                 api_inputs: CompletionInferenceInputs,
+                                 template: str = """{api_prompt}""",
+                                 prompt_input_variables: list[str] = ["api_prompt"]
+                                 ):
+
+        # validate input
+        if not isinstance(api_inputs, CompletionInferenceInputs):
+            raise ValidationError(
+                'must input type BasicResponseInputs')
+
+        # build the prompt template
+        prompt = PromptTemplate(template=template, input_variables=prompt_input_variables)
+
+        llm = self._build_llm(api_inputs)
+
+        # run inference
+        api_prompt = api_inputs.prompt
+        llm_chain = LLMChain(prompt=prompt, llm=llm)
+        output_text = llm_chain.run(api_prompt)
+
+        choices = []
+        choices.append(CompletionInferenceOutputChoices(
+            text=output_text,
+            index=0,
+            finish_reason=FinishReasonEnum.LENGTH,
+        ))
+
+        return CompletionInferenceOutputs(
+            model=self.gpt4all_pretrained_model_obj.model_type,
+            choices=choices
+        )
+
+    def _build_llm(self,
+                   api_inputs: CompletionInferenceInputs
+                   ):
+
+        # handle stream via LangChain Callbacks
         # Callbacks support token-wise streaming
-        callbacks = [StreamingStdOutCallbackHandler()]
+        callbacks = []
+        if (api_inputs.stream):
+            callbacks.append(StreamingStdOutCallbackHandler())
 
         # Verbose is required to pass to the callback manager
         # TODO If you want to use a custom model add the backend parameter (e.g., backend='gptj'),
         # see https://docs.gpt4all.io/gpt4all_python.html
-        llm = GPT4All(model=self.llm_path, callbacks=callbacks, verbose=False)
+        llm = GPT4All(
+            model=self.llm_path,
+            callbacks=callbacks,
+            verbose=False,
+            n_predict=api_inputs.max_tokens,
+            temp=api_inputs.temperature,
+            top_p=api_inputs.top_p,
+            n_batch=api_inputs.n,
+            echo=api_inputs.echo,
+            stop=api_inputs.stop,
+            repeat_penalty=api_inputs.presence_penalty
+        )
 
-        # run inference
-        llm_chain = LLMChain(prompt=prompt, llm=llm)
-        completion = llm_chain.run(input)
-
-        return CompletionInferenceOutputs(completion=completion)
+        return llm
