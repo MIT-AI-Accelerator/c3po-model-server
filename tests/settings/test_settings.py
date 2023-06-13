@@ -24,6 +24,13 @@ def test_env_file_name_local():
     env_file = get_env_file(environment_settings)
     assert env_file == (os.path.join(BASEDIR, "local.env"), os.path.join(BASEDIR, "secrets.env"))
 
+
+@mock.patch.dict(os.environ, {"ENVIRONMENT": "development"})
+def test_env_file_name_development():
+    environment_settings = EnvironmentSettings()
+    env_file = get_env_file(environment_settings)
+    assert env_file == (os.path.join(BASEDIR, "development.env"), os.path.join(BASEDIR, "secrets.env"))
+
 @mock.patch.dict(os.environ, {"ENVIRONMENT": "staging"})
 def test_env_file_name_staging():
     environment_settings = EnvironmentSettings()

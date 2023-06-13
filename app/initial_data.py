@@ -271,7 +271,7 @@ def main() -> None:
 
     # all environments need to initialize the database
     # prod only if migration toggle is on
-    if (environment in ['local', 'test', 'staging'] or (environment == 'production' and migration_toggle is True)):
+    if (environment in ['local', 'test', 'staging', 'development'] or (environment == 'production' and migration_toggle is True)):
         logger.info("Creating database schema and tables")
         db = SessionLocal()
         init()
