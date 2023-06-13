@@ -74,11 +74,12 @@ def test_question_response_lang_chain_works_with_fake_llm(mock_os_path, mock_gpt
         s3=create_autospec(Minio)
     )
 
-    inputs = CompletionInferenceInputs(prompt="test")
+    inputs = CompletionInferenceInputs(prompt="test",n=2)
     output = completion_inference_obj.basic_response(inputs)
 
     mock_gpt4all_new.assert_called_once()
     assert output.choices[0].text == "test1"
+    assert output.choices[1].text == "test2"
 
 @patch('app.aimodels.gpt4all.ai_services.completion_inference.os.path.isfile', return_value=True)
 def test_type_validation_basic_and_question_response(mock_os_path, mock_gpt4all_pretrained_obj: Gpt4AllPretrainedModel):

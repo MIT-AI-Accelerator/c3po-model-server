@@ -3,11 +3,12 @@ from time import time
 from uuid import uuid4
 from enum import Enum
 from typing import Optional
-from pydantic import BaseModel, validator, Field, ValidationError
+from pydantic import BaseModel, validator, ValidationError
 from langchain import PromptTemplate, LLMChain
 from langchain.llms import GPT4All
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from pathlib import Path
+from app.aimodels.gpt4all.models.gpt4all_pretrained import Gpt4AllModelFilenameEnum
 from app.core.minio import download_file_from_minio
 from minio import Minio
 from app.core.model_cache import MODEL_CACHE_BASEDIR
@@ -104,7 +105,7 @@ class CompletionInferenceOutputs(BaseModel):
     id: str = str(uuid4())
     object: str = "text_completion"
     created: int = int(time())
-    model: str
+    model: Optional[Gpt4AllModelFilenameEnum] = None
     choices: list[CompletionInferenceOutputChoices]
     usage: Optional[CompletionInferenceOutputUsage] = None
 
@@ -125,7 +126,7 @@ class CompletionInferenceInputs(BaseModel):
     - user
     """
 
-    model: Optional[str] = None
+    model: Optional[Gpt4AllModelFilenameEnum] = None
     """Name of the GPT4All model file.
     NOTE 1: While this does map to model on Gpt4All, the meaning is slightly different.
     Here it is the name of the model; there it is the full model path.
@@ -151,11 +152,11 @@ class CompletionInferenceInputs(BaseModel):
     are considered.
     """
 
-    n: int = Field(1, alias="n_batch")
-    """Batch size for prompt processing, i.e., number of
-    times to replicate this prompt and generate a unique
+    n: int = 1
+    """Number of times to replicate this prompt and generate a unique
     output.
-    NOTE: maps to n_batch on Gpt4All"""
+    NOTE: does not map to anything on Gpt4All, implemented via
+    LangChain generate method."""
 
     stream: bool = False
     """Whether to stream the results or not.
@@ -200,18 +201,22 @@ class CompletionInference:
     def basic_response(self, api_inputs: CompletionInferenceInputs):
         return self._general_completion_base(api_inputs)
 
+    def chat_response(self, api_inputs: CompletionInferenceInputs):
+        template = """Prompt: {api_prompt}
+
+        Response: \n\n"""
+        return self._general_completion_base(api_inputs, template=template)
+
     def question_response(self, api_inputs: CompletionInferenceInputs):
         template = """Question: {api_prompt}
 
         Answer: Let's think step by step."""
-        prompt_input_variables=["api_prompt"]
 
-        return self._general_completion_base(api_inputs, template=template, prompt_input_variables=prompt_input_variables)
+        return self._general_completion_base(api_inputs, template=template)
 
     def _general_completion_base(self,
                                  api_inputs: CompletionInferenceInputs,
                                  template: str = """{api_prompt}""",
-                                 prompt_input_variables: list[str] = ["api_prompt"]
                                  ):
 
         # validate input
@@ -220,21 +225,27 @@ class CompletionInference:
                 'must input type BasicResponseInputs')
 
         # build the prompt template
-        prompt = PromptTemplate(template=template, input_variables=prompt_input_variables)
+        prompt = PromptTemplate(template=template, input_variables=["api_prompt"])
 
+        # build the chain
         llm = self._build_llm(api_inputs)
+        llm_chain = LLMChain(prompt=prompt, llm=llm)
 
         # run inference
-        api_prompt = api_inputs.prompt
-        llm_chain = LLMChain(prompt=prompt, llm=llm)
-        output_text = llm_chain.run(api_prompt)
+        api_input_list = [{ "api_prompt": api_inputs.prompt } for item in range(api_inputs.n)]
+        results = llm_chain.generate(api_input_list)
 
         choices = []
-        choices.append(CompletionInferenceOutputChoices(
-            text=output_text,
-            index=0,
-            finish_reason=FinishReasonEnum.LENGTH,
-        ))
+        for generation in results.generations:
+            finish_reason = FinishReasonEnum.NULL
+            if (generation[0].generation_info) and ("finish_reason" in generation[0].generation_info):
+                finish_reason = generation[0].generation_info['finish_reason']
+
+            choices.append(CompletionInferenceOutputChoices(
+                text=generation[0].text,
+                index=0,
+                finish_reason=finish_reason
+            ))
 
         return CompletionInferenceOutputs(
             model=self.gpt4all_pretrained_model_obj.model_type,
@@ -261,7 +272,6 @@ class CompletionInference:
             n_predict=api_inputs.max_tokens,
             temp=api_inputs.temperature,
             top_p=api_inputs.top_p,
-            n_batch=api_inputs.n,
             echo=api_inputs.echo,
             stop=api_inputs.stop,
             repeat_penalty=api_inputs.presence_penalty
