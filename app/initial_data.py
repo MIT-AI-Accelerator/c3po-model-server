@@ -162,7 +162,7 @@ def init_weak_learning_object(s3: Minio, db: Session) -> None:
     hex_dig = hash_object.hexdigest()
 
     # check to make sure sha256 doesn't already exist
-    obj_by_sha: BertopicEmbeddingPretrainedModel = crud.bertopic_embedding_pretrained.get_by_sha256(
+    obj_by_sha: BertopicEmbeddingPretrainedModel = bertopic_crud.bertopic_embedding_pretrained.get_by_sha256(
         db, sha256=hex_dig)
 
     if not obj_by_sha:
@@ -178,7 +178,7 @@ def init_weak_learning_object(s3: Minio, db: Session) -> None:
         bertopic_embedding_pretrained_obj = BertopicEmbeddingPretrainedCreate(
             sha256=hex_dig, model_name=model_name, model_type=EmbeddingModelTypeEnum.WEAK_LEARNERS)
 
-        new_bertopic_embedding_pretrained_obj: BertopicEmbeddingPretrainedModel = crud.bertopic_embedding_pretrained.create(
+        new_bertopic_embedding_pretrained_obj: BertopicEmbeddingPretrainedModel = bertopic_crud.bertopic_embedding_pretrained.create(
             db, obj_in=bertopic_embedding_pretrained_obj)
 
         # utilize id from above to upload file to minio
@@ -187,7 +187,7 @@ def init_weak_learning_object(s3: Minio, db: Session) -> None:
 
         # update the object to reflect uploaded status
         updated_object = BertopicEmbeddingPretrainedUpdate(uploaded=True)
-        new_bertopic_embedding_pretrained_obj: BertopicEmbeddingPretrainedModel = crud.bertopic_embedding_pretrained.update(
+        new_bertopic_embedding_pretrained_obj: BertopicEmbeddingPretrainedModel = bertopic_crud.bertopic_embedding_pretrained.update(
             db, db_obj=new_bertopic_embedding_pretrained_obj, obj_in=updated_object)
 
         return new_bertopic_embedding_pretrained_obj
