@@ -4,12 +4,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_versioning import VersionedFastAPI
 from .core.config import settings
-from .core.logging import logger
+from .core.logging import logger, LogConfig
+from logging.config import dictConfig
 from .aimodels.router import router as aimodels_router
 from .sentiments.router import router as sentiments_router
 from .topics.router import router as topics_router
 from .dependencies import httpx_client
 
+dictConfig(LogConfig().dict())
 logger.info("Dummy Info")
 logger.error("Dummy Error")
 logger.debug("Dummy Debug")

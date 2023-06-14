@@ -8,6 +8,7 @@ coverage-re
 
 # local ignore items
 data
+model_cache
 training_checkpoints
 training_checkpoints_archive
 .pylint
