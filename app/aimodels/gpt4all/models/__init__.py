@@ -1,0 +1,1 @@
+from .gpt4all_pretrained import Gpt4AllPretrainedModel

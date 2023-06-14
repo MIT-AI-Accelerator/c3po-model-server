@@ -1,0 +1,1 @@
+from .gpt4all_pretrained import Gpt4AllPretrained, Gpt4AllPretrainedCreate, Gpt4AllPretrainedInDB, Gpt4AllPretrainedUpdate

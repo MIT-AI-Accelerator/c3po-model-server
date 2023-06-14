@@ -20,6 +20,7 @@ def client() -> Generator:
 
 @pytest.fixture(scope="function")
 def valid_sha256() -> str:
+    random.seed(None)
     output = '%032x' % random.getrandbits(256)
 
     # it is possible that the random number generator generates a number with slightly than 64 digits
