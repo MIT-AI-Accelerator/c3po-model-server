@@ -95,6 +95,7 @@ In general, tensorflow and pytorch use the underlying `unittest` framework that 
 - [Tensorflow testing](https://theaisummer.com/unit-test-deep-learning/)
 - [Pytest handling unittest](https://docs.pytest.org/en/latest/how-to/unittest.html#pytest-features-in-unittest-testcase-subclasses)
 - [Mocking in pytest--especially import location](https://changhsinlee.com/pytest-mock/)
+- [Better mocking in pytest walkthrough](https://www.toptal.com/python/an-introduction-to-mocking-in-python)
 - [Test coverage using `coverage`](https://coverage.readthedocs.io/en/7.2.1/)
 
 
