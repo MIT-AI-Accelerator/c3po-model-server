@@ -1,7 +1,6 @@
 from contextlib import redirect_stdout
 import io
 import os
-import sys
 from time import time
 from uuid import uuid4
 from enum import Enum
