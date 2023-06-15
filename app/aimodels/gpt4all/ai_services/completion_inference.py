@@ -1,6 +1,7 @@
 from contextlib import redirect_stdout
 import io
 import os
+import sys
 from time import time
 from uuid import uuid4
 from enum import Enum
@@ -281,7 +282,8 @@ class CompletionInference:
             top_p=api_inputs.top_p,
             echo=api_inputs.echo,
             stop=api_inputs.stop,
-            repeat_penalty=api_inputs.presence_penalty
+            repeat_penalty=api_inputs.presence_penalty,
+            use_mlock = True
         )
 
         return llm
