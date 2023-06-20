@@ -59,6 +59,9 @@ class Settings(BaseSettings):
     mm_aoc_base_url: str = ""
     mm_nitmre_base_url: str = ""
 
+    # Default model hash settings
+    default_sha256_l13b_snoozy: str = ""
+
 def get_env_file(environment_settings_in):
     # get the base directory
     BASEDIR = os.path.join(os.path.abspath(

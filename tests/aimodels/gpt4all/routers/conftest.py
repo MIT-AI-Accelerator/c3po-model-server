@@ -1,9 +1,11 @@
+from typing import Optional, Callable
 from sqlalchemy.orm import Session
 from app.aimodels.gpt4all import crud
 from app.aimodels.gpt4all.ai_services.completion_inference import CompletionInferenceInputs, CompletionInferenceOutputChoices, CompletionInferenceOutputs, FinishReasonEnum
 
 from app.aimodels.gpt4all.models.gpt4all_pretrained import Gpt4AllModelFilenameEnum, Gpt4AllPretrainedModel
 from app.aimodels.gpt4all.schemas.gpt4all_pretrained import Gpt4AllPretrainedCreate
+from app.core.config import settings
 
 import pytest
 
@@ -58,3 +60,18 @@ def mock_completion_inference_inputs() -> CompletionInferenceInputs:
                                      stop=[],
                                      presence_penalty=1.3
                                      )
+
+@pytest.fixture(scope="function")
+def mock_gpt4all_crud_sha256_return_vals() -> Callable:
+    def side_effect(*args, **kwargs) -> Optional[Gpt4AllPretrainedModel]:
+        '''
+        return a nonempty object when called with the specific hash, else return None
+        '''
+
+        desired_input = settings.default_sha256_l13b_snoozy
+        if args[0] == desired_input or kwargs["sha256"] == desired_input:
+            return Gpt4AllPretrainedModel(uploaded=True)
+
+        return None
+
+    return side_effect

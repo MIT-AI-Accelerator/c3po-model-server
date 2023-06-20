@@ -1,10 +1,13 @@
-from unittest.mock import create_autospec
+from typing import Optional, Callable
+from unittest.mock import create_autospec, MagicMock
 from fastapi.testclient import TestClient
 from app.aimodels.gpt4all.ai_services.completion_inference import CompletionInference, CompletionInferenceInputs, CompletionInferenceOutputs
+from app.aimodels.gpt4all.models.gpt4all_pretrained import Gpt4AllPretrainedModel
 
 from app.main import app
 from app.aimodels.bertopic.routers.documents import get_db
 from tests.test_files.db.db_test_session import SessionLocal
+from app.aimodels.gpt4all import crud as crud_gpt4all
 
 # ************Mocks*******************
 def mock_db():
@@ -21,9 +24,15 @@ app.dependency_overrides[get_db] = mock_db
 def test_gpt_completion_post_valid_input(client: TestClient,
                                          mock_completion_inference_inputs: CompletionInferenceInputs,
                                          mock_completion_inference_outputs: CompletionInferenceOutputs,
+                                         mock_gpt4all_crud_sha256_return_vals: Callable,
                                          mocker):
 
+    # mock the return value
+    mock_crud = create_autospec(crud_gpt4all)
+    mocker.patch("app.aimodels.gpt4all.routers.completions.crud", new=mock_crud)
+    mock_crud.gpt4all_pretrained.get_by_sha256.side_effect = mock_gpt4all_crud_sha256_return_vals
 
+    # mock the CompletionInference Object
     mock_completion_inference_object = create_autospec(CompletionInference)
     mocker.patch("app.aimodels.gpt4all.routers.completions.CompletionInference.__new__",
                  return_value=mock_completion_inference_object)
@@ -71,9 +80,15 @@ def test_gpt_completion_post_model_invalid_gpt4all_model_type(client: TestClient
 def test_chat_completion_post_valid_input(client: TestClient,
                                          mock_completion_inference_inputs: CompletionInferenceInputs,
                                          mock_completion_inference_outputs: CompletionInferenceOutputs,
+                                         mock_gpt4all_crud_sha256_return_vals: Callable,
                                          mocker):
 
+    # mock the return value
+    mock_crud = create_autospec(crud_gpt4all)
+    mocker.patch("app.aimodels.gpt4all.routers.completions.crud", new=mock_crud)
+    mock_crud.gpt4all_pretrained.get_by_sha256.side_effect = mock_gpt4all_crud_sha256_return_vals
 
+    # mock the CompletionInference Object
     mock_completion_inference_object = create_autospec(CompletionInference)
     mocker.patch("app.aimodels.gpt4all.routers.completions.CompletionInference.__new__",
                  return_value=mock_completion_inference_object)
