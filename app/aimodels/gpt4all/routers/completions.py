@@ -15,7 +15,7 @@ router = APIRouter()
     summary="GPT completion endpoint",
     response_description="Completed GPT response"
 )
-def gpt_completion_post(request: CompletionInferenceInputs, db: Session = Depends(get_db), s3: Minio = Depends(get_minio)) -> (
+async def gpt_completion_post(request: CompletionInferenceInputs, db: Session = Depends(get_db), s3: Minio = Depends(get_minio)) -> (
     CompletionInferenceOutputs
 ):
     """
@@ -31,7 +31,7 @@ def gpt_completion_post(request: CompletionInferenceInputs, db: Session = Depend
     summary="Chat completion endpoint",
     response_description="Completed Chat response"
 )
-def chat_completion_post(request: CompletionInferenceInputs, db: Session = Depends(get_db), s3: Minio = Depends(get_minio)) -> (
+async def chat_completion_post(request: CompletionInferenceInputs, db: Session = Depends(get_db), s3: Minio = Depends(get_minio)) -> (
     CompletionInferenceOutputs
 ):
     """

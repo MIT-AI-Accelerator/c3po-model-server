@@ -1,3 +1,5 @@
+from contextlib import redirect_stdout
+import io
 import os
 from time import time
 from uuid import uuid4
@@ -233,7 +235,12 @@ class CompletionInference:
 
         # run inference
         api_input_list = [{ "api_prompt": api_inputs.prompt } for item in range(api_inputs.n)]
-        results = llm_chain.generate(api_input_list)
+
+        # use context manager to redirect stream output so multiple requests
+        # can be handled at once on the same process (else output streams conflict)
+        # https://stackoverflow.com/questions/1218933/can-i-redirect-the-stdout-into-some-sort-of-string-buffer
+        with io.StringIO() as buf, redirect_stdout(buf):
+            results = llm_chain.generate(api_input_list)
 
         choices = []
         for generation in results.generations:
@@ -274,7 +281,8 @@ class CompletionInference:
             top_p=api_inputs.top_p,
             echo=api_inputs.echo,
             stop=api_inputs.stop,
-            repeat_penalty=api_inputs.presence_penalty
+            repeat_penalty=api_inputs.presence_penalty,
+            use_mlock = True
         )
 
         return llm
