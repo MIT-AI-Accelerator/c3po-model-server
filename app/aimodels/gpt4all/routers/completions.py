@@ -2,6 +2,7 @@ from fastapi import Depends, APIRouter, HTTPException
 from minio import Minio
 from app.aimodels.gpt4all.models.gpt4all_pretrained import Gpt4AllModelFilenameEnum
 from app.dependencies import get_db, get_minio
+from app.core.config import settings
 from sqlalchemy.orm import Session
 from .. import crud
 from ..models import Gpt4AllPretrainedModel
@@ -42,9 +43,12 @@ async def chat_completion_post(request: CompletionInferenceInputs, db: Session =
     return completion_inference_service.chat_response(request)
 
 def _validate_inputs_and_generate_service(request: CompletionInferenceInputs, db: Session, s3: Minio):
-    sha256 = "997072bd77078c82131e7becf3fc4b090efec43a1f480bbde0e401ffe5145688"
+    # default model to pull
+    sha256 = settings.default_sha256_l13b_snoozy
+
+    # check for other model type options
     if request.model == Gpt4AllModelFilenameEnum.L13B_SNOOZY:
-        sha256 = "997072bd77078c82131e7becf3fc4b090efec43a1f480bbde0e401ffe5145688"
+        sha256 = settings.default_sha256_l13b_snoozy
 
     # TODO: determine how to incorporate crud.gpt4all_pretrained.get_latest_uploaded_by_model_type
     gpt4all_pretrained_model_obj: Gpt4AllPretrainedModel = crud.gpt4all_pretrained.get_by_sha256(
