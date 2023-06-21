@@ -104,7 +104,7 @@ def init_gpt4all_pretrained_model(s3: Minio, db: Session) -> None:
     Path(local_path).parent.mkdir(parents=True, exist_ok=True)
 
     # Example model. Check https://github.com/nomic-ai/gpt4all for the latest models.
-    url = 'http://gpt4all.io/models/ggml-gpt4all-l13b-snoozy.bin'
+    url = 'https://gpt4all.io/models/ggml-gpt4all-l13b-snoozy.bin'
 
     # send a GET request to the URL to download the file. Stream since it's large
     response = requests.get(url, stream=True)
