@@ -145,7 +145,7 @@ def init_gpt4all_pretrained_model(s3: Minio, db: Session) -> None:
         os.remove(local_path)
 
         return new_gpt4all_pretrained_obj
-    
+
     return obj_by_sha
 
 
