@@ -1,6 +1,11 @@
 import os
+import enum
 from typing import Optional, Any
 from pydantic import BaseSettings, PostgresDsn, validator
+
+class OriginationEnum(str, enum.Enum):
+    ORIGINATED_FROM_APP = "app"
+    ORIGINATED_FROM_TEST = "test"
 
 # load the environment name, local, test, staging, or production
 class EnvironmentSettings(BaseSettings):
@@ -11,6 +16,7 @@ class Settings(BaseSettings):
     # general settings
     docs_ui_root_path: str = ""
     log_level: str = "INFO"
+    originated_from: str = OriginationEnum.ORIGINATED_FROM_APP
 
     # minio settings
     minio_bucket_name: str = ""

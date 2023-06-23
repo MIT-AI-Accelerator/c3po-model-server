@@ -3,6 +3,7 @@ from typing import Optional
 
 from pydantic import BaseModel, UUID4, validator
 from ..models.bertopic_embedding_pretrained import EmbeddingModelTypeEnum
+from app.core.config import settings, OriginationEnum
 
 # Shared properties
 class BertopicEmbeddingPretrainedBase(BaseModel):
@@ -29,6 +30,7 @@ class BertopicEmbeddingPretrainedBase(BaseModel):
 class BertopicEmbeddingPretrainedCreate(BertopicEmbeddingPretrainedBase):
     sha256: str
     model_name: str = ''
+    originated_from: OriginationEnum = settings.originated_from
 
 # Properties to receive on BertopicEmbeddingPretrained update
 class BertopicEmbeddingPretrainedUpdate(BertopicEmbeddingPretrainedBase):
@@ -42,6 +44,7 @@ class BertopicEmbeddingPretrainedInDBBase(BertopicEmbeddingPretrainedBase):
     uploaded: bool = False
     version: int
     sha256: str
+    originated_from: OriginationEnum
 
     class Config:
         orm_mode = True
