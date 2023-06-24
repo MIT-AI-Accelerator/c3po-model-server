@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     # general settings
     docs_ui_root_path: str = ""
     log_level: str = "INFO"
-    originated_from: str = OriginationEnum.ORIGINATED_FROM_APP
+    originated_from: OriginationEnum = OriginationEnum.ORIGINATED_FROM_APP
 
     # minio settings
     minio_bucket_name: str = ""
@@ -89,7 +89,9 @@ def get_env_file(environment_settings_in):
 
     return env_file
 
-
 environment_settings = EnvironmentSettings()
 settings = Settings(_env_file=get_env_file(
     environment_settings), _env_file_encoding='utf-8')
+
+def get_originated_from():
+    return settings.originated_from

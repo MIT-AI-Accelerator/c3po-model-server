@@ -1,4 +1,5 @@
 from typing import Optional
+from app.core.config import OriginationEnum
 
 from pydantic import BaseModel, UUID4
 
@@ -22,6 +23,7 @@ class BertopicTrainedUpdate(BertopicTrainedBase):
 class BertopicTrainedInDBBase(BertopicTrainedBase):
     id: UUID4
     embedding_pretrained_id: UUID4
+    originated_from: OriginationEnum
 
     class Config:
         orm_mode = True

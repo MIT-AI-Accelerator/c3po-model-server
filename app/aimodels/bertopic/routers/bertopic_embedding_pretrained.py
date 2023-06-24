@@ -1,4 +1,3 @@
-import os
 import hashlib
 from typing import Union
 from fastapi import Depends, APIRouter, UploadFile
