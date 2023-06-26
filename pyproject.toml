@@ -25,7 +25,7 @@ hdbscan = "^0.8.29"
 python-multipart = "^0.0.6"
 minio = "^7.1.15"
 bertopic = "^0.14.1"
-transformers = "^4.29.2"
+transformers = "^4.30.2"
 tensorflow = {version = "2.11.1", markers = "platform.machine == 'x86_64'"}
 tensorflow-macos = {version = "2.11.0", platform = "darwin", markers = "platform.machine == 'arm64'"}
 snorkel = "^0.9.9"
