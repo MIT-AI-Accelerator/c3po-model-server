@@ -17,3 +17,4 @@ class Gpt4AllPretrainedModel(Base):
     version = Column(Integer, version_sequence, server_default=version_sequence.next_value(), index=True, unique=True, nullable=False)
     sha256 = Column(String(64))
     uploaded = Column(Boolean(), default=False)
+    use_base_model = Column(Boolean(), default=False)

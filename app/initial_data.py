@@ -19,7 +19,7 @@ from app.aimodels.gpt4all.schemas.gpt4all_pretrained import Gpt4AllPretrainedCre
 
 from app.db.init_db import init_db
 from app.db.session import SessionLocal
-from app.core.minio import build_client, upload_file_to_minio
+from app.core.minio import build_client, download_file_from_minio, upload_file_to_minio
 
 from app.core.config import settings, environment_settings
 from app.aimodels.bertopic import crud as bertopic_crud
@@ -148,6 +148,40 @@ def init_gpt4all_pretrained_model(s3: Minio, db: Session) -> None:
 
     return obj_by_sha
 
+def init_gpt4all_db_obj_staging_prod(s3: Minio, db: Session) -> None:
+
+    local_path = os.path.join(
+        MODEL_CACHE_BASEDIR, "ggml-gpt4all-l13b-snoozy.bin")
+
+    if not os.path.isfile(local_path):
+        # Create the directory if it doesn't exist
+        Path(local_path).parent.mkdir(parents=True, exist_ok=True)
+
+        # Download the file from Minio
+        logger.info(f"Downloading base model from Minio to {local_path}")
+        download_file_from_minio("ggml-gpt4all-l13b-snoozy.bin", s3, filename=local_path)
+        logger.info(f"Downloaded model from Minio to {local_path}")
+
+    # check to make sure sha256 doesn't already exist
+    obj_by_sha: Gpt4AllPretrainedModel = gpt4all_crud.gpt4all_pretrained.get_by_sha256(
+        db, sha256=settings.default_sha256_l13b_snoozy)
+
+    if not obj_by_sha:
+
+        gpt4all_pretrained_obj = Gpt4AllPretrainedCreate(
+            sha256=settings.default_sha256_l13b_snoozy, use_base_model=True)
+
+        new_gpt4all_pretrained_obj: Gpt4AllPretrainedModel = gpt4all_crud.gpt4all_pretrained.create(
+            db, obj_in=gpt4all_pretrained_obj)
+
+        # update the object to reflect uploaded status
+        updated_object = Gpt4AllPretrainedUpdate(uploaded=True)
+        new_gpt4all_pretrained_obj: Gpt4AllPretrainedModel = gpt4all_crud.gpt4all_pretrained.update(
+            db, db_obj=new_gpt4all_pretrained_obj, obj_in=updated_object)
+
+        return new_gpt4all_pretrained_obj
+
+    return obj_by_sha
 
 def init_weak_learning_object(s3: Minio, db: Session) -> None:
     # Create the weak learner object
@@ -243,24 +277,36 @@ def main() -> None:
         init_minio_bucket(s3)
         logger.info("MinIO bucket set up.")
 
+    ########## large object uploads ################
     if (environment == 'local'):
+        # Sentence Transformer
         logger.info("Uploading SentenceTransformer object to MinIO")
         embedding_pretrained_obj = init_sentence_embedding_object(s3, db)
         logger.info("SentenceTransformer object uploaded to MinIO.")
+        logger.info(
+            f"Embedding Pretrained Object ID: {embedding_pretrained_obj.id}, SHA256: {embedding_pretrained_obj.sha256}")
+
+        #Gpt4All
         logger.info("Uploading Gpt4All object to MinIO")
         gpt4all_pretrained_obj = init_gpt4all_pretrained_model(s3, db)
         logger.info("Gpt4All object uploaded to MinIO.")
         logger.info(
-            f"Embedding Pretrained Object ID: {embedding_pretrained_obj.id}, SHA256: {embedding_pretrained_obj.sha256}")
-        logger.info(
             f"Gpt4All Object ID: {gpt4all_pretrained_obj.id}, SHA256: {gpt4all_pretrained_obj.sha256}")
 
-    if (environment == 'local'):
+        # Weak learner
         logger.info("Uploading WeakLearner object to MinIO")
         embedding_pretrained_obj = init_weak_learning_object(s3, db)
         logger.info("WeakLearner object uploaded to MinIO.")
         logger.info(
-            f"Embedding Pretrained Object ID: {embedding_pretrained_obj.id}, SHA256: {embedding_pretrained_obj.sha256}")
+            f"Weak learner Pretrained Object ID: {embedding_pretrained_obj.id}, SHA256: {embedding_pretrained_obj.sha256}")
+
+    if (environment == 'staging' or (environment == 'production' and migration_toggle is True)):
+        logger.info("Verifying Gpt4All object in MinIO")
+        gpt4all_pretrained_obj = init_gpt4all_db_obj_staging_prod(s3, db)
+        logger.info("Verified Gpt4All object in MinIO")
+        logger.info(
+            f"Gpt4All Object ID: {gpt4all_pretrained_obj.id}, SHA256: {gpt4all_pretrained_obj.sha256}")
+    ########## large object uploads ################
 
     if (environment != 'production'):
         logger.info("Creating documents from chats")
