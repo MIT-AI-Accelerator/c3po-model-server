@@ -99,8 +99,10 @@ def init_sentence_embedding_object(s3: Minio, db: Session) -> None:
 
 
 def init_gpt4all_pretrained_model(s3: Minio, db: Session) -> None:
+
+    model_name = "ggml-gpt4all-l13b-snoozy.bin"
     local_path = os.path.join(
-        MODEL_CACHE_BASEDIR, "ggml-gpt4all-l13b-snoozy.bin")
+        MODEL_CACHE_BASEDIR, model_name)
     Path(local_path).parent.mkdir(parents=True, exist_ok=True)
 
     # Example model. Check https://github.com/nomic-ai/gpt4all for the latest models.
@@ -150,8 +152,9 @@ def init_gpt4all_pretrained_model(s3: Minio, db: Session) -> None:
 
 def init_gpt4all_db_obj_staging_prod(s3: Minio, db: Session) -> None:
 
+    model_name = "ggml-gpt4all-l13b-snoozy.bin"
     local_path = os.path.join(
-        MODEL_CACHE_BASEDIR, "ggml-gpt4all-l13b-snoozy.bin")
+        MODEL_CACHE_BASEDIR, model_name)
 
     if not os.path.isfile(local_path):
         # Create the directory if it doesn't exist
@@ -159,7 +162,7 @@ def init_gpt4all_db_obj_staging_prod(s3: Minio, db: Session) -> None:
 
         # Download the file from Minio
         logger.info(f"Downloading base model from Minio to {local_path}")
-        download_file_from_minio("ggml-gpt4all-l13b-snoozy.bin", s3, filename=local_path)
+        download_file_from_minio(model_name, s3, filename=local_path)
         logger.info(f"Downloaded model from Minio to {local_path}")
 
     # check to make sure sha256 doesn't already exist
