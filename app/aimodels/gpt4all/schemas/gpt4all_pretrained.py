@@ -8,6 +8,7 @@ from ..models.gpt4all_pretrained import Gpt4AllModelFilenameEnum
 class Gpt4AllPretrainedBase(BaseModel):
     sha256: Optional[str] = None
     model_type: Optional[Gpt4AllModelFilenameEnum] = None
+    use_base_model: Optional[bool] = None
 
     # ensure valid sha256 format
     @validator('sha256')
@@ -27,18 +28,20 @@ class Gpt4AllPretrainedBase(BaseModel):
 # Properties to receive on Gpt4AllPretrained creation
 class Gpt4AllPretrainedCreate(Gpt4AllPretrainedBase):
     sha256: str
+    use_base_model: bool = False
 
 # Properties to receive on Gpt4AllPretrained update
 class Gpt4AllPretrainedUpdate(Gpt4AllPretrainedBase):
-    uploaded: bool = False
+    uploaded: bool
 
 # Properties shared by models stored in DB
 class Gpt4AllPretrainedInDBBase(Gpt4AllPretrainedBase):
     id: UUID4
     model_type: Gpt4AllModelFilenameEnum
-    uploaded: bool = False
+    uploaded: bool
     version: int
     sha256: str
+    use_base_model: bool
 
     class Config:
         orm_mode = True

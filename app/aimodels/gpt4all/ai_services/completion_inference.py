@@ -194,9 +194,12 @@ class CompletionInference:
             # Create the directory if it doesn't exist
             Path(self.llm_path).parent.mkdir(parents=True, exist_ok=True)
 
+            # filename or id
+            minio_filename = gpt4all_pretrained_model_obj.model_type if gpt4all_pretrained_model_obj.use_base_model else gpt4all_pretrained_model_obj.id
+
             # Download the file from Minio
             logger.info(f"Downloading model from Minio to {self.llm_path}")
-            download_file_from_minio(gpt4all_pretrained_model_obj.id, s3, filename=self.llm_path)
+            download_file_from_minio(minio_filename, s3, filename=self.llm_path)
             logger.info(f"Downloaded model from Minio to {self.llm_path}")
 
 

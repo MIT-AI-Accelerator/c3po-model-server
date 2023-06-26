@@ -1,6 +1,6 @@
 import io
 import pickle
-from typing import Any, Optional
+from typing import Any, Optional, Union
 from .config import settings
 from .logging import logger
 from fastapi import UploadFile, HTTPException
@@ -65,8 +65,8 @@ def pickle_and_upload_object_to_minio(object: Any, id: UUID4, s3: Minio) -> bool
 
     return True
 
-def download_file_from_minio(id: UUID4, s3: Minio, filename: Optional[str] = None) -> io.BytesIO:
-    output_filename = f"{id}"
+def download_file_from_minio(id: Union[UUID4, str], s3: Minio, filename: Optional[str] = None) -> io.BytesIO:
+    output_filename = f"{str(id)}"
 
     try:
         data = s3.get_object(
