@@ -13,3 +13,7 @@ def init_db() -> None:
 
     # pylint: disable=no-member
     Base.metadata.create_all(bind=engine) # noqa: F401
+
+# used to clear the DB (for local / staging, DO NOT USE IN PROD)
+def wipe_db() -> None:
+    Base.metadata.drop_all(bind=engine) # noqa: F401

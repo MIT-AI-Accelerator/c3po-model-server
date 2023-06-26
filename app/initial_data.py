@@ -17,7 +17,7 @@ from app.aimodels.bertopic.schemas.document import DocumentCreate
 from app.aimodels.gpt4all.models.gpt4all_pretrained import Gpt4AllPretrainedModel
 from app.aimodels.gpt4all.schemas.gpt4all_pretrained import Gpt4AllPretrainedCreate, Gpt4AllPretrainedUpdate
 
-from app.db.init_db import init_db
+from app.db.init_db import init_db, wipe_db
 from app.db.session import SessionLocal
 from app.core.minio import build_client, download_file_from_minio, upload_file_to_minio
 
@@ -41,7 +41,6 @@ logger = logging.getLogger(__name__)
 
 def init() -> None:
     init_db()
-
 
 def init_minio_bucket(s3: Minio) -> None:
     bucket_name = settings.minio_bucket_name
@@ -263,6 +262,12 @@ def main() -> None:
 
     logger.info(f"Using initialization environment: {environment}")
     logger.info(f"Using migration toggle: {migration_toggle}")
+
+    # clear DB if local or staging as long as not actively testing migrating
+    if (environment in ['local', 'staging'] and migration_toggle is False):
+        logger.info("Clearing database")
+        wipe_db()
+        logger.info("Database cleared")
 
     # all environments need to initialize the database
     # prod only if migration toggle is on
