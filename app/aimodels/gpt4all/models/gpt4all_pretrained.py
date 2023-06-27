@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import Column, Enum, Integer, UUID, String, Boolean, Sequence
 from sqlalchemy.orm import relationship
 from app.db.base_class import Base
+from app.core.config import OriginationEnum, get_originated_from
 import uuid
 
 # add in the TYPE_CHECKING check here if relationships are created
@@ -18,3 +19,4 @@ class Gpt4AllPretrainedModel(Base):
     sha256 = Column(String(64))
     uploaded = Column(Boolean(), default=False)
     use_base_model = Column(Boolean(), default=False)
+    originated_from = Column(Enum(OriginationEnum), default=get_originated_from)

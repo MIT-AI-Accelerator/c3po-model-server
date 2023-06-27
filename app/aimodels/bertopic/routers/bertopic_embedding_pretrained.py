@@ -1,4 +1,3 @@
-import os
 import hashlib
 from typing import Union
 from fastapi import Depends, APIRouter, UploadFile
@@ -17,12 +16,11 @@ from sqlalchemy.orm import Session
 from .. import crud
 from ..ai_services.basic_inference import BASE_CKPT_DIR
 from ..models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedModel
+
 from app.core.errors import HTTPValidationError, ValidationError
 from aiofiles import open as open_aio
 from minio import Minio
 from minio.error import InvalidResponseError
-
-from app.core.config import settings
 
 
 router = APIRouter(
@@ -101,3 +99,26 @@ async def upload_bertopic_embedding_post(new_file: UploadFile, id: UUID4, db: Se
         db, db_obj=bertopic_embedding_pretrained_obj, obj_in=BertopicEmbeddingPretrainedUpdate(uploaded=True))
 
     return new_bertopic_embedding_pretrained_obj
+
+@router.get(
+    "/",
+    response_model=Union[BertopicEmbeddingPretrained, HTTPValidationError],
+    responses={'422': {'model': HTTPValidationError}},
+    summary="Get latest uploaded BERTopic Embedding Pretrained Model object",
+    response_description="Retrieved latest Embedding Pretrained Model object"
+)
+def get_latest_bertopic_embedding_pretrained_object(model_name: str, db: Session = Depends(get_db)) -> (
+    Union[BertopicEmbeddingPretrained, HTTPValidationError]
+):
+    """
+    Get latest uploaded BERTopic Embedding Pretrained Model object.
+    """
+    bertopic_embedding_pretrained_obj = db.query(BertopicEmbeddingPretrainedModel).filter(
+        BertopicEmbeddingPretrainedModel.model_name == model_name,
+        BertopicEmbeddingPretrainedModel.uploaded).order_by(
+        BertopicEmbeddingPretrainedModel.version.desc()).first()
+
+    if not bertopic_embedding_pretrained_obj:
+        raise HTTPException(status_code=422, detail="BERTopic Embedding Pretrained Model not found")
+
+    return bertopic_embedding_pretrained_obj

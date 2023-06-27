@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING
-from sqlalchemy import Column, ForeignKey, Table
+from sqlalchemy import Column, ForeignKey, Table, Enum
 from app.db.base_class import Base
+from app.core.config import OriginationEnum, get_originated_from
 
 if TYPE_CHECKING:
     from .document import DocumentModel  # noqa: F401

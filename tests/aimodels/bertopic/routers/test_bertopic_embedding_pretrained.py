@@ -278,3 +278,41 @@ def test_upload_bertopic_embedding_pretrained_weak_learner_object_post_valid_req
 
     assert response2.status_code == 200
     assert response2.json()["uploaded"] is True
+
+
+def test_get_latest_bertopic_embedding_pretrained_object_invalid_request(client: TestClient):
+    body = {'wrong_param': 'does not matter'}
+
+    response = client.get(
+        "/aimodels/bertopic/bertopic-embedding-pretrained",
+        headers={},
+        params=jsonable_encoder(body)
+    )
+
+    assert response.status_code == 422
+
+
+def test_get_latest_bertopic_embedding_pretrained_object_invalid_name(client: TestClient):
+    body = {'model_name': 'nonexistent_model'}
+
+    response = client.get(
+        "/aimodels/bertopic/bertopic-embedding-pretrained",
+        headers={},
+        params=jsonable_encoder(body)
+    )
+
+    assert response.status_code == 422
+
+
+def test_get_latest_bertopic_embedding_pretrained_object_valid_name(client: TestClient):
+    my_model = 'test'
+    body = {'model_name': my_model}
+
+    response = client.get(
+        "/aimodels/bertopic/bertopic-embedding-pretrained",
+        headers={},
+        params=jsonable_encoder(body)
+    )
+
+    assert response.status_code == 200
+    assert response.json()['model_name'] == my_model

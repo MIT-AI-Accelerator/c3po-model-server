@@ -1,8 +1,9 @@
 import uuid
 from typing import TYPE_CHECKING
-from sqlalchemy import Column, UUID, Float, ARRAY, ForeignKey
+from sqlalchemy import Column, UUID, Float, ARRAY, ForeignKey, Enum
 from sqlalchemy.orm import relationship
 from app.db.base_class import Base
+from app.core.config import OriginationEnum, get_originated_from
 
 if TYPE_CHECKING:
     from .bertopic_embedding_pretrained import BertopicEmbeddingPretrainedModel  # noqa: F401
@@ -15,3 +16,4 @@ class DocumentEmbeddingComputationModel(Base):
     document = relationship("DocumentModel", back_populates="embedding_computations")
     bertopic_embedding_pretrained_id = Column(UUID, ForeignKey("bertopicembeddingpretrainedmodel.id"))
     bertopic_embedding_pretrained = relationship("BertopicEmbeddingPretrainedModel", back_populates="document_embedding_computations")
+    originated_from = Column(Enum(OriginationEnum), default=get_originated_from)

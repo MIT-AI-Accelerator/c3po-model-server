@@ -1,4 +1,5 @@
 from typing import Optional
+from app.core.config import OriginationEnum
 
 from pydantic import BaseModel, UUID4
 
@@ -22,6 +23,7 @@ class DocumentEmbeddingComputationInDBBase(DocumentEmbeddingComputationBase):
     id: UUID4
     document_id: UUID4
     bertopic_embedding_pretrained_id: UUID4
+    originated_from: OriginationEnum
 
     class Config:
         orm_mode = True

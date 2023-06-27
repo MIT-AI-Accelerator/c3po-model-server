@@ -1,9 +1,10 @@
 import enum
+import uuid
 from typing import TYPE_CHECKING
 from sqlalchemy import Column, Enum, Integer, UUID, String, Boolean, Sequence
 from sqlalchemy.orm import relationship
 from app.db.base_class import Base
-import uuid
+from app.core.config import OriginationEnum, get_originated_from
 
 if TYPE_CHECKING:
     from .document_embedding_computation import DocumentEmbeddingComputationModel  # noqa: F401
@@ -22,5 +23,6 @@ class BertopicEmbeddingPretrainedModel(Base):
     version = Column(Integer, version_sequence, server_default=version_sequence.next_value(), index=True, unique=True, nullable=False)
     sha256 = Column(String(64))
     uploaded = Column(Boolean(), default=False)
+    originated_from = Column(Enum(OriginationEnum), default=get_originated_from)
     document_embedding_computations = relationship("DocumentEmbeddingComputationModel", back_populates="bertopic_embedding_pretrained")
     trained_models = relationship("BertopicTrainedModel", back_populates="embedding_pretrained")

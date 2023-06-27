@@ -1,5 +1,6 @@
 from datetime import datetime
 from pydantic import BaseModel, UUID4
+from app.core.config import OriginationEnum
 
 # Shared properties
 class DocumentBase(BaseModel):
@@ -13,6 +14,7 @@ class DocumentCreate(DocumentBase):
 class DocumentInDBBase(DocumentBase):
     id: UUID4
     original_created_time: datetime
+    originated_from: OriginationEnum
 
     class Config:
         orm_mode = True
