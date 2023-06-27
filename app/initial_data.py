@@ -271,7 +271,7 @@ def main() -> None:
 
     # all environments need to initialize the database
     # prod only if migration toggle is on
-    if (environment in ['local', 'test', 'staging', 'development'] or (environment == 'production' and migration_toggle is True)):
+    if (environment in ['local', 'development', 'test', 'staging'] or (environment == 'production' and migration_toggle is True)):
         logger.info("Creating database schema and tables")
         db = SessionLocal()
         init()
@@ -280,12 +280,12 @@ def main() -> None:
         logger.info("Skipping database initialization")
 
     # setup minio client if available (i.e., not in unit tests)
-    if (environment in ['local', 'staging', 'production']):
+    if (environment in ['local', 'development', 'staging', 'production']):
         logger.info("Connecting MinIO client")
         s3 = build_client()
         logger.info("MinIO client connected")
 
-    if (environment == 'local'):
+    if (environment in ['local','development']):
         logger.info("Setting up MinIO bucket")
         init_minio_bucket(s3)
         logger.info("MinIO bucket set up.")
