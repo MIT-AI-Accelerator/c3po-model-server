@@ -279,9 +279,14 @@ def main() -> None:
     else:
         logger.info("Skipping database initialization")
 
+    # setup minio client if available (i.e., not in unit tests)
+    if (environment in ['local', 'staging', 'production']):
+        logger.info("Connecting MinIO client")
+        s3 = build_client()
+        logger.info("MinIO client connected")
+
     if (environment == 'local'):
         logger.info("Setting up MinIO bucket")
-        s3 = build_client()
         init_minio_bucket(s3)
         logger.info("MinIO bucket set up.")
 
