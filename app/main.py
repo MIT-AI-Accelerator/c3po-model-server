@@ -3,7 +3,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_versioning import VersionedFastAPI
-from .core.config import settings
+from .core.config import settings, OriginationEnum
 from .core.logging import logger, LogConfig
 from logging.config import dictConfig
 from .aimodels.router import router as aimodels_router
@@ -35,6 +35,18 @@ origins = [
     "https://transformers.staging.dso.mil",
     "https://transformers.apps.dso.mil",
 ]
+
+# set originated_from for standard app usage
+@app.get('/originated_from_app/')
+async def originated_from_app():
+    settings.originated_from = OriginationEnum.ORIGINATED_FROM_APP
+    return settings.originated_from
+
+# use test to allow for cleanup of database entries
+@app.get('/originated_from_test/')
+async def originated_from_test():
+    settings.originated_from = OriginationEnum.ORIGINATED_FROM_TEST
+    return settings.originated_from
 
 app.include_router(aimodels_router)
 app.include_router(sentiments_router)

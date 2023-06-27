@@ -13,6 +13,7 @@ from .. import crud
 from ..models.bertopic_trained import BertopicTrainedModel
 from ..schemas.bertopic_trained import BertopicTrainedCreate
 from app.core.errors import ValidationError, HTTPValidationError
+from app.core.config import settings
 from ..models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedModel
 
 router = APIRouter(
@@ -88,7 +89,8 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
     new_embedding_computation_obj_list = [DocumentEmbeddingComputationCreate(
         document_id=documents[i].id,
         bertopic_embedding_pretrained_id=request.sentence_transformer_id,
-        embedding_vector=inference_output.embeddings[i]
+        embedding_vector=inference_output.embeddings[i], 
+        originated_from=settings.originated_from
     ) for i, wasUpdated in enumerate(inference_output.updated_document_indicies) if wasUpdated]
 
     crud.document_embedding_computation.create_all_using_id(

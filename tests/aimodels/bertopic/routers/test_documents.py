@@ -3,6 +3,7 @@ from fastapi.testclient import TestClient
 from app.aimodels.bertopic.schemas.document import DocumentCreate
 
 from app.main import app
+from app.core.config import OriginationEnum
 from app.aimodels.bertopic.routers.documents import get_db
 from tests.test_files.db.db_test_session import SessionLocal
 
@@ -35,6 +36,10 @@ def test_create_document_object_post_valid_request(client: TestClient):
     assert response.json()[0]['id'] is not None
     assert response.json()[0]['original_created_time'] is not None
     assert response.json()[0]['text'] == "This is a test document"
+
+    # extend test_set_originated_from_* to confirm originated_from set properly in db
+    # originated_from_test called in pytest client fixture
+    assert response.json()[0]['originated_from'] == OriginationEnum.ORIGINATED_FROM_TEST
 
 def test_create_document_object_post_invalid_request(client: TestClient):
     body = None
