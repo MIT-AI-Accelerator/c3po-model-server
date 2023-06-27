@@ -1,20 +1,15 @@
-# Pre-reqs if you use an ARM-based machine (e.g., Apple M1)--skip if x86 unless you want conda to manage python env, then just skip the tensorflow steps
-1. Make sure that you have `conda` installed.  [Recommend this article](https://caffeinedev.medium.com/how-to-install-tensorflow-on-m1-mac-8e9b91d93706).
+# If you want to use conda, not required
+1. Make sure that you have `conda` installed.  [Recommend this article if on Mac, just do through step 2](https://caffeinedev.medium.com/how-to-install-tensorflow-on-m1-mac-8e9b91d93706).
 
-2. Create and activate a new conda environment, e.g., `transformers-api` with python 3.9.
+2. Create and activate a new conda environment, e.g., `transformers-api` with python 3.11.
 ```bash
-conda create --name transformers-api python==3.9
+conda create --name transformers-api python==3.11
 conda activate transformers-api
 ```
 
-3. (Apple silicon only) Install underlying tensorflow dependencies (info pulled from [this article](https://caffeinedev.medium.com/how-to-install-tensorflow-on-m1-mac-8e9b91d93706))
-```bash
-conda install -c apple tensorflow-deps
-```
+3. Run `which pip` and `which python` to verify path to make sure that your `python` and `pip` binaries are coming from your `conda` virtual environment.  Note that the order in which you install conda vs. pip matters to set virtual env priorities.
 
-4. Run `which pip` and `which python` to verify path to make sure that your `python` and `pip` binaries are coming from your `conda` virtual environment.  Note that the order in which you install conda vs. pip matters to set virtual env priorities.
-
-# Getting Started Locally
+# Getting Started Locally (Start here if not using conda, just make sure you have the right version of python and pip installed)
 1. Install `poetry`: `pip install poetry` (or use `pipx` [on link here](https://python-poetry.org/docs/1.4#installing-with-pipx) if you prefer isolated envs and you don't have `conda` managing your env)
 
 2. Create and enter the virtual environment: `poetry shell`

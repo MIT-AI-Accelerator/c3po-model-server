@@ -7,7 +7,7 @@ readme = "README.md"
 packages = [{include = "app"}]
 
 [tool.poetry.dependencies]
-python = "~3.9"
+python = "~3.11"
 urllib3 = "^1.26.16"
 fastapi = "^0.95.2"
 uvicorn = "^0.22.0"
@@ -26,8 +26,9 @@ python-multipart = "^0.0.6"
 minio = "^7.1.15"
 bertopic = "^0.14.1"
 transformers = "^4.30.2"
-tensorflow = {version = "2.11.1", markers = "platform.machine == 'x86_64'"}
-tensorflow-macos = {version = "2.11.0", platform = "darwin", markers = "platform.machine == 'arm64'"}
+tensorflow = {version = "2.12.0", markers = "platform.machine == 'x86_64'"}
+tensorflow-macos = {version = "2.12.0", platform = "darwin", markers = "platform.machine == 'arm64'"}
+tensorflow-metal = {version = "1.0.1", platform = "darwin", markers = "platform.machine == 'arm64'"}
 snorkel = "^0.9.9"
 gpt4all = "^0.2.3"
 langchain = "^0.0.188"
