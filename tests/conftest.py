@@ -16,6 +16,7 @@ def db() -> Generator:
 @pytest.fixture(scope="module")
 def client() -> Generator:
     with TestClient(app) as c:
+        # initialize originated_from to test to allow for db cleanup 
         response = c.get("/originated_from_test/")
         data = response.json()
         assert data == OriginationEnum.ORIGINATED_FROM_TEST
