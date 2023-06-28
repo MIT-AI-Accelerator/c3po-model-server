@@ -116,9 +116,9 @@ class BuildTopicModelInputs(BaseModel):
     @validator('documents_text_list')
     def documents_text_list_must_be_large_enough_for_inference(cls, v):
         # pylint: disable=no-self-argument
-        if len(v) < 10:
+        if len(v) < 7:
             raise ValueError(
-                'documents_text_list must have at least 10 documents')
+                'documents_text_list must have at least 7 documents')
         return v
 
     # ensure embeddings is same length as documents_text_list
@@ -162,7 +162,7 @@ class BasicInference:
             self.label_model = weak_models[3]
             self.weak_learner = WeakLearner(self.vectorizer, self.svm, self.mlp, self.label_model)
             labeling_functions, self.label_applier = self.weak_learner.create_label_applier()
-        
+
     def train_bertopic_on_documents(self, documents, precalculated_embeddings, num_topics = 1, seed_topic_list = []) -> BasicInferenceOutputs:
         # validate input
         TrainBertopicOnDocumentsInput(
@@ -234,9 +234,9 @@ class BasicInference:
             data_test = data_test[data_test['y_pred'] < 2]
             documents_text_list = list(data_test['message'])
 
-        hdbscan_model = hdbscan.HDBSCAN(min_cluster_size=10, min_samples=10,
+        hdbscan_model = hdbscan.HDBSCAN(min_cluster_size=2, min_samples=2,
                                         metric='euclidean', prediction_data=True)
-        topic_model = BERTopic(nr_topics=num_topics, seed_topic_list=seed_topic_list, 
+        topic_model = BERTopic(nr_topics=num_topics, seed_topic_list=seed_topic_list,
                             hdbscan_model=hdbscan_model, vectorizer_model=self.vectorizer)
         topic_model = topic_model.fit(documents_text_list, embeddings)
 
