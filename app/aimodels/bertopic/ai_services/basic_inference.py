@@ -282,7 +282,7 @@ class BasicInference:
             data_test = data_test[data_test['y_pred'] < 2]
             documents_text_list = list(data_test['message'])
 
-        hdbscan_model = hdbscan.HDBSCAN(min_cluster_size=10, min_samples=10,
+        hdbscan_model = hdbscan.HDBSCAN(min_cluster_size=2, min_samples=2,
                                         metric='euclidean', prediction_data=True)
         topic_model = BERTopic(nr_topics=num_topics, seed_topic_list=seed_topic_list,
                                hdbscan_model=hdbscan_model, vectorizer_model=self.vectorizer)
