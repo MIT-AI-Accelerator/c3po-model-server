@@ -4,29 +4,7 @@ from unittest.mock import MagicMock
 import uuid
 from fastapi.testclient import TestClient
 from app.aimodels.gpt4all.schemas.gpt4all_pretrained import Gpt4AllPretrainedCreate
-
-from app.main import app
-from app.aimodels.gpt4all.routers.pretrained import get_db, get_minio, upload_file_to_minio
-from tests.test_files.db.db_test_session import SessionLocal
-
 from fastapi.encoders import jsonable_encoder
-
-# ************Mocks*******************
-def mock_db():
-    try:
-        db = SessionLocal()
-        yield db
-    finally:
-        db.close()
-
-
-mock_s3 = MagicMock()
-def mock_get_minio():
-    return mock_s3
-
-app.dependency_overrides = {get_db: mock_db, get_minio: mock_get_minio}
-# *************************************
-
 
 def test_create_gpt4all_pretrained_object_post_valid_request(client: TestClient, valid_sha256: str):
     body = Gpt4AllPretrainedCreate(sha256=valid_sha256)

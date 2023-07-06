@@ -1,5 +1,6 @@
 from collections.abc import Generator
 import random
+from unittest.mock import MagicMock
 from .test_files.db.db_test_session import SessionLocal
 import pytest
 from fastapi.testclient import TestClient
@@ -16,12 +17,18 @@ def db() -> Generator:
 
 @pytest.fixture(scope="session")
 def s3():
-    yield build_client()
+    # return not yield...we only want a single client, not a new one each time
+    return build_client()
+
+@pytest.fixture(scope="session")
+def mock_s3():
+    # return not yield...we only want a single client, not a new one each time
+    return MagicMock()
 
 @pytest.fixture(scope="module")
 def client() -> Generator:
     with TestClient(app) as c:
-        # initialize originated_from to test to allow for db cleanup 
+        # initialize originated_from to test to allow for db cleanup
         response = c.get("/originated_from_test/")
         data = response.json()
         assert data == OriginationEnum.ORIGINATED_FROM_TEST
