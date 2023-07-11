@@ -48,6 +48,10 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
 
     validate_obj(bertopic_sentence_transformer_obj)
 
+    # verify enough documents to actually handle clustering
+    if len(request.document_ids) < 7:
+        raise HTTPException(status_code=400, detail="must have at least 7 documents to find topics")
+
     bertopic_weak_learner_obj = None
     if request.weak_learner_id:
         # check to make sure id exists
@@ -83,13 +87,14 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
     inference_output = basic_inference.train_bertopic_on_documents(
         documents, precalculated_embeddings=precalculated_embeddings, num_topics=request.num_topics,
         seed_topic_list=request.seed_topics)
+
     new_plotly_bubble_config = inference_output.plotly_bubble_config
 
     # save calculated embeddings computations
     new_embedding_computation_obj_list = [DocumentEmbeddingComputationCreate(
         document_id=documents[i].id,
         bertopic_embedding_pretrained_id=request.sentence_transformer_id,
-        embedding_vector=inference_output.embeddings[i], 
+        embedding_vector=inference_output.embeddings[i],
         originated_from=settings.originated_from
     ) for i, wasUpdated in enumerate(inference_output.updated_document_indicies) if wasUpdated]
 

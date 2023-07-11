@@ -5,6 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 from app.main import app
 from app.core.config import OriginationEnum
+from app.core.minio import build_client
 
 
 # in case you are wondering why we use yield instead of return, check this
@@ -12,6 +13,10 @@ from app.core.config import OriginationEnum
 @pytest.fixture(scope="session")
 def db() -> Generator:
     yield SessionLocal()
+
+@pytest.fixture(scope="session")
+def s3():
+    yield build_client()
 
 @pytest.fixture(scope="module")
 def client() -> Generator:
