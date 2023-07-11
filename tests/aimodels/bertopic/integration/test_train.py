@@ -36,7 +36,7 @@ def test_train_valid_request(client: TestClient, db: Session):
     sentence_transformer_id = response.json()['id']
 
     # get documents
-    n_docs = 11
+    n_docs = 20
     documents_db = db.query(DocumentModel).where(DocumentModel.text != None).limit(n_docs).all()
     assert len(documents_db) == n_docs
 
@@ -70,7 +70,7 @@ def test_train_valid_request_seed_topics(client: TestClient, db: Session):
     sentence_transformer_id = response.json()['id']
 
     # ensure init script run before this
-    n_docs = 11
+    n_docs = 20
     documents_db = db.query(DocumentModel).where(DocumentModel.text != None).limit(n_docs).all()
     assert len(documents_db) == n_docs
 
@@ -122,7 +122,7 @@ def test_train_valid_request_weak_learning(client: TestClient, db: Session):
     weak_learner_id = response.json()['id']
 
     # get documents
-    n_docs = 11
+    n_docs = 20
     documents_db = db.query(DocumentModel).where(DocumentModel.text != None).limit(n_docs).all()
     assert len(documents_db) == n_docs
 
