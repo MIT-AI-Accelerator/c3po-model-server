@@ -2,24 +2,8 @@
 from fastapi.testclient import TestClient
 from app.aimodels.bertopic.schemas.document import DocumentCreate
 
-from app.main import app
 from app.core.config import OriginationEnum
-from app.aimodels.bertopic.routers.documents import get_db
-from tests.test_files.db.db_test_session import SessionLocal
-
 from fastapi.encoders import jsonable_encoder
-
-
-# ************Mocks*******************
-def mock_db():
-    try:
-        db = SessionLocal()
-        yield db
-    finally:
-        db.close()
-
-app.dependency_overrides[get_db] = mock_db
-# *************************************
 
 def test_create_document_object_post_valid_request(client: TestClient):
     body = [DocumentCreate(

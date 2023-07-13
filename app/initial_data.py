@@ -290,6 +290,12 @@ def main() -> None:
         init_minio_bucket(s3)
         logger.info("MinIO bucket set up.")
 
+    if (environment != 'production'):
+        logger.info("Creating documents from chats")
+        swagger_string = init_documents_from_chats(db)
+        logger.info("Documents created.")
+        logger.info(f"Documents: {swagger_string}")
+
     ########## large object uploads ################
     if (environment == 'local'):
         # Sentence Transformer
@@ -299,19 +305,19 @@ def main() -> None:
         logger.info(
             f"Embedding Pretrained Object ID: {embedding_pretrained_obj.id}, SHA256: {embedding_pretrained_obj.sha256}")
 
-        #Gpt4All
-        logger.info("Uploading Gpt4All object to MinIO")
-        gpt4all_pretrained_obj = init_gpt4all_pretrained_model(s3, db)
-        logger.info("Gpt4All object uploaded to MinIO.")
-        logger.info(
-            f"Gpt4All Object ID: {gpt4all_pretrained_obj.id}, SHA256: {gpt4all_pretrained_obj.sha256}")
-
         # Weak learner
         logger.info("Uploading WeakLearner object to MinIO")
         embedding_pretrained_obj = init_weak_learning_object(s3, db)
         logger.info("WeakLearner object uploaded to MinIO.")
         logger.info(
             f"Weak learner Pretrained Object ID: {embedding_pretrained_obj.id}, SHA256: {embedding_pretrained_obj.sha256}")
+
+        #Gpt4All
+        logger.info("Uploading Gpt4All object to MinIO")
+        gpt4all_pretrained_obj = init_gpt4all_pretrained_model(s3, db)
+        logger.info("Gpt4All object uploaded to MinIO.")
+        logger.info(
+            f"Gpt4All Object ID: {gpt4all_pretrained_obj.id}, SHA256: {gpt4all_pretrained_obj.sha256}")
 
     if (environment == 'staging' or (environment == 'production' and migration_toggle is True)):
         logger.info("Verifying Gpt4All object in MinIO")
@@ -320,13 +326,6 @@ def main() -> None:
         logger.info(
             f"Gpt4All Object ID: {gpt4all_pretrained_obj.id}, SHA256: {gpt4all_pretrained_obj.sha256}")
     ########## large object uploads ################
-
-    if (environment != 'production'):
-        logger.info("Creating documents from chats")
-        swagger_string = init_documents_from_chats(db)
-        logger.info("Documents created.")
-        logger.info(f"Documents: {swagger_string}")
-
 
 if __name__ == "__main__":
     main()

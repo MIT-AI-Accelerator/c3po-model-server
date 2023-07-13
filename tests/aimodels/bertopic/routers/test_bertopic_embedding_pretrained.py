@@ -10,31 +10,10 @@ import pandas as pd
 from fastapi.testclient import TestClient
 from app.aimodels.bertopic.schemas.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedCreate
 from app.aimodels.bertopic.ai_services.weak_learning import WeakLearner
-
-from app.main import app
-from app.aimodels.bertopic.routers.bertopic_embedding_pretrained import get_db, get_minio, upload_file_to_minio
-from tests.test_files.db.db_test_session import SessionLocal
-
 from fastapi.encoders import jsonable_encoder
 
-# ************Mocks*******************
-def mock_db():
-    try:
-        db = SessionLocal()
-        yield db
-    finally:
-        db.close()
-
-
-mock_s3 = MagicMock()
-def mock_get_minio():
-    return mock_s3
-
-app.dependency_overrides = {get_db: mock_db, get_minio: mock_get_minio}
-# *************************************
-
-
 def test_create_bertopic_embedding_pretrained_object_post_valid_request(client: TestClient, valid_sha256: str):
+
     body = BertopicEmbeddingPretrainedCreate(sha256=valid_sha256, model_name='test')
 
     response = client.post(
@@ -50,7 +29,9 @@ def test_create_bertopic_embedding_pretrained_object_post_valid_request(client: 
     assert response.json()['sha256'] == valid_sha256
 
 
+
 def test_create_bertopic_embedding_pretrained_object_post_invalid_request(client: TestClient):
+
     body = {}
 
     response = client.post(
@@ -62,7 +43,9 @@ def test_create_bertopic_embedding_pretrained_object_post_invalid_request(client
     assert response.status_code == 422
 
 
+
 def test_create_bertopic_embedding_pretrained_object_post_invalid_request_sha256(client: TestClient):
+
     body = {'sha256': '', 'model_name': 'test'}
 
     response = client.post(
@@ -76,7 +59,9 @@ def test_create_bertopic_embedding_pretrained_object_post_invalid_request_sha256
         'body', 'sha256'], 'msg': 'sha256 must be hexademical and 64 characters long', 'type': 'value_error'}]}
 
 
+
 def test_create_bertopic_embedding_pretrained_object_post_already_existing_sha256(client: TestClient, valid_sha256: str):
+
     body = BertopicEmbeddingPretrainedCreate(sha256=valid_sha256, model_name='test')
 
     response = client.post(
@@ -98,7 +83,9 @@ def test_create_bertopic_embedding_pretrained_object_post_already_existing_sha25
         {'loc': ['body', 'sha256'], 'msg': 'sha256 already exists', 'type': 'value_error'}]}
 
 
+
 def test_create_bertopic_embedding_pretrained_object_post_sha256_converted_to_lowercase(client: TestClient, valid_sha256: str):
+
     body = BertopicEmbeddingPretrainedCreate(sha256=valid_sha256.upper(), model_name='test')
 
     response = client.post(
@@ -109,6 +96,7 @@ def test_create_bertopic_embedding_pretrained_object_post_sha256_converted_to_lo
 
     assert response.status_code == 200
     assert response.json()['sha256'] == valid_sha256.lower()
+
 
 # ************ upload ************
 
@@ -154,8 +142,10 @@ def test_upload_bertopic_embedding_pretrained_object_post_valid_request(client: 
     assert response2.status_code == 200
     assert response2.json()["uploaded"] is True
 
+
 # test upload with sha256 not matching the one in the database
 def test_upload_bertopic_embedding_pretrained_object_post_invalid_sha256(client: TestClient, valid_sha256: str, mocker):
+
     # Create a file to upload
     test_file = "test_file_invalid_sha256"
     with open(test_file, "wb") as f:
@@ -190,7 +180,9 @@ def test_upload_bertopic_embedding_pretrained_object_post_invalid_sha256(client:
     assert response2.json() == {'detail': 'SHA256 hash mismatch'}
 
 
+
 def test_upload_bertopic_embedding_pretrained_object_post_empty_file(client: TestClient, valid_sha256: str):
+
     body = BertopicEmbeddingPretrainedCreate(sha256=valid_sha256, model_name='test')
 
     response = client.post(
@@ -206,7 +198,9 @@ def test_upload_bertopic_embedding_pretrained_object_post_empty_file(client: Tes
     assert response2.status_code == 400
 
 
+
 def test_upload_bertopic_embedding_pretrained_object_post_invalid_id(client: TestClient, mocker):
+
     test_file = "test_file_invalid_id"
     with open(test_file, "wb") as f:
         f.write(b"test data")
@@ -228,8 +222,9 @@ def test_upload_bertopic_embedding_pretrained_object_post_invalid_id(client: Tes
         'path', 'id'], 'msg': 'value is not a valid uuid', 'type': 'type_error.uuid'}]}
 
 
+
 def test_upload_bertopic_embedding_pretrained_weak_learner_object_post_valid_request(client: TestClient):
-    
+
     # Create a file to upload
     test_file = "test_file.csv"
     tdf = pd.DataFrame({'createat': [0,0,0,0,0,0,0,0,0,0],
@@ -278,6 +273,7 @@ def test_upload_bertopic_embedding_pretrained_weak_learner_object_post_valid_req
 
     assert response2.status_code == 200
     assert response2.json()["uploaded"] is True
+
 
 
 def test_get_latest_bertopic_embedding_pretrained_object_invalid_request(client: TestClient):

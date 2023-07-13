@@ -2,11 +2,9 @@ from fastapi.testclient import TestClient
 from app.aimodels.bertopic.models.document import DocumentModel
 
 from fastapi.encoders import jsonable_encoder
-
 from sqlalchemy.orm import Session
 
 from sample_data import CHAT_DATASET_4_PATH
-from minio import Minio
 
 # test train endpoint with invalid request
 def test_train_invalid_request(client: TestClient):
@@ -25,9 +23,8 @@ def test_train_invalid_request(client: TestClient):
 
 
 # test train endpoint with valid request
-def test_train_valid_request(client: TestClient, db: Session, s3: Minio):
-# def test_train_valid_request(client: TestClient, db: Session):
-    
+def test_train_valid_request(client: TestClient, db: Session):
+
     my_model = 'all-MiniLM-L6-v2'
     response = client.get(
         "/aimodels/bertopic/bertopic-embedding-pretrained",
@@ -39,13 +36,13 @@ def test_train_valid_request(client: TestClient, db: Session, s3: Minio):
     sentence_transformer_id = response.json()['id']
 
     # get documents
-    n_docs = 11
-    documents_db = db.query(DocumentModel).limit(n_docs).all()
+    n_docs = 20
+    documents_db = db.query(DocumentModel).where(DocumentModel.text != None).limit(n_docs).all()
     assert len(documents_db) == n_docs
 
     body = {
         "sentence_transformer_id": sentence_transformer_id,
-        "document_ids": [d.id for d in documents_db]
+        "document_ids": [str(d.id) for d in documents_db]
     }
 
     response = client.post(
@@ -58,9 +55,10 @@ def test_train_valid_request(client: TestClient, db: Session, s3: Minio):
     assert response.json()['id'] is not None
 
 
+
 # test train endpoint with valid request
-def test_train_valid_request_seed_topics(client: TestClient, db: Session, s3: Minio):
-    
+def test_train_valid_request_seed_topics(client: TestClient, db: Session):
+
     my_model = 'all-MiniLM-L6-v2'
     response = client.get(
         "/aimodels/bertopic/bertopic-embedding-pretrained",
@@ -71,9 +69,9 @@ def test_train_valid_request_seed_topics(client: TestClient, db: Session, s3: Mi
     assert response.json()['model_name'] == my_model
     sentence_transformer_id = response.json()['id']
 
-    # get documents
-    n_docs = 11
-    documents_db = db.query(DocumentModel).limit(n_docs).all()
+    # ensure init script run before this
+    n_docs = 20
+    documents_db = db.query(DocumentModel).where(DocumentModel.text != None).limit(n_docs).all()
     assert len(documents_db) == n_docs
 
     seed_topics = [['urgent', 'priority'],
@@ -97,8 +95,9 @@ def test_train_valid_request_seed_topics(client: TestClient, db: Session, s3: Mi
     assert response.json()['id'] is not None
 
 
+
 # test train endpoint with valid request
-def test_train_valid_request_weak_learning(client: TestClient, db: Session, s3: Minio):
+def test_train_valid_request_weak_learning(client: TestClient, db: Session):
 
     # get valid sentence transformer object
     my_model = 'all-MiniLM-L6-v2'
@@ -123,8 +122,8 @@ def test_train_valid_request_weak_learning(client: TestClient, db: Session, s3: 
     weak_learner_id = response.json()['id']
 
     # get documents
-    n_docs = 11
-    documents_db = db.query(DocumentModel).limit(n_docs).all()
+    n_docs = 20
+    documents_db = db.query(DocumentModel).where(DocumentModel.text != None).limit(n_docs).all()
     assert len(documents_db) == n_docs
 
     # train on documents
