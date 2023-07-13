@@ -1,3 +1,4 @@
+import pytest
 from typing import Optional, Callable
 from sqlalchemy.orm import Session
 from app.aimodels.gpt4all import crud
@@ -6,9 +7,27 @@ from app.aimodels.gpt4all.ai_services.completion_inference import CompletionInfe
 from app.aimodels.gpt4all.models.gpt4all_pretrained import Gpt4AllModelFilenameEnum, Gpt4AllPretrainedModel
 from app.aimodels.gpt4all.schemas.gpt4all_pretrained import Gpt4AllPretrainedCreate
 from app.core.config import settings
+from app.main import app
+from app.aimodels.bertopic.routers.bertopic_embedding_pretrained import get_db, get_minio
 
-import pytest
+def setup(db, mock_s3):
+    def replace_db():
+        return db
 
+    def mock_get_minio():
+        return mock_s3
+
+    app.dependency_overrides = {get_db: replace_db, get_minio: mock_get_minio}
+
+
+def teardown():
+    app.dependency_overrides = {}
+
+@pytest.fixture(scope="function", autouse=True)
+def setup_teardown(db, mock_s3):
+    setup(db, mock_s3)
+    yield
+    teardown()
 
 @pytest.fixture(scope="function")
 def gpt4all_pretrained_obj_uploaded_false(valid_sha256: str, db: Session) -> Gpt4AllPretrainedModel:

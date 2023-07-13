@@ -1,25 +1,8 @@
-from typing import Optional, Callable
-from unittest.mock import create_autospec, MagicMock
+from typing import Callable
+from unittest.mock import create_autospec
 from fastapi.testclient import TestClient
 from app.aimodels.gpt4all.ai_services.completion_inference import CompletionInference, CompletionInferenceInputs, CompletionInferenceOutputs
-from app.aimodels.gpt4all.models.gpt4all_pretrained import Gpt4AllPretrainedModel
-
-from app.main import app
-from app.aimodels.bertopic.routers.documents import get_db
-from tests.test_files.db.db_test_session import SessionLocal
 from app.aimodels.gpt4all import crud as crud_gpt4all
-
-# ************Mocks*******************
-def mock_db():
-    try:
-        db = SessionLocal()
-        yield db
-    finally:
-        db.close()
-
-
-app.dependency_overrides[get_db] = mock_db
-# *************************************
 
 def test_gpt_completion_post_valid_input(client: TestClient,
                                          mock_completion_inference_inputs: CompletionInferenceInputs,

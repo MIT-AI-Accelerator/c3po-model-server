@@ -101,8 +101,8 @@ class CalculateDocumentEmbeddingsInputs(BaseModel):
 
 class TrainBertopicOnDocumentsInput(BaseModel):
     documents: list[DocumentModel]
-    precalculated_embeddings: Union[list[Union[list[StrictFloat], None]], None] = None
-    num_topics: StrictInt = 1
+    precalculated_embeddings: list[list[StrictFloat] | None] | None
+    num_topics: StrictInt | None
 
     class Config:
         arbitrary_types_allowed = True
@@ -111,7 +111,7 @@ class TrainBertopicOnDocumentsInput(BaseModel):
 class BuildTopicModelInputs(BaseModel):
     documents_text_list: list[str]
     embeddings: np.ndarray
-    num_topics: StrictInt = 1
+    num_topics: StrictInt
 
     @validator('documents_text_list')
     def documents_text_list_must_be_large_enough_for_inference(cls, v):
@@ -128,6 +128,14 @@ class BuildTopicModelInputs(BaseModel):
         if v.shape[0] != len(values['documents_text_list']):
             raise ValueError(
                 'embeddings must be same length as documents_text_list')
+        return v
+
+    @validator('num_topics')
+    def num_topics_at_least_two(cls, v):
+        # pylint: disable=no-self-argument
+        if v < 2:
+            raise ValueError(
+                'num_topics must be at least 2')
         return v
 
     class Config:
@@ -163,7 +171,7 @@ class BasicInference:
             self.weak_learner = WeakLearner(self.vectorizer, self.svm, self.mlp, self.label_model)
             labeling_functions, self.label_applier = self.weak_learner.create_label_applier()
 
-    def train_bertopic_on_documents(self, documents, precalculated_embeddings, num_topics = 1, seed_topic_list = []) -> BasicInferenceOutputs:
+    def train_bertopic_on_documents(self, documents, precalculated_embeddings, num_topics, seed_topic_list = None) -> BasicInferenceOutputs:
         # validate input
         TrainBertopicOnDocumentsInput(
             documents=documents, precalculated_embeddings=precalculated_embeddings, num_topics=num_topics)
@@ -234,7 +242,7 @@ class BasicInference:
             data_test = data_test[data_test['y_pred'] < 2]
             documents_text_list = list(data_test['message'])
 
-        hdbscan_model = hdbscan.HDBSCAN(min_cluster_size=2, min_samples=2,
+        hdbscan_model = hdbscan.HDBSCAN(min_cluster_size=10, min_samples=10,
                                         metric='euclidean', prediction_data=True)
         topic_model = BERTopic(nr_topics=num_topics, seed_topic_list=seed_topic_list,
                             hdbscan_model=hdbscan_model, vectorizer_model=self.vectorizer)

@@ -23,10 +23,10 @@ router = APIRouter(
 
 class TrainModelRequest(BaseModel):
     sentence_transformer_id: UUID4
-    weak_learner_id: UUID4 = None
+    weak_learner_id: UUID4 | None
     document_ids: list[UUID4] = []
-    num_topics: int = 1
-    seed_topics: list[list] = []
+    num_topics: int = 2
+    seed_topics: list[list] | None
 
 
 @router.post(
