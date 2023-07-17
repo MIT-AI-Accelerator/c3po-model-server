@@ -4,7 +4,11 @@ from app.core.config import settings
 import app.mattermost.mm_utils as mm
 import json 
 import pandas as pd
-
+from fastapi import Depends
+from sqlalchemy.orm import Session
+from app.dependencies import get_db
+from app.aimodels.bertopic.schemas.document import Document, DocumentCreate
+from app.aimodels.bertopic import crud
 
 """mattermost section"""
 router = APIRouter(
@@ -29,7 +33,7 @@ async def get_mm_user_info(user_name):
 
 """get a list of posts from a list of channel ids"""
 @router.get("/mattermost/documents/", summary="Mattermost Documents", response_description="")
-async def get_mm_channel_docs(channels):
+async def get_mm_channel_docs(channels, db: Session = Depends(get_db)):
     """
     Get Mattermost documents.
 
@@ -40,9 +44,17 @@ async def get_mm_channel_docs(channels):
 
     adf = pd.DataFrame()
     for channel_id in channel_ids:
-        df = mm.get_channel_posts(settings.mm_base_url, settings.mm_token, channel_id)[['channel_id', 'create_at', 'message']]
+        df = mm.get_channel_posts(settings.mm_base_url, settings.mm_token, channel_id)[['id', 'channel_id', 'user_id', 'create_at', 'message']]
         # remove print statements after db integration completed
         print(df)
         adf = pd.concat([adf, df], ignore_index=True)
-    return adf.to_json()
 
+    documents = [DocumentCreate(
+            text=row['message'],
+            mattermost_channel_id=row['channel_id'],
+            mattermost_user_id=row['user_id'],
+            mattermost_id=row['id'],
+            original_created_time=row['create_at']
+        ) for key, row in df.iterrows()]
+
+    return crud.document.create_all_using_id(db, obj_in_list=documents)

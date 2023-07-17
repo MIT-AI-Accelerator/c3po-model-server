@@ -13,10 +13,11 @@ if TYPE_CHECKING:
 class DocumentModel(Base):
     id = Column(UUID, primary_key=True, unique=True, default=uuid.uuid4)
     # pylint: disable=not-callable
-    original_created_time = Column(DateTime(timezone=True), server_default=func.now()) # see sqlalchemy datetime info here: https://stackoverflow.com/questions/13370317/sqlalchemy-default-datetime
+    original_created_time = Column(DateTime(timezone=True)) # see sqlalchemy datetime info here: https://stackoverflow.com/questions/13370317/sqlalchemy-default-datetime
     text = Column(String)
     originated_from = Column(Enum(OriginationEnum), default=get_originated_from)
+    mattermost_channel_id = Column(String())
+    mattermost_user_id = Column(String())
+    mattermost_id = Column(String())
     embedding_computations = relationship("DocumentEmbeddingComputationModel", back_populates="document")
     used_in_trained_models = relationship("BertopicTrainedModel", secondary="documentbertopictrainedmodel", back_populates="trained_on_documents")
-    # TODO: have a mattermost "post" entity save a document ID in a "1-to-1" manner, but dont relate...try to make modular
-    # for future microservicing / simplicity of schema
