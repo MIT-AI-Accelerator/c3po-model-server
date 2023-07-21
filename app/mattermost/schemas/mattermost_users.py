@@ -1,32 +1,44 @@
-from app.core.config import OriginationEnum
 from pydantic import BaseModel, UUID4
+from app.core.config import OriginationEnum
 
-# Shared properties
+
 class MattermostUserBase(BaseModel):
+    # Shared properties
+
     user_id: str
     user_name: str
     teams: dict
 
-# Properties to receive on MattermostUser creation
+
 class MattermostUserCreate(MattermostUserBase):
+    # Properties to receive on MattermostUser creation
+
     pass
 
-# Properties to receive on MattermostUser creation
+
 class MattermostUserUpdate(MattermostUserBase):
+    # Properties to receive on MattermostUser creation
+
     teams: dict
 
-# Properties shared by models stored in DB
+
 class MattermostUserInDBBase(MattermostUserBase):
+    # Properties shared by models stored in DB
+
     id: UUID4
     originated_from: OriginationEnum
 
     class Config:
         orm_mode = True
 
-# Properties to return to client
+
 class MattermostUser(MattermostUserInDBBase):
+    # Properties to return to client
+
     pass
 
-# Properties properties stored in DB
+
 class MattermostUserInDB(MattermostUserInDBBase):
+    # Properties properties stored in DB
+
     pass

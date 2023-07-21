@@ -1,117 +1,158 @@
 """mattermost utilities"""
 import pandas as pd
 import requests
+from app.core.logging import logger
+
+HTTP_REQUEST_TIMEOUT_S = 60
 
 
-"""iterate through pages of an http request"""
 def get_all_pages(url, mm_token, is_channel=False):
-    
+    """iterate through pages of an http request"""
+
     per_page = 200
     page_num = 0
     rdf = pd.DataFrame()
-    
+
     while True:
-        resp = requests.get(url, headers={'Authorization': f'Bearer {mm_token}'},\
-                            params={'page': page_num, 'per_page': per_page})
-        print(resp.url)
-        if resp.status_code < 400:                
+        resp = requests.get(url, headers={'Authorization': f'Bearer {mm_token}'},
+                            params={'page': page_num, 'per_page': per_page},
+                            timeout=HTTP_REQUEST_TIMEOUT_S)
+        if resp.status_code < 400:
             rdata = resp.json()
             if is_channel:
                 rdata = rdata['posts']
-                rdf = pd.concat([rdf, pd.DataFrame(rdata).transpose()], ignore_index=True)
+                rdf = pd.concat(
+                    [rdf, pd.DataFrame(rdata).transpose()], ignore_index=True)
             else:
                 rdf = pd.concat([rdf, pd.DataFrame(rdata)], ignore_index=True)
 
             if len(rdata) < per_page:
                 break
         else:
-            print('request failed: %d' % resp.status_code)
+            logger.debug(f"{resp.url} request failed: {resp.status_code}")
             break
         page_num += 1
-        
+
     return rdf
-    
-    
-"""get a list of teams by user"""
+
+
 def get_user_info(mm_base_url, mm_token, mm_user):
-    
+    """get a list of teams by user"""
+
+    user = None
+    tdf = None
+
     # user info
-    resp = requests.get(f'{mm_base_url}/api/v4/users/username/%s' % mm_user,\
-                        headers={'Authorization': f'Bearer {mm_token}'})
+    resp = requests.get(f'{mm_base_url}/api/v4/users/username/%s' % mm_user,
+                        headers={'Authorization': f'Bearer {mm_token}'},
+                        timeout=HTTP_REQUEST_TIMEOUT_S)
     if resp.status_code < 400:
         user = resp.json()
-    #     print(json.dumps(buser, indent=2))
     else:
-        print('request failed: %d' % resp.status_code)
+        logger.debug(f"{resp.url} request failed: {resp.status_code}")
 
     # team info
-    url = f'{mm_base_url}/api/v4/users/%s/teams' % user['id']
-    tdf = get_all_pages(url, mm_token)
-    if not tdf.empty:
-        tdf.set_index('id', inplace=True)
+    if user:
+        url = f'{mm_base_url}/api/v4/users/%s/teams' % user['id']
+        tdf = get_all_pages(url, mm_token)
+        if not tdf.empty:
+            tdf.set_index('id', inplace=True)
 
     return (user, tdf)
 
-"""get a list of teams by user"""
+
 def get_user_name(mm_base_url, mm_token, mm_user):
+    """get a list of teams by user"""
+
     user_name = None
 
     # user info
-    resp = requests.get(f'{mm_base_url}/api/v4/users/%s' % mm_user,\
-                        headers={'Authorization': f'Bearer {mm_token}'})
+    resp = requests.get(f'{mm_base_url}/api/v4/users/%s' % mm_user,
+                        headers={'Authorization': f'Bearer {mm_token}'},
+                        timeout=HTTP_REQUEST_TIMEOUT_S)
     if resp.status_code < 400:
         user = resp.json()
         user_name = user['username']
-    #     print(json.dumps(buser, indent=2))
     else:
-        print('request failed: %d' % resp.status_code)
+        logger.debug(f"{resp.url} request failed: {resp.status_code}")
 
     return user_name
 
-"""get a list of channels by team"""
-# def get_team_channels(mm_base_url, mm_token, user_id, team_id, team_name):
-def get_team_channels(mm_base_url, mm_token, user_id, team_id):
 
-    url = f'{mm_base_url}/api/v4/users/%s/teams/%s/channels' % (user_id, team_id)
-    # df = get_all_pages(url, mm_token).assign(team_name=team_name)
+def get_team_channels(mm_base_url, mm_token, user_id, team_id):
+    """get a list of channels by team"""
+
+    url = f'{mm_base_url}/api/v4/users/%s/teams/%s/channels' % (
+        user_id, team_id)
     df = get_all_pages(url, mm_token)
     return df[df.total_msg_count > 1]
 
 
-"""get a list of channels by user"""
 def get_all_user_channels(mm_base_url, mm_token, user_id, teams):
+    """get a list of channels by user"""
 
     cdf = pd.DataFrame()
     for tid in teams:
-        df = get_team_channels(mm_base_url, mm_token, user_id, tid).assign(team_name=teams[tid])
+        df = get_team_channels(mm_base_url, mm_token,
+                               user_id, tid).assign(team_name=teams[tid])
         cdf = pd.concat([cdf, df])
     return cdf
 
 
-"""get a list of posts for a single channel"""
+def get_channel_info(mm_base_url, mm_token, channel_id):
+    """get info for a single channel"""
+
+    channel = None
+
+    # channel info
+    url = f'{mm_base_url}/api/v4/channels/%s' % channel_id
+    resp = requests.get(url, headers={'Authorization': f'Bearer {mm_token}'},
+                        timeout=HTTP_REQUEST_TIMEOUT_S)
+    if resp.status_code < 400:
+        channel = resp.json()
+    else:
+        logger.debug(f"{resp.url} request failed: {resp.status_code}")
+
+    # team info
+    if channel:
+        url = f'{mm_base_url}/api/v4/teams/%s' % channel['team_id']
+        resp = requests.get(url, headers={'Authorization': f'Bearer {mm_token}'},
+                            timeout=HTTP_REQUEST_TIMEOUT_S)
+        if resp.status_code < 400:
+            team = resp.json()
+            if team:
+                channel['team_name'] = team['name']
+        else:
+            logger.debug(f"{resp.url} request failed: {resp.status_code}")
+
+    return channel
+
+
 def get_channel_posts(mm_base_url, mm_token, channel_id):
-    
+    """get a list of posts for a single channel"""
+
     url = f'{mm_base_url}/api/v4/channels/%s/posts' % channel_id
     return get_all_pages(url, mm_token, is_channel=True)
 
 
-"""get a list of posts for a list of channels"""
 def get_all_user_channel_posts(mm_base_url, mm_token, channel_ids):
-    
+    """get a list of posts for a list of channels"""
+
     df = pd.DataFrame()
     for cid in channel_ids:
         df = pd.concat([df, get_channel_posts(mm_base_url, mm_token, cid)])
     return df
-    
-"""get a list of all users"""
+
+
 def get_all_users(mm_base_url, mm_token):
+    """get a list of all users"""
 
     url = f'{mm_base_url}/api/v4/users'
     return get_all_pages(url, mm_token).set_index('username')
 
 
-"""get a list of all public teams"""
 def get_all_public_teams(mm_base_url, mm_token):
+    """get a list of all public teams"""
 
     url = f'{mm_base_url}/api/v4/teams'
     return get_all_pages(url, mm_token).set_index('name')

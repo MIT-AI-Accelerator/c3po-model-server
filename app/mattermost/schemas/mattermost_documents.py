@@ -1,6 +1,6 @@
+from pydantic import BaseModel, UUID4
 from app.core.config import OriginationEnum
 
-from pydantic import BaseModel, UUID4
 
 # Shared properties
 class MattermostDocumentBase(BaseModel):
@@ -9,22 +9,30 @@ class MattermostDocumentBase(BaseModel):
     user: UUID4
     document: UUID4
 
-# Properties to receive on MattermostDocument creation
+
 class MattermostDocumentCreate(MattermostDocumentBase):
+    # Properties to receive on MattermostDocument creation
+
     pass
 
-# Properties shared by models stored in DB
+
 class MattermostDocumentInDBBase(MattermostDocumentBase):
+    # Properties shared by models stored in DB
+
     id: UUID4
     originated_from: OriginationEnum
 
     class Config:
         orm_mode = True
 
-# Properties to return to client
+
 class MattermostDocument(MattermostDocumentInDBBase):
+    # Properties to return to client
+
     pass
 
-# Properties properties stored in DB
+
 class MattermostDocumentInDB(MattermostDocumentInDBBase):
+    # Properties properties stored in DB
+
     pass
