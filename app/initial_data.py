@@ -24,6 +24,9 @@ from app.core.minio import build_client, download_file_from_minio, upload_file_t
 from app.core.config import settings, environment_settings
 from app.aimodels.bertopic import crud as bertopic_crud
 from app.aimodels.gpt4all import crud as gpt4all_crud
+
+from app.mattermost.crud import crud_mattermost
+
 from sentence_transformers import SentenceTransformer
 
 from sqlalchemy.orm import Session
@@ -250,6 +253,9 @@ def init_documents_from_chats(db: Session) -> str:
     return swagger_string
 
 
+def init_mattermost_bot_user(db: Session, user_name: str) -> None:
+    return crud_mattermost.populate_mm_user_info(db, user_name=user_name)
+
 def main() -> None:
     args = sys.argv[1:]
 
@@ -322,6 +328,13 @@ def main() -> None:
         logger.info("Gpt4All object uploaded to MinIO.")
         logger.info(
             f"Gpt4All Object ID: {gpt4all_pretrained_obj.id}, SHA256: {gpt4all_pretrained_obj.sha256}")
+
+        # Mattermost user
+        logger.info("Uploading Mattermost bot user")
+        user_obj = init_mattermost_bot_user(db, "nitmre-bot")
+        logger.info("Mattermost bot user uploaded to DB")
+        logger.info(
+            f"Mattermost bot user object ID: {user_obj.id}, mattermost ID: {user_obj.user_id}")
 
     if (environment == 'staging' or (environment == 'production' and migration_toggle is True)):
         logger.info("Verifying Gpt4All object in MinIO")
