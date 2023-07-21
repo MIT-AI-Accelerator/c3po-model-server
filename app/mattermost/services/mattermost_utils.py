@@ -39,32 +39,52 @@ def get_user_info(mm_base_url, mm_token, mm_user):
     resp = requests.get(f'{mm_base_url}/api/v4/users/username/%s' % mm_user,\
                         headers={'Authorization': f'Bearer {mm_token}'})
     if resp.status_code < 400:
-        buser = resp.json()
+        user = resp.json()
     #     print(json.dumps(buser, indent=2))
     else:
         print('request failed: %d' % resp.status_code)
 
     # team info
-    url = f'{mm_base_url}/api/v4/users/%s/teams' % buser['id']
-    return (buser, get_all_pages(url, mm_token))
+    url = f'{mm_base_url}/api/v4/users/%s/teams' % user['id']
+    tdf = get_all_pages(url, mm_token)
+    if not tdf.empty:
+        tdf.set_index('id', inplace=True)
 
+    return (user, tdf)
+
+"""get a list of teams by user"""
+def get_user_name(mm_base_url, mm_token, mm_user):
+    user_name = None
+
+    # user info
+    resp = requests.get(f'{mm_base_url}/api/v4/users/%s' % mm_user,\
+                        headers={'Authorization': f'Bearer {mm_token}'})
+    if resp.status_code < 400:
+        user = resp.json()
+        user_name = user['username']
+    #     print(json.dumps(buser, indent=2))
+    else:
+        print('request failed: %d' % resp.status_code)
+
+    return user_name
 
 """get a list of channels by team"""
-def get_team_channels(mm_base_url, mm_token, user_id, team_id, team_name):
+# def get_team_channels(mm_base_url, mm_token, user_id, team_id, team_name):
+def get_team_channels(mm_base_url, mm_token, user_id, team_id):
 
     url = f'{mm_base_url}/api/v4/users/%s/teams/%s/channels' % (user_id, team_id)
-    df = get_all_pages(url, mm_token).assign(team_name=team_name)  
+    # df = get_all_pages(url, mm_token).assign(team_name=team_name)
+    df = get_all_pages(url, mm_token)
     return df[df.total_msg_count > 1]
 
 
 """get a list of channels by user"""
-def get_all_user_channels(mm_base_url, mm_token, mm_user):
+def get_all_user_channels(mm_base_url, mm_token, user_id, teams):
 
-    (user, bdf) = get_user_info(mm_base_url, mm_token, mm_user)
     cdf = pd.DataFrame()
-    for index, team in bdf.iterrows():
-        df = get_team_channels(mm_base_url, mm_token, user['id'], team['id'], team['name'])
-        cdf = pd.concat([cdf, df], ignore_index=True)
+    for tid in teams:
+        df = get_team_channels(mm_base_url, mm_token, user_id, tid).assign(team_name=teams[tid])
+        cdf = pd.concat([cdf, df])
     return cdf
 
 

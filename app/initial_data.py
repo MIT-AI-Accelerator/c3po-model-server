@@ -51,9 +51,9 @@ def init_minio_bucket(s3: Minio) -> None:
         logger.error(err)
 
 
-def init_sentence_embedding_object(s3: Minio, db: Session) -> None:
+def init_sentence_embedding_object(s3: Minio, db: Session, model_path: str) -> None:
     # Create the SentenceTransformer object
-    model_name = "all-MiniLM-L6-v2"
+    model_name = model_path.split('/')[-1]
     embedding_pretrained_model_obj = SentenceTransformer(model_name)
 
     # Serialize the object
@@ -300,10 +300,14 @@ def main() -> None:
     if (environment == 'local'):
         # Sentence Transformer
         logger.info("Uploading SentenceTransformer object to MinIO")
-        embedding_pretrained_obj = init_sentence_embedding_object(s3, db)
+        embedding_pretrained_obj1 = init_sentence_embedding_object(s3, db, "all-MiniLM-L6-v2")
         logger.info("SentenceTransformer object uploaded to MinIO.")
         logger.info(
-            f"Embedding Pretrained Object ID: {embedding_pretrained_obj.id}, SHA256: {embedding_pretrained_obj.sha256}")
+            f"Embedding Pretrained Object ID: {embedding_pretrained_obj1.id}, SHA256: {embedding_pretrained_obj1.sha256}")
+        embedding_pretrained_obj2 = init_sentence_embedding_object(s3, db, "sentence-transformers/all-mpnet-base-v2")
+        logger.info("SentenceTransformer object uploaded to MinIO.")
+        logger.info(
+            f"Embedding Pretrained Object ID: {embedding_pretrained_obj2.id}, SHA256: {embedding_pretrained_obj2.sha256}")
 
         # Weak learner
         logger.info("Uploading WeakLearner object to MinIO")

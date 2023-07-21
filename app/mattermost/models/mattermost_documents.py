@@ -1,0 +1,28 @@
+import uuid
+from typing import TYPE_CHECKING
+from sqlalchemy import Column, UUID, String, ForeignKey, Enum
+from sqlalchemy.orm import relationship
+from app.db.base_class import Base
+from app.core.config import OriginationEnum, get_originated_from
+
+if TYPE_CHECKING:
+    from .mattermost_channels import MattermostChannelModel  
+    from .mattermost_users import MattermostUserModel  
+    from app.aimodels.bertopic.models.document import DocumentModel
+
+class MattermostDocumentModel(Base):
+    id = Column(UUID, primary_key=True, unique=True, default=uuid.uuid4)
+    
+    message_id = Column(String(), unique=True)
+
+    channel = Column(UUID, ForeignKey("mattermostchannelmodel.id"))
+    # channel = relationship("MattermostChannelModel", back_populates="document_channel")
+
+    user = Column(UUID, ForeignKey("mattermostusermodel.id"))
+    # user = relationship("MattermostUserModel", back_populates="document_user")
+
+    document = Column(UUID, ForeignKey("documentmodel.id"))
+    # document = relationship("DocumentModel", back_populates="mattermost_document")
+    # document = relationship("DocumentModel", foreign_keys="MattermostDocumentModel.document")
+
+    originated_from = Column(Enum(OriginationEnum), default=get_originated_from)

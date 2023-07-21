@@ -7,9 +7,6 @@ from app.core.config import OriginationEnum
 class DocumentBase(BaseModel):
     text: str
     original_created_time: Optional[datetime] = datetime.now()
-    mattermost_channel_id: Optional[str] = None
-    mattermost_user_id: Optional[str] = None
-    mattermost_id: Optional[str] = None
 
 # Properties to receive on Document creation
 class DocumentCreate(DocumentBase):
