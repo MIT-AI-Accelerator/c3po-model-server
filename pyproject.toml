@@ -21,7 +21,7 @@ python-dotenv = "^1.0.0"
 fastapi-versioning = "^0.10.0"
 sqlalchemy = "^2.0.15"
 psycopg2-binary = "^2.9.6"
-hdbscan = "^0.8.29"
+hdbscan = "0.8.29"
 python-multipart = "^0.0.6"
 minio = "^7.1.15"
 bertopic = "^0.14.1"
@@ -34,6 +34,7 @@ gpt4all = "^0.2.3"
 langchain = "^0.0.188"
 torch = "2.0.0"
 numpy = "1.24.3"
+scikit-learn = "~1.2"
 
 [tool.poetry.group.test.dependencies]
 pylint = "^2.17.4"
@@ -57,50 +58,3 @@ omit = ["__init__.py", "initial_data.py", "init_db.py"]
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
-
-
-
-[[source]]
-url = "https://pypi.org/simple"
-verify_ssl = true
-name = "pypi"
-
-[packages]
-fastapi = "*"
-uvicorn = "*"
-pydantic = "*"
-transformers = "*"
-matplotlib = "*"
-pandas = "*"
-pre-commit = "*"
-pylint = "*"
-pytest = "*"
-httpx = "*"
-pytest-cov = "*"
-python-multipart = "*"
-aiofiles = "*"
-clamd = "*"
-python-dotenv = "*"
-fastapi-versioning = "*"
-sqlalchemy = "*"
-psycopg2-binary = "*"
-hdbscan = "*"
-bertopic = "*"
-minio = "*"
-pytest-asyncio = "*"
-pytest-mock = "*"
-
-[dev-packages]
-black = "==19.10b0"
-isort = "*"
-flake8 = "*"
-ipykernel = "*"
-autopep8 = "*"
-fastapi-code-generator = "*"
-pipdeptree = "*"
-
-[requires]
-python_version = "3.9"
-
-[pipenv]
-allow_prereleases = true
