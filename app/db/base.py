@@ -8,3 +8,6 @@ from app.aimodels.bertopic.models.document import DocumentModel # noqa
 from app.aimodels.bertopic.models.document_embedding_computation import DocumentEmbeddingComputationModel # noqa
 from app.aimodels.bertopic.models.document_bertopic_trained_model import DocumentBertopicTrainedModel # noqa
 from app.aimodels.gpt4all.models.gpt4all_pretrained import Gpt4AllPretrainedModel # noqa
+from app.mattermost.models.mattermost_channels import MattermostChannelModel # noqa
+from app.mattermost.models.mattermost_users import MattermostUserModel # noqa
+from app.mattermost.models.mattermost_documents import MattermostDocumentModel # noqa
