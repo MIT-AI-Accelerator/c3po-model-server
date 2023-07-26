@@ -1,10 +1,12 @@
 from datetime import datetime
 from pydantic import BaseModel, UUID4
+from typing import Optional
 from app.core.config import OriginationEnum
 
 # Shared properties
 class DocumentBase(BaseModel):
     text: str
+    original_created_time: Optional[datetime] = datetime.now()
 
 # Properties to receive on Document creation
 class DocumentCreate(DocumentBase):
@@ -13,7 +15,6 @@ class DocumentCreate(DocumentBase):
 # Properties shared by models stored in DB
 class DocumentInDBBase(DocumentBase):
     id: UUID4
-    original_created_time: datetime
     originated_from: OriginationEnum
 
     class Config:
