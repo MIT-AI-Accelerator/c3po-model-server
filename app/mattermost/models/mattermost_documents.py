@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 class MattermostDocumentModel(Base):
     id = Column(UUID, primary_key=True, unique=True, default=uuid.uuid4)
     message_id = Column(String(), unique=True)
+    root_message_id = Column(String())
     channel = Column(UUID, ForeignKey("mattermostchannelmodel.id"))
     user = Column(UUID, ForeignKey("mattermostusermodel.id"))
     document = Column(UUID, ForeignKey("documentmodel.id"))

@@ -5,6 +5,7 @@ from app.core.config import OriginationEnum
 # Shared properties
 class MattermostDocumentBase(BaseModel):
     message_id: str
+    root_message_id: str
     channel: UUID4
     user: UUID4
     document: UUID4

@@ -126,6 +126,7 @@ async def upload_mm_channel_docs(channel_ids: list[str], db: Session = Depends(g
 
         mattermost_documents = mattermost_documents + [MattermostDocumentCreate(
             message_id=row['id'],
+            root_message_id=row['root_id'],
             channel=row['channel'],
             user=row['user'],
             document=document_obj.id)]
