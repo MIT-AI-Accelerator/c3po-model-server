@@ -23,7 +23,7 @@ def test_upload_mattermost_user_info_invalid_input():
     )
 
     assert response.status_code == 422
-    # assert 'Mattermost' in response.json()['detail'] FIXME
+    assert 'Mattermost' in response.json()['detail']
 
 # returns 422
 def test_get_mattermost_user_info_invalid_format():
@@ -52,11 +52,11 @@ def test_upload_mattermost_documents_invalid_format():
     response = client.post(
         "/mattermost/documents/upload",
         headers={},
-        json={"notafield": "notachannelid1"}
+        json={"notafield": "notachannelid"}
     )
 
     assert response.status_code == 422
-    # assert response.json()['detail'][0]['msg'] == 'field required' FIXME
+    assert 'Mattermost' in response.json()['detail']
 
 # returns 422
 def test_upload_mattermost_documents_invalid_input():
@@ -67,7 +67,7 @@ def test_upload_mattermost_documents_invalid_input():
     )
 
     assert response.status_code == 422
-    # assert 'Mattermost' in response.json()['detail'] FIXME
+    assert 'Mattermost' in response.json()['detail']
 
 # returns 422
 def test_get_mattermost_documents_invalid_format():

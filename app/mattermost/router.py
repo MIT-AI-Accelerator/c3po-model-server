@@ -1,5 +1,6 @@
 """mattermost router"""
 from typing import Union
+from pydantic import BaseModel
 from fastapi import Depends, APIRouter, HTTPException
 import pandas as pd
 from sqlalchemy.orm import Session
@@ -18,6 +19,8 @@ router = APIRouter(
     prefix="", tags=["Mattermost"]
 )
 
+class UploadUserRequest(BaseModel):
+    user_name: str
 
 @router.post(
     "/mattermost/user/upload",
@@ -25,7 +28,7 @@ router = APIRouter(
     responses={'422': {'model': HTTPValidationError}},
     summary="Upload Mattermost user info",
     response_description="Uploaded Mattermost user info")
-async def upload_mm_user_info(user_name: str, db: Session = Depends(get_db)) -> (
+async def upload_mm_user_info(request: UploadUserRequest, db: Session = Depends(get_db)) -> (
     Union[MattermostUser, HTTPValidationError]
 ):
     """
@@ -34,7 +37,7 @@ async def upload_mm_user_info(user_name: str, db: Session = Depends(get_db)) -> 
     - **user_name**: Required.  Mattermost user name.
     """
 
-    user_obj = crud_mattermost.populate_mm_user_info(db, user_name=user_name)
+    user_obj = crud_mattermost.populate_mm_user_info(db, user_name=request.user_name)
     if not user_obj:
         raise HTTPException(
             status_code=422, detail="Mattermost user not found")
@@ -65,6 +68,8 @@ async def get_mm_user_info(user_name: str, db: Session = Depends(get_db)) -> (
 
     return user_obj
 
+class UploadDocumentRequest(BaseModel):
+    channel_ids: list[str] = []
 
 @router.post(
     "/mattermost/documents/upload",
@@ -72,7 +77,7 @@ async def get_mm_user_info(user_name: str, db: Session = Depends(get_db)) -> (
     responses={'422': {'model': HTTPValidationError}},
     summary="Upload Mattermost documents",
     response_description="Uploaded Mattermost documents")
-async def upload_mm_channel_docs(channel_ids: list[str], db: Session = Depends(get_db)) -> (
+async def upload_mm_channel_docs(request: UploadDocumentRequest, db: Session = Depends(get_db)) -> (
     Union[list[MattermostDocument], HTTPValidationError]
 ):
     """
@@ -81,8 +86,11 @@ async def upload_mm_channel_docs(channel_ids: list[str], db: Session = Depends(g
     - **channel_ids**: Required.  Mattermost channels to query for posts.
     """
 
+    if not request.channel_ids:
+        raise HTTPException(status_code=422, detail="No Mattermost channels requested")
+
     adf = pd.DataFrame()
-    for channel_id in channel_ids:
+    for channel_id in request.channel_ids:
         channel_obj = crud_mattermost.mattermost_channels.get_by_channel_id(
             db, channel_id=channel_id)
         if not channel_obj:
