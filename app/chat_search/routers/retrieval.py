@@ -9,7 +9,9 @@ from .. import crud
 from app.aimodels.gpt4all.ai_services.completion_inference import CompletionInference, CompletionInferenceInputs, CompletionInferenceOutputs
 from .service import RetrievalService
 
-router = APIRouter()
+router = APIRouter(
+    prefix="", tags=["Query Retrieval"]
+)
 
 @router.post(
     "/retrieval",

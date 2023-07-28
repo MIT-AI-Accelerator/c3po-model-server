@@ -100,6 +100,19 @@ class RetrievalService:
 
             retriever_infos.append(retriever_info)
 
+            # Step 1: Define a retriever that inputs a vectorstore-backed retreiver, and can set / update the vector store retriever
+            # Step 2: add in a method in new retreiver that reranks based on marco or input reranker of sentence transformers
+            # Step 3: return in the get_documents methods with rerank
+
+            
+
+
+
+            # Step 4: add in BM25 retriever
+            # Step 5: build just diffcse, just epubs, just bm25, ensemble of 2, ensemble of 3 for results
+            # step 6: pass to LLM
+            ###Unknown: how to address FAISS chunking and add metadata
+
         # prompt_template = DEFAULT_TEMPLATE.replace("input", "query")
         # prompt = PromptTemplate(
         #     template=prompt_template, input_variables=["history", "query"]
