@@ -9,7 +9,7 @@ from app.aimodels.gpt4all.ai_services.completion_inference import (
     CompletionInference,
     CompletionInferenceInputs,
 )
-from app.chat_search.retriever import MarcoRerankRetriever
+from app.chat_search.ai_services.marco_rerank_retriever import MarcoRerankRetriever
 from app.core.errors import ValidationError
 from app.core.model_cache import MODEL_CACHE_BASEDIR
 

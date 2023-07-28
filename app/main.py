@@ -10,7 +10,7 @@ from .aimodels.router import router as aimodels_router
 from .sentiments.router import router as sentiments_router
 from .topics.router import router as topics_router
 from .mattermost.router import router as mattermost_router
-from .chat_queries.router import router as chat_queries_router
+from .chat_search.routers.retrieval import router as chat_queries_router
 from .dependencies import httpx_client
 
 dictConfig(LogConfig().dict())
