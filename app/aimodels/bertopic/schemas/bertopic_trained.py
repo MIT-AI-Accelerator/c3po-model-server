@@ -9,7 +9,8 @@ from .document import Document
 # Shared properties
 class BertopicTrainedBase(BaseModel):
     uploaded: Optional[bool] = None
-    plotly_bubble_config: Optional[dict] = None
+    topic_word_visualization: Optional[str] = None
+    topic_cluster_visualization: Optional[str] = None
 
 # Properties to receive on BertopicTrained creation
 class BertopicTrainedCreate(BertopicTrainedBase):

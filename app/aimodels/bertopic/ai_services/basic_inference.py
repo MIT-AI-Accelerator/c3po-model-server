@@ -14,6 +14,9 @@ from minio import Minio
 
 from ..models.document import DocumentModel
 from ..models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedModel
+from ..models.topic import TopicSummaryModel
+from ..schemas.topic import TopicSummaryCreate
+from ..crud import crud_topic
 from .weak_learning import WeakLearner
 
 BASE_CKPT_DIR = os.path.join(os.path.abspath(
@@ -50,7 +53,9 @@ class BasicInferenceOutputs(BaseModel):
     embeddings: list[list[StrictFloat]]
     updated_document_indicies: list[StrictBool]
     topic_model: BERTopic
-    plotly_bubble_config: dict
+    topics: list[TopicSummaryModel]
+    topic_word_visualization: str
+    topic_cluster_visualization: str
 
     # ensure that documents is same length as embeddings
     @validator('embeddings')
@@ -144,7 +149,7 @@ class BuildTopicModelInputs(BaseModel):
 
 class BasicInference:
 
-    def __init__(self, sentence_transformer_obj, s3, weak_learner_obj = None):
+    def __init__(self, sentence_transformer_obj, s3, weak_learner_obj=None):
 
         # validate input
         InitInputs(
@@ -158,20 +163,23 @@ class BasicInference:
 
         self.sentence_transformer_obj = sentence_transformer_obj
 
-        self.vectorizer = CountVectorizer(stop_words="english", ngram_range=(1, 2))
+        self.vectorizer = CountVectorizer(
+            stop_words="english", ngram_range=(1, 2))
 
         self.weak_learner_obj = weak_learner_obj
         self.label_model = None
         if weak_learner_obj:
-            weak_models = download_pickled_object_from_minio(id=weak_learner_obj.id, s3=s3)
+            weak_models = download_pickled_object_from_minio(
+                id=weak_learner_obj.id, s3=s3)
             self.vectorizer = weak_models[0]
             self.svm = weak_models[1]
             self.mlp = weak_models[2]
             self.label_model = weak_models[3]
-            self.weak_learner = WeakLearner(self.vectorizer, self.svm, self.mlp, self.label_model)
+            self.weak_learner = WeakLearner(
+                self.vectorizer, self.svm, self.mlp, self.label_model)
             labeling_functions, self.label_applier = self.weak_learner.create_label_applier()
 
-    def train_bertopic_on_documents(self, documents, precalculated_embeddings, num_topics, seed_topic_list = None) -> BasicInferenceOutputs:
+    def train_bertopic_on_documents(self, db, documents, precalculated_embeddings, num_topics, seed_topic_list=None, num_related_docs=5) -> BasicInferenceOutputs:
         # validate input
         TrainBertopicOnDocumentsInput(
             documents=documents, precalculated_embeddings=precalculated_embeddings, num_topics=num_topics)
@@ -181,21 +189,47 @@ class BasicInference:
         (embeddings, updated_document_indicies) = self.calculate_document_embeddings(
             documents_text_list, precalculated_embeddings)
 
-        topic_model = self.build_topic_model(
+        (topic_model, filtered_embeddings, filtered_documents_text_list) = self.build_topic_model(
             documents_text_list, embeddings, num_topics, seed_topic_list)
 
-        plotly_visualization = topic_model.visualize_documents(
-            documents_text_list, embeddings=embeddings, title='Topic Analysis')
+        # output topic cluster visualization as an html string
+        topic_cluster_visualization = topic_model.visualize_documents(
+            filtered_documents_text_list, embeddings=filtered_embeddings, title='Topic Analysis').to_html()
 
-        # output plotly config to json string and convert to dict
-        plotly_bubble_config = json.loads(plotly_visualization.to_json())
+        # per topic documents and summary
+        document_info = topic_model.get_document_info(
+            filtered_documents_text_list)
+        topic_info = topic_model.get_topic_info()
+        new_topic_obj_list = []
+        for key, row in topic_info.iterrows():
+            if row['Topic'] < 0:
+                continue
+
+            print(row['Name'])
+            print(document_info[document_info['Topic'] == row['Topic']].sort_values(
+                'Probability', ascending=False).head(num_related_docs))
+            # print(document_info[document_info.Representative_document][document_info['Topic'] == row['Topic']].sort_values('Probability', ascending=False).head(num_related_docs))
+
+            new_topic_obj_list = new_topic_obj_list + [TopicSummaryCreate(
+                topic_id=row['Topic'],
+                name=row['Name'],
+                summary="i like cats")]
+
+        topic_objs = crud_topic.topic_summary.create_all_using_id(
+            db, obj_in_list=new_topic_obj_list)
+
+        # output topic word visualization as an html string FIXME check before convert to html, pytest failing
+        topic_word_visualization = topic_model.visualize_barchart(
+            top_n_topics=num_topics, n_words=5, title='Topic Word Scores').to_html()
 
         return BasicInferenceOutputs(
             documents=documents,
             embeddings=embeddings.tolist(),
-            updated_document_indicies=updated_document_indicies,
+            updated_document_indicies=updated_document_indicies,  # FIXME - weak learning
             topic_model=topic_model,
-            plotly_bubble_config=plotly_bubble_config
+            topics=topic_objs,
+            topic_word_visualization=topic_word_visualization,
+            topic_cluster_visualization=topic_cluster_visualization
         )
 
     def calculate_document_embeddings(
@@ -236,7 +270,8 @@ class BasicInference:
 
         if self.weak_learner_obj:
             data_test = pd.DataFrame({'message': documents_text_list})
-            l_test = self.label_applier.apply(pd.DataFrame(data_test['message']))
+            l_test = self.label_applier.apply(
+                pd.DataFrame(data_test['message']))
             data_test['y_pred'] = self.label_model.predict(l_test)
             embeddings = embeddings[data_test['y_pred'] < 2]
             data_test = data_test[data_test['y_pred'] < 2]
@@ -245,7 +280,7 @@ class BasicInference:
         hdbscan_model = hdbscan.HDBSCAN(min_cluster_size=10, min_samples=10,
                                         metric='euclidean', prediction_data=True)
         topic_model = BERTopic(nr_topics=num_topics, seed_topic_list=seed_topic_list,
-                            hdbscan_model=hdbscan_model, vectorizer_model=self.vectorizer)
+                               hdbscan_model=hdbscan_model, vectorizer_model=self.vectorizer)
         topic_model = topic_model.fit(documents_text_list, embeddings)
 
-        return topic_model
+        return (topic_model, embeddings, documents_text_list)
