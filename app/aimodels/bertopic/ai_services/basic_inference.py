@@ -8,10 +8,9 @@ from sklearn.feature_extraction.text import CountVectorizer
 from bertopic import BERTopic
 import hdbscan
 from pydantic import BaseModel, StrictFloat, StrictInt, StrictBool, validator
-
+from app.core.logging import logger
 from app.core.minio import download_pickled_object_from_minio
 from minio import Minio
-
 from ..models.document import DocumentModel
 from ..models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedModel
 from ..models.topic import TopicSummaryModel
@@ -192,11 +191,7 @@ class BasicInference:
         (topic_model, filtered_embeddings, filtered_documents_text_list) = self.build_topic_model(
             documents_text_list, embeddings, num_topics, seed_topic_list)
 
-        # output topic cluster visualization as an html string
-        topic_cluster_visualization = topic_model.visualize_documents(
-            filtered_documents_text_list, embeddings=filtered_embeddings, title='Topic Analysis').to_html()
-
-        # per topic documents and summary
+        # per topic documents and summary TODO
         document_info = topic_model.get_document_info(
             filtered_documents_text_list)
         topic_info = topic_model.get_topic_info()
@@ -206,9 +201,10 @@ class BasicInference:
                 continue
 
             print(row['Name'])
-            print(document_info[document_info['Topic'] == row['Topic']].sort_values(
-                'Probability', ascending=False).head(num_related_docs))
-            # print(document_info[document_info.Representative_document][document_info['Topic'] == row['Topic']].sort_values('Probability', ascending=False).head(num_related_docs))
+            # print(document_info[document_info['Topic'] == row['Topic']].sort_values(
+            #     'Probability', ascending=False).head(num_related_docs))
+            print(document_info[document_info.Representative_document][document_info['Topic'] ==
+                  row['Topic']].sort_values('Probability', ascending=False).head(num_related_docs))
 
             new_topic_obj_list = new_topic_obj_list + [TopicSummaryCreate(
                 topic_id=row['Topic'],
@@ -218,9 +214,19 @@ class BasicInference:
         topic_objs = crud_topic.topic_summary.create_all_using_id(
             db, obj_in_list=new_topic_obj_list)
 
-        # output topic word visualization as an html string FIXME check before convert to html, pytest failing
-        topic_word_visualization = topic_model.visualize_barchart(
-            top_n_topics=num_topics, n_words=5, title='Topic Word Scores').to_html()
+        try:
+            # output topic cluster visualization as an html string
+            topic_cluster_visualization = topic_model.visualize_documents(
+                filtered_documents_text_list, embeddings=filtered_embeddings, title='Topic Analysis').to_html()
+
+            # output topic word visualization as an html string FIXME check before convert to html, pytest failing
+            topic_word_visualization = topic_model.visualize_barchart(
+                top_n_topics=num_topics, n_words=5, title='Topic Word Scores').to_html()
+
+        except ValueError:
+            html_str = "<html>Error generating BERTopic visualizations</html>"
+            topic_cluster_visualization = html_str
+            topic_word_visualization = html_str
 
         return BasicInferenceOutputs(
             documents=documents,

@@ -46,7 +46,7 @@ def test_train_valid_request(client: TestClient, db: Session):
     }
 
     response = client.post(
-        "/aimodels/bertopic/train",
+        "/aimodels/bertopic/model/train",
         headers={},
         json=jsonable_encoder(body),
     )

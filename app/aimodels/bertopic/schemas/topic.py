@@ -8,7 +8,7 @@ class TopicSummaryBase(BaseModel):
     topic_id: int
     name: str
     top_n_words: str = ""
-    # documents: list[TopicSummaryDocument]
+    # documents: list[TopicSummaryDocument] TODO
     summary: str
 
 # Properties to receive on TopicSummary creation
