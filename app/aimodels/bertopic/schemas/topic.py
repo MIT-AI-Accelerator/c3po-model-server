@@ -8,7 +8,7 @@ class TopicSummaryBase(BaseModel):
     topic_id: Optional[int] = None
     name: Optional[str] = None
     top_n_words: Optional[str] = None
-    # documents: list[TopicSummaryDocument] TODO
+    top_n_documents: Optional[dict] = None
     summary: Optional[str] = None
 
 # Properties to receive on TopicSummary creation

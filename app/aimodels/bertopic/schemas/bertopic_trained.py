@@ -9,9 +9,9 @@ from .document import Document
 class BertopicTrainedBase(BaseModel):
     uploaded: Optional[bool] = None
     sentence_transformer_id: Optional[UUID4] = None
-    weak_leaner_id: Optional[UUID4] = None
+    weak_learner_id: Optional[UUID4] = None
     summarization_model_id: Optional[UUID4] = None
-    # TODO seed_topics: Optional[list[list]] = None
+    seed_topics: Optional[dict] = None
     topic_word_visualization: Optional[str] = None
     topic_cluster_visualization: Optional[str] = None
 

@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING
-from sqlalchemy import Boolean, Column, ForeignKey, UUID, Enum, String, DateTime
+from sqlalchemy import Boolean, Column, ForeignKey, UUID, Enum, String, DateTime, JSON
+from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db.base_class import Base
@@ -16,9 +17,9 @@ class BertopicTrainedModel(Base):
     time = Column(DateTime(timezone=True), server_default=func.now())
     uploaded = Column(Boolean(), default=False)
     sentence_transformer_id = Column(UUID)
-    weak_leaner_id = Column(UUID)
+    weak_learner_id = Column(UUID)
     summarization_model_id = Column(UUID)
-    # TODO seed_topics
+    seed_topics = Column(MutableDict.as_mutable(JSON))
     topic_word_visualization = Column(String)
     topic_cluster_visualization = Column(String)
     embedding_pretrained_id = Column(UUID, ForeignKey("bertopicembeddingpretrainedmodel.id"))

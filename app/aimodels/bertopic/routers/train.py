@@ -2,6 +2,7 @@ from typing import Union
 from pydantic import BaseModel, UUID4
 from fastapi import Depends, APIRouter, HTTPException
 from fastapi.responses import HTMLResponse
+import pandas as pd
 from app.aimodels.bertopic.schemas.document_embedding_computation import DocumentEmbeddingComputationCreate
 from minio import Minio
 from app.core.minio import pickle_and_upload_object_to_minio
@@ -114,7 +115,7 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
         sentence_transformer_id=request.sentence_transformer_id,
         weak_learner_id=request.weak_learner_id,
         summarization_model_id=request.summarization_model_id,
-        # seed_topics = request.seed_topics, # TODO
+        seed_topics = pd.DataFrame({'seed_topics': request.seed_topics})['seed_topics'].to_dict(),
         topic_word_visualization=new_topic_word_visualization,
         topic_cluster_visualization=new_topic_cluster_visualization,
         uploaded=False

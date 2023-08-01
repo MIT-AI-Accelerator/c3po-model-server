@@ -4,39 +4,32 @@ from fastapi import Depends, APIRouter, HTTPException
 from sqlalchemy.orm import Session
 from app.dependencies import get_db
 from app.core.errors import ValidationError, HTTPValidationError
-# from ..models.topic import TopicDocument
+from ..schemas.topic import TopicSummary
+from .. import crud
 
 router = APIRouter(
     prefix=""
 )
 
-
-class SummarizationRequest(BaseModel):
-    trained_topic_id: UUID4
-
-
-class SummarizationResponse(BaseModel):
-    # documents: list[TopicDocument]
-    summary: str
-
-
 @router.get(
     "/topic/{id}",
-    response_model=Union[SummarizationResponse, HTTPValidationError],
+    response_model=Union[TopicSummary, HTTPValidationError],
     responses={'422': {'model': HTTPValidationError}},
     summary="Retrieve a BERTopic summary",
     response_description="Retrieved a BERTopic summary")
 async def get_topic_summary(id: UUID4, db: Session = Depends(get_db)) -> (
-    Union[SummarizationResponse, HTTPValidationError]
+    Union[TopicSummary, HTTPValidationError]
 ):
     """
     Retrieve a BERTopic summary and list of most relaetd documents
 
     - **trained_topic_id**: Required.  Trained BERTopic model topic ID.
     """
+    topic_obj = crud.topic_summary.get(db, id)
+    if not topic_obj:
+        raise HTTPException(
+            status_code=422, detail=f"BERTopic topic summary not found")
 
-    # response_obj = SummarizationResponse(
-    #     documents=[TopicDocument(text="cats", relation=100.0), TopicDocument(text="dogs", relation=0.0)], summary="i like cats")
-    response_obj = SummarizationResponse(summary="i like cats")
+    return topic_obj
 
-    return response_obj
+# TODO endpoint to list topics per trained model ID

@@ -191,7 +191,7 @@ class BasicInference:
         (topic_model, filtered_embeddings, filtered_documents_text_list) = self.build_topic_model(
             documents_text_list, embeddings, num_topics, seed_topic_list)
 
-        # per topic documents and summary TODO
+        # per topic documents and summary
         document_info = topic_model.get_document_info(
             filtered_documents_text_list)
         topic_info = topic_model.get_topic_info()
@@ -200,22 +200,23 @@ class BasicInference:
             if row['Topic'] < 0:
                 continue
 
-            # note: validation of Representative_document needed
+            # note: research/validation of Representative_document needed
             topic_docs = document_info[document_info.Representative_document][document_info['Topic'] ==
-                row['Topic']].sort_values('Probability', ascending=False).head(num_related_docs)
+                row['Topic']].sort_values('Probability', ascending=False).head(num_related_docs).reset_index()
 
-            print(row['Name'])
-            print(topic_docs)
+            # TODO integrate summarization here
 
             new_topic_obj_list = new_topic_obj_list + [TopicSummaryCreate(
-                topic_id=row['Topic'],
-                name=row['Name'],
-                top_n_words=topic_docs['Top_n_words'].unique()[0],
+                topic_id = row['Topic'],
+                name = row['Name'],
+                top_n_words = topic_docs['Top_n_words'].unique()[0],
+                top_n_documents = topic_docs[['Document', 'Probability']].to_dict(),
                 summary="i like cats")]
 
         topic_objs = crud_topic.topic_summary.create_all_using_id(
             db, obj_in_list=new_topic_obj_list)
 
+        # TODO rename topics with UUID? endpoint to display topics per trained model?
         try:
             # output topic cluster visualization as an html string
             topic_cluster_visualization = topic_model.visualize_documents(
@@ -233,7 +234,7 @@ class BasicInference:
         return BasicInferenceOutputs(
             documents=documents,
             embeddings=embeddings.tolist(),
-            updated_document_indicies=updated_document_indicies,  # FIXME - weak learning
+            updated_document_indicies=updated_document_indicies,
             topic_model=topic_model,
             topics=topic_objs,
             topic_word_visualization=topic_word_visualization,
