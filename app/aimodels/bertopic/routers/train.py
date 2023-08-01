@@ -24,6 +24,7 @@ router = APIRouter(
 class TrainModelRequest(BaseModel):
     sentence_transformer_id: UUID4
     weak_learner_id: UUID4 | None
+    summarization_model_id: UUID4 | None
     document_ids: list[UUID4] = []
     num_topics: int = 2
     seed_topics: list[list] | None
@@ -110,6 +111,10 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
 
     # create and save a trained model object
     bertopic_trained_obj = BertopicTrainedCreate(
+        sentence_transformer_id=request.sentence_transformer_id,
+        weak_learner_id=request.weak_learner_id,
+        summarization_model_id=request.summarization_model_id,
+        # seed_topics = request.seed_topics, # TODO
         topic_word_visualization=new_topic_word_visualization,
         topic_cluster_visualization=new_topic_cluster_visualization,
         uploaded=False
@@ -140,8 +145,8 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
     db.refresh(new_bertopic_trained_obj)
 
     # for topic in inference_output.topics: FIXME There appear to be 1 leaked semaphore objects ...
-    #     crud.topic_summary.update(db, db_obj=topic, obj_in=TopicSummaryUpdate(
-    #         model_id=new_bertopic_trained_obj.id))
+    updated_topic_objs = [crud.topic_summary.update(db, db_obj=topic, obj_in=TopicSummaryUpdate(
+        model_id=new_bertopic_trained_obj.id)) for topic in inference_output.topics]
 
     return new_bertopic_trained_obj
 

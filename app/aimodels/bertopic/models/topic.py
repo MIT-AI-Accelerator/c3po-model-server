@@ -1,5 +1,5 @@
 from typing import TYPE_CHECKING
-from sqlalchemy import Column, DateTime, UUID, String, Enum, ARRAY, Integer
+from sqlalchemy import Column, UUID, String, Enum, ARRAY, Integer
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db.base_class import Base

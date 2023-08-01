@@ -200,15 +200,17 @@ class BasicInference:
             if row['Topic'] < 0:
                 continue
 
+            # note: validation of Representative_document needed
+            topic_docs = document_info[document_info.Representative_document][document_info['Topic'] ==
+                row['Topic']].sort_values('Probability', ascending=False).head(num_related_docs)
+
             print(row['Name'])
-            # print(document_info[document_info['Topic'] == row['Topic']].sort_values(
-            #     'Probability', ascending=False).head(num_related_docs))
-            print(document_info[document_info.Representative_document][document_info['Topic'] ==
-                  row['Topic']].sort_values('Probability', ascending=False).head(num_related_docs))
+            print(topic_docs)
 
             new_topic_obj_list = new_topic_obj_list + [TopicSummaryCreate(
                 topic_id=row['Topic'],
                 name=row['Name'],
+                top_n_words=topic_docs['Top_n_words'].unique()[0],
                 summary="i like cats")]
 
         topic_objs = crud_topic.topic_summary.create_all_using_id(

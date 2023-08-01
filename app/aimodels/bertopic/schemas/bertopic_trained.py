@@ -1,14 +1,17 @@
 from typing import Optional
 from app.core.config import OriginationEnum
-
+from datetime import datetime
 from pydantic import BaseModel, UUID4
-
 from .bertopic_embedding_pretrained import BertopicEmbeddingPretrained
 from .document import Document
 
 # Shared properties
 class BertopicTrainedBase(BaseModel):
     uploaded: Optional[bool] = None
+    sentence_transformer_id: Optional[UUID4] = None
+    weak_leaner_id: Optional[UUID4] = None
+    summarization_model_id: Optional[UUID4] = None
+    # TODO seed_topics: Optional[list[list]] = None
     topic_word_visualization: Optional[str] = None
     topic_cluster_visualization: Optional[str] = None
 
@@ -23,6 +26,7 @@ class BertopicTrainedUpdate(BertopicTrainedBase):
 # Properties shared by models stored in DB
 class BertopicTrainedInDBBase(BertopicTrainedBase):
     id: UUID4
+    time: datetime
     embedding_pretrained_id: UUID4
     originated_from: OriginationEnum
 

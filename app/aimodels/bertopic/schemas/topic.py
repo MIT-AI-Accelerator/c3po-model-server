@@ -5,11 +5,11 @@ from app.core.config import OriginationEnum
 
 # Shared properties
 class TopicSummaryBase(BaseModel):
-    topic_id: int
-    name: str
-    top_n_words: str = ""
+    topic_id: Optional[int] = None
+    name: Optional[str] = None
+    top_n_words: Optional[str] = None
     # documents: list[TopicSummaryDocument] TODO
-    summary: str
+    summary: Optional[str] = None
 
 # Properties to receive on TopicSummary creation
 class TopicSummaryCreate(TopicSummaryBase):
@@ -17,7 +17,7 @@ class TopicSummaryCreate(TopicSummaryBase):
 
 # Properties to receive on TopicSummary update
 class TopicSummaryUpdate(TopicSummaryBase):
-    model_id: str
+    model_id: UUID4
 
 # Properties shared by models stored in DB
 class TopicSummaryInDBBase(TopicSummaryBase):
