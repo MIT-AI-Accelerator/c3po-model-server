@@ -6,21 +6,16 @@ from fastapi import HTTPException
 
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
-from fastapi.exceptions import RequestValidationError
 from pydantic import UUID4
 
-from app.core.minio import upload_file_to_minio
-from ..schemas.bertopic_embedding_pretrained import BertopicEmbeddingPretrained, BertopicEmbeddingPretrainedCreate, BertopicEmbeddingPretrainedUpdate
-from app.dependencies import get_db, get_minio
 from sqlalchemy.orm import Session
-from .. import crud
-from ..ai_services.basic_inference import BASE_CKPT_DIR
-from ..models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedModel
-
-from app.core.errors import HTTPValidationError, ValidationError
-from aiofiles import open as open_aio
 from minio import Minio
-from minio.error import InvalidResponseError
+from app.core.minio import upload_file_to_minio
+from app.core.errors import HTTPValidationError, ValidationError
+from app.dependencies import get_db, get_minio
+from ..schemas.bertopic_embedding_pretrained import BertopicEmbeddingPretrained, BertopicEmbeddingPretrainedCreate, BertopicEmbeddingPretrainedUpdate
+from .. import crud
+from ..models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedModel
 
 
 router = APIRouter(

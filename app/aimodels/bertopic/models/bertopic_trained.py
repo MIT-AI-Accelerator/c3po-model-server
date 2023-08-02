@@ -1,3 +1,4 @@
+import uuid
 from typing import TYPE_CHECKING
 from sqlalchemy import Boolean, Column, ForeignKey, UUID, Enum, String, DateTime, JSON
 from sqlalchemy.ext.mutable import MutableDict
@@ -5,7 +6,6 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db.base_class import Base
 from app.core.config import OriginationEnum, get_originated_from
-import uuid
 
 if TYPE_CHECKING:
     from .document import DocumentModel  # noqa: F401

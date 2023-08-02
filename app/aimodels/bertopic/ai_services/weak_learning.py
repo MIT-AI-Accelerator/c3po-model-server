@@ -1,6 +1,6 @@
+from enum import IntEnum
 import numpy as np
 import pandas as pd
-from enum import IntEnum
 from snorkel.labeling import labeling_function
 from snorkel.labeling import PandasLFApplier
 from snorkel.labeling import LFAnalysis
@@ -131,12 +131,12 @@ class WeakLearner:
         self.mlp.fit(x_train.toarray(), y_train)
 
         labeling_functions, label_applier = self.create_label_applier()
-        L_train = label_applier.apply(pd.DataFrame(data_train['message']))
+        l_train = label_applier.apply(pd.DataFrame(data_train['message']))
 
         # train the weak learner and apply it to the dataset
-        LFAnalysis(L=L_train, lfs=labeling_functions).lf_summary()
+        LFAnalysis(L=l_train, lfs=labeling_functions).lf_summary()
         self.label_model = LabelModel(cardinality=6, verbose=True)
-        self.label_model.fit(L_train=L_train, n_epochs=500,
+        self.label_model.fit(L_train=l_train, n_epochs=500,
                              log_freq=100, seed=123)
         return (self.vectorizer, self.svm, self.mlp, self.label_model)
 

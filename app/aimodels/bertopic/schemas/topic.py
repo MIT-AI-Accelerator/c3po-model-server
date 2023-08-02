@@ -1,7 +1,6 @@
 from pydantic import BaseModel, UUID4
 from typing import Optional
 from app.core.config import OriginationEnum
-# from ..models.topic import TopicDocument
 
 # Shared properties
 class TopicSummaryBase(BaseModel):

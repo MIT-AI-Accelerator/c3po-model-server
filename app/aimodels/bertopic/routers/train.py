@@ -145,7 +145,7 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
     # (see docs here for info: https://docs.sqlalchemy.org/en/20/orm/session_state_management.html#refreshing-expiring)
     db.refresh(new_bertopic_trained_obj)
 
-    # for topic in inference_output.topics: FIXME There appear to be 1 leaked semaphore objects ...
+    # update topics with associated model id
     updated_topic_objs = [crud.topic_summary.update(db, db_obj=topic, obj_in=TopicSummaryUpdate(
         model_id=new_bertopic_trained_obj.id)) for topic in inference_output.topics]
 

@@ -1,16 +1,13 @@
 import os
-import json
 from typing import Union
-from fastapi import HTTPException
 import numpy as np
 import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer
 from bertopic import BERTopic
 import hdbscan
 from pydantic import BaseModel, StrictFloat, StrictInt, StrictBool, validator
-from app.core.logging import logger
-from app.core.minio import download_pickled_object_from_minio
 from minio import Minio
+from app.core.minio import download_pickled_object_from_minio
 from ..models.document import DocumentModel
 from ..models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedModel
 from ..models.topic import TopicSummaryModel
