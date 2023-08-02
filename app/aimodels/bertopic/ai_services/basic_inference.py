@@ -216,7 +216,6 @@ class BasicInference:
         topic_objs = crud_topic.topic_summary.create_all_using_id(
             db, obj_in_list=new_topic_obj_list)
 
-        # TODO rename topics with UUID? endpoint to display topics per trained model?
         try:
             # output topic cluster visualization as an html string
             topic_cluster_visualization = topic_model.visualize_documents(

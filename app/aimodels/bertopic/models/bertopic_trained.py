@@ -22,7 +22,12 @@ class BertopicTrainedModel(Base):
     seed_topics = Column(MutableDict.as_mutable(JSON))
     topic_word_visualization = Column(String)
     topic_cluster_visualization = Column(String)
-    embedding_pretrained_id = Column(UUID, ForeignKey("bertopicembeddingpretrainedmodel.id"))
     originated_from = Column(Enum(OriginationEnum), default=get_originated_from)
+
+    embedding_pretrained_id = Column(UUID, ForeignKey("bertopicembeddingpretrainedmodel.id"))
     embedding_pretrained = relationship("BertopicEmbeddingPretrainedModel", back_populates="trained_models")
+
     trained_on_documents = relationship("DocumentModel", secondary="documentbertopictrainedmodel", back_populates="used_in_trained_models")
+
+    topic_summary_id = Column(UUID, ForeignKey("topicsummarymodel.id"))
+    topic_summaries = relationship("TopicSummaryModel", back_populates="trained_model")

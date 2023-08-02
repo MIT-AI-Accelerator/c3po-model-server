@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from .. import crud
 from ..models.bertopic_trained import BertopicTrainedModel
 from ..schemas.bertopic_trained import BertopicTrained, BertopicTrainedCreate, BertopicTrainedUpdate
-from ..schemas.topic import TopicSummaryUpdate
+from ..schemas.topic import TopicSummary, TopicSummaryUpdate
 from app.core.errors import ValidationError, HTTPValidationError
 from app.core.config import settings
 from ..models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedModel
@@ -28,7 +28,7 @@ class TrainModelRequest(BaseModel):
     summarization_model_id: UUID4 | None
     document_ids: list[UUID4] = []
     num_topics: int = 2
-    seed_topics: list[list] | None
+    seed_topics: list[list] = []
 
 
 @router.post(
@@ -200,3 +200,24 @@ async def visualize_topic_words(id: UUID4, db: Session = Depends(get_db)):
             status_code=422, detail=f"BERTopic trained model not found")
 
     return model_obj.topic_word_visualization
+
+
+@router.get(
+    "/model/{id}/topics",
+    response_model=Union[list[TopicSummary], HTTPValidationError],
+    summary="Retrieve topics for a trained BERTopic model",
+    response_description="Retrieved topics for a trained BERTopic model")
+async def get_model_topics(id: UUID4, db: Session = Depends(get_db)) -> (
+    Union[list[TopicSummary], HTTPValidationError]
+):
+    """
+    Retrieve topics for a trained BERTopic model
+
+    - **trained_model_id**: Required.  Trained BERTopic model ID.
+    """
+
+    if not crud.bertopic_trained.get(db, id):
+        raise HTTPException(
+            status_code=422, detail=f"BERTopic trained model not found")
+
+    return crud.topic_summary.get_by_model_id(db, model_id=id)

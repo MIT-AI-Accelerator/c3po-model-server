@@ -11,6 +11,7 @@ router = APIRouter(
     prefix=""
 )
 
+
 @router.get(
     "/topic/{id}",
     response_model=Union[TopicSummary, HTTPValidationError],
@@ -31,5 +32,3 @@ async def get_topic_summary(id: UUID4, db: Session = Depends(get_db)) -> (
             status_code=422, detail=f"BERTopic topic summary not found")
 
     return topic_obj
-
-# TODO endpoint to list topics per trained model ID
