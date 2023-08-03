@@ -45,6 +45,7 @@ logger = logging.getLogger(__name__)
 def init() -> None:
     init_db()
 
+
 def init_minio_bucket(s3: Minio) -> None:
     bucket_name = settings.minio_bucket_name
     try:
@@ -152,6 +153,7 @@ def init_gpt4all_pretrained_model(s3: Minio, db: Session) -> None:
 
     return obj_by_sha
 
+
 def init_gpt4all_db_obj_staging_prod(s3: Minio, db: Session) -> None:
 
     model_name = "ggml-gpt4all-l13b-snoozy.bin"
@@ -187,6 +189,7 @@ def init_gpt4all_db_obj_staging_prod(s3: Minio, db: Session) -> None:
         return new_gpt4all_pretrained_obj
 
     return obj_by_sha
+
 
 def init_weak_learning_object(s3: Minio, db: Session) -> None:
     # Create the weak learner object
@@ -256,6 +259,7 @@ def init_documents_from_chats(db: Session) -> str:
 def init_mattermost_bot_user(db: Session, user_name: str) -> None:
     return crud_mattermost.populate_mm_user_info(db, user_name=user_name)
 
+
 def main() -> None:
     args = sys.argv[1:]
 
@@ -291,7 +295,7 @@ def main() -> None:
         s3 = build_client()
         logger.info("MinIO client connected")
 
-    if (environment in ['local','development']):
+    if (environment in ['local', 'development']):
         logger.info("Setting up MinIO bucket")
         init_minio_bucket(s3)
         logger.info("MinIO bucket set up.")
@@ -306,11 +310,13 @@ def main() -> None:
     if (environment == 'local'):
         # Sentence Transformer
         logger.info("Uploading SentenceTransformer object to MinIO")
-        embedding_pretrained_obj1 = init_sentence_embedding_object(s3, db, "all-MiniLM-L6-v2")
+        embedding_pretrained_obj1 = init_sentence_embedding_object(
+            s3, db, "all-MiniLM-L6-v2")
         logger.info("SentenceTransformer object uploaded to MinIO.")
         logger.info(
             f"Embedding Pretrained Object ID: {embedding_pretrained_obj1.id}, SHA256: {embedding_pretrained_obj1.sha256}")
-        embedding_pretrained_obj2 = init_sentence_embedding_object(s3, db, "sentence-transformers/all-mpnet-base-v2")
+        embedding_pretrained_obj2 = init_sentence_embedding_object(
+            s3, db, "sentence-transformers/all-mpnet-base-v2")
         logger.info("SentenceTransformer object uploaded to MinIO.")
         logger.info(
             f"Embedding Pretrained Object ID: {embedding_pretrained_obj2.id}, SHA256: {embedding_pretrained_obj2.sha256}")
@@ -322,7 +328,7 @@ def main() -> None:
         logger.info(
             f"Weak learner Pretrained Object ID: {embedding_pretrained_obj.id}, SHA256: {embedding_pretrained_obj.sha256}")
 
-        #Gpt4All
+        # Gpt4All
         logger.info("Uploading Gpt4All object to MinIO")
         gpt4all_pretrained_obj = init_gpt4all_pretrained_model(s3, db)
         logger.info("Gpt4All object uploaded to MinIO.")
@@ -332,9 +338,12 @@ def main() -> None:
         # Mattermost user
         logger.info("Uploading Mattermost bot user")
         user_obj = init_mattermost_bot_user(db, "nitmre-bot")
-        logger.info("Mattermost bot user uploaded to DB")
-        logger.info(
-            f"Mattermost bot user object ID: {user_obj.id}, mattermost ID: {user_obj.user_id}")
+        if user_obj:
+            logger.info("Mattermost bot user uploaded to DB")
+            logger.info(
+                f"Mattermost bot user object ID: {user_obj.id}, mattermost ID: {user_obj.user_id}")
+        else:
+            logger.info("Unable to load Mattermost bot user")
 
     if (environment == 'staging' or (environment == 'production' and migration_toggle is True)):
         logger.info("Verifying Gpt4All object in MinIO")
@@ -343,6 +352,7 @@ def main() -> None:
         logger.info(
             f"Gpt4All Object ID: {gpt4all_pretrained_obj.id}, SHA256: {gpt4all_pretrained_obj.sha256}")
     ########## large object uploads ################
+
 
 if __name__ == "__main__":
     main()

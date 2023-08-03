@@ -37,6 +37,11 @@ origins = [
     "https://transformers.apps.dso.mil",
 ]
 
+app.include_router(aimodels_router)
+app.include_router(sentiments_router)
+app.include_router(topics_router)
+app.include_router(mattermost_router)
+
 # set originated_from for standard app usage
 @app.get('/originated_from_app/')
 async def originated_from_app():
@@ -48,11 +53,6 @@ async def originated_from_app():
 async def originated_from_test():
     settings.originated_from = OriginationEnum.ORIGINATED_FROM_TEST
     return settings.originated_from
-
-app.include_router(aimodels_router)
-app.include_router(sentiments_router)
-app.include_router(topics_router)
-app.include_router(mattermost_router)
 
 # setup for major versioning
 # ensure to copy over all the non-title args to the original FastAPI call...read docs here: https://pypi.org/project/fastapi-versioning/

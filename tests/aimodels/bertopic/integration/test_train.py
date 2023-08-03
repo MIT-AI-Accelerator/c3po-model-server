@@ -14,7 +14,7 @@ def test_train_invalid_request(client: TestClient):
     }
 
     response = client.post(
-        "/aimodels/bertopic/train",
+        "/aimodels/bertopic/model/train",
         headers={},
         json=jsonable_encoder(body),
     )
@@ -46,7 +46,7 @@ def test_train_valid_request(client: TestClient, db: Session):
     }
 
     response = client.post(
-        "/aimodels/bertopic/train",
+        "/aimodels/bertopic/model/train",
         headers={},
         json=jsonable_encoder(body),
     )
@@ -86,7 +86,7 @@ def test_train_valid_request_seed_topics(client: TestClient, db: Session):
     }
 
     response = client.post(
-        "/aimodels/bertopic/train",
+        "/aimodels/bertopic/model/train",
         headers={},
         json=jsonable_encoder(body),
     )
@@ -134,7 +134,7 @@ def test_train_valid_request_weak_learning(client: TestClient, db: Session):
     }
 
     response = client.post(
-        "/aimodels/bertopic/train",
+        "/aimodels/bertopic/model/train",
         headers={},
         json=jsonable_encoder(body),
     )

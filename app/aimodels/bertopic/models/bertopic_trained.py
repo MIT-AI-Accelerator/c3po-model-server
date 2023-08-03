@@ -1,9 +1,11 @@
+import uuid
 from typing import TYPE_CHECKING
-from sqlalchemy import Boolean, Column, ForeignKey, UUID, JSON, Enum
+from sqlalchemy import Boolean, Column, ForeignKey, UUID, Enum, String, DateTime, JSON
+from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
 from app.db.base_class import Base
 from app.core.config import OriginationEnum, get_originated_from
-import uuid
 
 if TYPE_CHECKING:
     from .document import DocumentModel  # noqa: F401
@@ -12,9 +14,20 @@ if TYPE_CHECKING:
 # JSON won't be mutable, see here if that needs to change: https://stackoverflow.com/questions/1378325/python-dicts-in-sqlalchemy
 class BertopicTrainedModel(Base):
     id = Column(UUID, primary_key=True, unique=True, default=uuid.uuid4)
+    time = Column(DateTime(timezone=True), server_default=func.now())
     uploaded = Column(Boolean(), default=False)
-    plotly_bubble_config = Column(JSON)
-    embedding_pretrained_id = Column(UUID, ForeignKey("bertopicembeddingpretrainedmodel.id"))
+    sentence_transformer_id = Column(UUID)
+    weak_learner_id = Column(UUID)
+    summarization_model_id = Column(UUID)
+    seed_topics = Column(MutableDict.as_mutable(JSON))
+    topic_word_visualization = Column(String)
+    topic_cluster_visualization = Column(String)
     originated_from = Column(Enum(OriginationEnum), default=get_originated_from)
+
+    embedding_pretrained_id = Column(UUID, ForeignKey("bertopicembeddingpretrainedmodel.id"))
     embedding_pretrained = relationship("BertopicEmbeddingPretrainedModel", back_populates="trained_models")
+
     trained_on_documents = relationship("DocumentModel", secondary="documentbertopictrainedmodel", back_populates="used_in_trained_models")
+
+    topic_summary_id = Column(UUID, ForeignKey("topicsummarymodel.id"))
+    topic_summaries = relationship("TopicSummaryModel", back_populates="trained_model")
