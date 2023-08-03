@@ -8,6 +8,6 @@ router = APIRouter(
     prefix="/aimodels"
 )
 
-router.include_router(lstm_stress_classifier_router)
 router.include_router(bertopic_router)
 router.include_router(gpt4all_router)
+router.include_router(lstm_stress_classifier_router)

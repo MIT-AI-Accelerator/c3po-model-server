@@ -2,3 +2,4 @@ from .crud_bertopic_trained import bertopic_trained
 from .crud_bertopic_embedding_pretrained import bertopic_embedding_pretrained
 from .crud_document_embedding_computation import document_embedding_computation
 from .crud_document import document
+from .crud_topic import topic_summary
