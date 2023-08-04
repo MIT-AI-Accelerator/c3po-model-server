@@ -42,7 +42,7 @@ async def chat_query_retrieval_get(
 
     api_inputs = CompletionInferenceInputs(prompt=prompt)
     completion_inference_service: CompletionInference = validate_inputs_and_generate_service(api_inputs, db, s3)
-    retrieval_service = RetrievalService(completion_inference_service)
+    retrieval_service = RetrievalService(completion_inference=completion_inference_service, db=db, s3=s3)
 
     results = retrieval_service.retrieve(api_inputs, summarize)
 

@@ -42,6 +42,7 @@ app.include_router(aimodels_router)
 app.include_router(sentiments_router)
 app.include_router(topics_router)
 app.include_router(mattermost_router)
+app.include_router(chat_queries_router)
 
 # set originated_from for standard app usage
 @app.get('/originated_from_app/')
