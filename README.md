@@ -18,7 +18,7 @@ conda activate transformers-api
 
 4.  In `c3po-model-server/app/core/env_var`, create a `secrets.env` file and ensure it is on the `.gitignore`.  Add the following for local dev:
 ```sh
-MM_TOKEN="<your_preprod_mattermost_token>"
+MM_TOKEN="<your_il4_mattermost_token>"
 ```
 
 5. Launch postgres, pgadmin, and minio via docker-compose `docker-compose up --build`.
