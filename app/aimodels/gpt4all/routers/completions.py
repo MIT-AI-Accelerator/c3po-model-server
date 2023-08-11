@@ -23,7 +23,7 @@ async def gpt_completion_post(request: CompletionInferenceInputs, db: Session = 
     GPT completion endpoint.
     """
 
-    completion_inference_service = _validate_inputs_and_generate_service(request, db, s3)
+    completion_inference_service = validate_inputs_and_generate_service(request, db, s3)
     return completion_inference_service.basic_response(request)
 
 @router.post(
@@ -39,10 +39,10 @@ async def chat_completion_post(request: CompletionInferenceInputs, db: Session =
     Chat completion endpoint.
     """
 
-    completion_inference_service = _validate_inputs_and_generate_service(request, db, s3)
+    completion_inference_service = validate_inputs_and_generate_service(request, db, s3)
     return completion_inference_service.chat_response(request)
 
-def _validate_inputs_and_generate_service(request: CompletionInferenceInputs, db: Session, s3: Minio):
+def validate_inputs_and_generate_service(request: CompletionInferenceInputs, db: Session, s3: Minio):
     # default model to pull
     sha256 = settings.default_sha256_l13b_snoozy
 

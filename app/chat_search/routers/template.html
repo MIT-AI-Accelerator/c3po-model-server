@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Result</title>
+    <style>
+        body {
+            font-family: 'Space Mono', monospace;
+            display: flex;
+            flex-direction: column;
+            max-width: 600px; /* Adjusted max-width to make it wider initially */
+            padding: 32px;
+            margin: 60px auto;
+            border: 1px solid #eee;
+            box-shadow: 0px 12px 24px rgba(0, 0, 0, 0.06);
+        }
+
+        * {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizelegibility;
+            letter-spacing: -0.25px;
+        }
+
+        ol {
+            padding-left: 50px;
+        }
+
+        li {
+            color: #4F4F4F;
+            padding-left: 16px;
+            margin-top: 24px;
+            position: relative;
+            font-size: 16px;
+            line-height: 20px;
+        }
+
+        li:before {
+            content: '';
+            display: block;
+            height: 42px;
+            width: 42px;
+            border-radius: 50%;
+            border: 2px solid #ddd;
+            position: absolute;
+            top: -12px;
+            left: -46px;
+        }
+
+        strong {
+            color: #292929;
+        }
+
+        ol.alternating-colors li:nth-child(odd):before {
+            border-color: #0BAD02;
+        }
+
+        ol.alternating-colors li:nth-child(even):before {
+            border-color: #2378D5;
+        }
+
+        /* Media query for smaller screen sizes */
+        @media screen and (max-width: 600px) {
+            body {
+                max-width: 90%; /* Adjusted max-width for smaller screen sizes */
+            }
+        }
+    </style>
+</head>
+<body>
+    <strong>Result</strong>
+
+    <ol class="alternating-colors">
+        {% for document in result['source_documents'] %}
+        <li>
+            <p><strong>Source:</strong> {{ document['metadata']['source'] }}</p>
+            <p><strong>Content:</strong> {{ document['page_content'] }}</p> <!-- Changed "Page Content" to "Content" -->
+        </li>
+        {% endfor %}
+    </ol>
+</body>
+</html>
