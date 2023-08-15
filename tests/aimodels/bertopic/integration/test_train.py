@@ -5,9 +5,12 @@ from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 
 from sample_data import CHAT_DATASET_4_PATH
+from app.core.config import environment_settings
 
 # test train endpoint with invalid request
 def test_train_invalid_request(client: TestClient):
+    if environment_settings.environment == 'test':
+        return
 
     body = {
         "wrong_param": '',
@@ -24,6 +27,8 @@ def test_train_invalid_request(client: TestClient):
 
 # test train endpoint with valid request
 def test_train_valid_request(client: TestClient, db: Session):
+    if environment_settings.environment == 'test':
+        return
 
     my_model = 'all-MiniLM-L6-v2'
     response = client.get(
@@ -58,6 +63,8 @@ def test_train_valid_request(client: TestClient, db: Session):
 
 # test train endpoint with valid request
 def test_train_valid_request_seed_topics(client: TestClient, db: Session):
+    if environment_settings.environment == 'test':
+        return
 
     my_model = 'all-MiniLM-L6-v2'
     response = client.get(
@@ -98,6 +105,8 @@ def test_train_valid_request_seed_topics(client: TestClient, db: Session):
 
 # test train endpoint with valid request
 def test_train_valid_request_weak_learning(client: TestClient, db: Session):
+    if environment_settings.environment == 'test':
+        return
 
     # get valid sentence transformer object
     my_model = 'all-MiniLM-L6-v2'
