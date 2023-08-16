@@ -4,7 +4,9 @@ from sqlalchemy.orm import Session
 from fastapi.testclient import TestClient
 from fastapi.encoders import jsonable_encoder
 from app.aimodels.bertopic.models.bertopic_trained import BertopicTrainedModel
-from app.aimodels.bertopic.crud import crud_bertopic_trained as crud
+from app.aimodels.bertopic.crud import crud_bertopic_trained
+from app.aimodels.bertopic.models.topic import TopicSummaryModel
+from app.aimodels.bertopic.crud import crud_topic
 
 
 # test train endpoint with invalid request
@@ -69,6 +71,29 @@ def test_get_bertopic_visualize_topic_words_invalid_id(client: TestClient):
     assert response.status_code == 422
     assert 'BERTopic trained model not found' in response.json()['detail']
 
+# test trained topic endpoint with invalid request
+def test_get_bertopic_trained_topics_invalid_request(client: TestClient):
+
+    response = client.get(
+        "/aimodels/bertopic/model/%d/topics" % 0,
+        headers={}
+    )
+
+    assert response.status_code == 422
+    assert 'value is not a valid uuid' in response.json()['detail'][0]['msg']
+
+# test trained topic endpoint with invalid model id
+def test_get_bertopic_trained_topics_invalid_id(client: TestClient):
+
+    response = client.get(
+        "/aimodels/bertopic/model/%s/topics" % str(
+            uuid.uuid4()),
+        headers={}
+    )
+
+    assert response.status_code == 422
+    assert 'BERTopic trained model not found' in response.json()['detail']
+
 # test visualization endpoints with valid model id
 def test_get_bertopic_visualizations(client: TestClient, db: Session):
 
@@ -78,7 +103,7 @@ def test_get_bertopic_visualizations(client: TestClient, db: Session):
         topic_word_visualization='<html>bye</html>'
     )
 
-    trained_model_db_obj = crud.bertopic_trained.create(
+    trained_model_db_obj = crud_bertopic_trained.bertopic_trained.create(
         db, obj_in=trained_model_obj)
 
     response = client.get(
@@ -89,6 +114,55 @@ def test_get_bertopic_visualizations(client: TestClient, db: Session):
 
     response = client.get(
         "/aimodels/bertopic/model/%s/visualize_topic_words" % trained_model_db_obj.id,
+        headers={}
+    )
+    assert response.status_code == 200
+
+    response = client.get(
+        "/aimodels/bertopic/model/%s/topics" % trained_model_db_obj.id,
+        headers={}
+    )
+    assert response.status_code == 200
+
+# test topic summarization endpoint with invalid request
+def test_get_bertopic_summarization_invalid_request(client: TestClient):
+
+    response = client.get(
+        "/aimodels/bertopic/topic/%d" % 0,
+        headers={}
+    )
+
+    assert response.status_code == 422
+    assert 'value is not a valid uuid' in response.json()['detail'][0]['msg']
+
+# test topic summarization endpoint with invalid model id
+def test_get_bertopic_summarization_invalid_id(client: TestClient):
+
+    response = client.get(
+        "/aimodels/bertopic/topic/%s" % str(
+            uuid.uuid4()),
+        headers={}
+    )
+
+    assert response.status_code == 422
+    assert 'BERTopic topic summary not found' in response.json()['detail']
+
+# test visualization endpoints with valid model id
+def test_get_bertopic_summary(client: TestClient, db: Session):
+
+    topic_obj = TopicSummaryModel(
+        topic_id=0,
+        name='my topic',
+        top_n_words='some_words',
+        top_n_documents=dict(),
+        summary='a summary'
+    )
+
+    topic_db_obj = crud_topic.topic_summary.create(
+        db, obj_in=topic_obj)
+
+    response = client.get(
+        "/aimodels/bertopic/topic/%s" % topic_db_obj.id,
         headers={}
     )
     assert response.status_code == 200
