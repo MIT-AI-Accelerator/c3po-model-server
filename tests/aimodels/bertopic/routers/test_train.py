@@ -1,5 +1,4 @@
 import uuid
-import time
 from sqlalchemy.orm import Session
 from fastapi.testclient import TestClient
 from fastapi.encoders import jsonable_encoder
