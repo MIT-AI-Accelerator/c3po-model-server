@@ -15,12 +15,16 @@ def test_mattermost_bot():
 
     assert user['username'] == mm_name
     assert not teams.empty
+    assert mattermost_utils.get_user_name(
+        settings.mm_base_url, settings.mm_token, user['id']) == mm_name
 
     # test get channels
     channels = mattermost_utils.get_all_user_channels(
         settings.mm_base_url, settings.mm_token, user['id'], teams['name'].to_dict())
 
     assert not channels.empty
+    assert mattermost_utils.get_channel_info(
+        settings.mm_base_url, settings.mm_token, channels['id'].iloc[0])['name'] == channels['name'].iloc[0]
 
     # test get documents
     documents = mattermost_utils.get_channel_posts(

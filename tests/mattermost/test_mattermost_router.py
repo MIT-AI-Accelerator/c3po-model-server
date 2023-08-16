@@ -1,10 +1,8 @@
 from fastapi.testclient import TestClient
-from app.main import app
-
-client = TestClient(app)
+from app.core.config import environment_settings
 
 # returns 422
-def test_upload_mattermost_user_info_invalid_format():
+def test_upload_mattermost_user_info_invalid_format(client: TestClient):
     response = client.post(
         "/mattermost/user/upload",
         headers={},
@@ -15,7 +13,7 @@ def test_upload_mattermost_user_info_invalid_format():
     assert response.json()['detail'][0]['msg'] == 'field required'
 
 # returns 422
-def test_upload_mattermost_user_info_invalid_input():
+def test_upload_mattermost_user_info_invalid_input(client: TestClient):
     response = client.post(
         "/mattermost/user/upload",
         headers={},
@@ -25,8 +23,22 @@ def test_upload_mattermost_user_info_invalid_input():
     assert response.status_code == 422
     assert 'Mattermost' in response.json()['detail']
 
+# test user upload endpoint
+def test_upload_mattermost_user_info(client: TestClient):
+
+    if environment_settings.environment == 'test':
+        return
+
+    response = client.post(
+        "/mattermost/user/upload",
+        headers={},
+        json={"user_name": "nitmre-bot"}
+    )
+
+    assert response.status_code == 200
+
 # returns 422
-def test_get_mattermost_user_info_invalid_format():
+def test_get_mattermost_user_info_invalid_format(client: TestClient):
     response = client.get(
         "/mattermost/user/get",
         headers={},
@@ -37,7 +49,7 @@ def test_get_mattermost_user_info_invalid_format():
     assert response.json()['detail'][0]['msg'] == 'field required'
 
 # returns 422
-def test_get_mattermost_user_info_invalid_input():
+def test_get_mattermost_user_info_invalid_input(client: TestClient):
     response = client.get(
         "/mattermost/user/get",
         headers={},
@@ -47,8 +59,22 @@ def test_get_mattermost_user_info_invalid_input():
     assert response.status_code == 422
     assert 'Mattermost' in response.json()['detail']
 
+# test user get endpoint
+def test_get_mattermost_user_info(client: TestClient):
+
+    if environment_settings.environment == 'test':
+        return
+
+    response = client.get(
+        "/mattermost/user/get",
+        headers={},
+        params={"user_name": "nitmre-bot"}
+    )
+
+    assert response.status_code == 200
+
 # returns 422
-def test_upload_mattermost_documents_invalid_format():
+def test_upload_mattermost_documents_invalid_format(client: TestClient):
     response = client.post(
         "/mattermost/documents/upload",
         headers={},
@@ -59,7 +85,7 @@ def test_upload_mattermost_documents_invalid_format():
     assert 'Mattermost' in response.json()['detail']
 
 # returns 422
-def test_upload_mattermost_documents_invalid_input():
+def test_upload_mattermost_documents_invalid_input(client: TestClient):
     response = client.post(
         "/mattermost/documents/upload",
         headers={},
@@ -70,7 +96,7 @@ def test_upload_mattermost_documents_invalid_input():
     assert 'Mattermost' in response.json()['detail']
 
 # returns 422
-def test_get_mattermost_documents_invalid_format():
+def test_get_mattermost_documents_invalid_format(client: TestClient):
     response = client.get(
         "/mattermost/documents/get",
         headers={},
@@ -81,7 +107,7 @@ def test_get_mattermost_documents_invalid_format():
     assert response.json()['detail'][0]['msg'] == 'field required'
 
 # returns 422
-def test_get_mattermost_documents_invalid_input():
+def test_get_mattermost_documents_invalid_input(client: TestClient):
     response = client.get(
         "/mattermost/documents/get",
         headers={},

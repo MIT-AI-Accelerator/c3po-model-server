@@ -1,6 +1,6 @@
 import uuid
 from sqlalchemy.orm import Session
-from app.core.config import settings, environment_settings
+from app.core.config import environment_settings
 from app.mattermost.models.mattermost_channels import MattermostChannelModel
 from app.mattermost.models.mattermost_users import MattermostUserModel
 from app.mattermost.models.mattermost_documents import MattermostDocumentModel
@@ -26,6 +26,7 @@ def test_crud_mattermost(db: Session):
     assert channel_db_obj.channel_name == channel_obj_in.channel_name
     assert channel_db_obj.team_id == channel_obj_in.team_id
     assert channel_db_obj.team_name == channel_obj_in.team_name
+    assert crud.mattermost_channels.get_by_channel_id(db, channel_id=channel_obj_in.channel_id) is not None
 
     # test mattermost user
     user = str(uuid.uuid4())
@@ -40,6 +41,7 @@ def test_crud_mattermost(db: Session):
     assert user_db_obj.user_id == user_obj_in.user_id
     assert user_db_obj.user_name == user_obj_in.user_name
     assert user_db_obj.teams == user_obj_in.teams
+    assert crud.mattermost_users.get_by_user_id(db, user_id=user_obj_in.user_id) is not None
 
     # test mattermost document
     doc_db_obj = crud_document.document.create(db,
@@ -59,6 +61,7 @@ def test_crud_mattermost(db: Session):
     assert db_obj.root_message_id == obj_in.root_message_id
     assert db_obj.channel == obj_in.channel
     assert db_obj.user == obj_in.user
+    assert crud.mattermost_documents.get_by_message_id(db, message_id=obj_in.message_id) is not None
 
 # test user info in database
 def test_populate_mm_user_info(db: Session):
