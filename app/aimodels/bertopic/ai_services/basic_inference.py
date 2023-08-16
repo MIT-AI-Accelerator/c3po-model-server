@@ -213,19 +213,17 @@ class BasicInference:
         topic_objs = crud_topic.topic_summary.create_all_using_id(
             db, obj_in_list=new_topic_obj_list)
 
-        try:
-            # output topic cluster visualization as an html string
-            topic_cluster_visualization = topic_model.visualize_documents(
-                filtered_documents_text_list, embeddings=filtered_embeddings, title='Topic Analysis').to_html()
+        # output topic cluster visualization as an html string
+        topic_cluster_visualization = topic_model.visualize_documents(
+            filtered_documents_text_list, embeddings=filtered_embeddings, title='Topic Analysis').to_html()
 
-            # output topic word visualization as an html string FIXME check before convert to html, pytest failing
+        # visualize_barchart will error if only default cluster (topic id -1) is available
+        if len(topic_info) > 1:
+            # output topic word visualization as an html string
             topic_word_visualization = topic_model.visualize_barchart(
                 top_n_topics=num_topics, n_words=5, title='Topic Word Scores').to_html()
-
-        except ValueError:
-            html_str = "<html>Error generating BERTopic visualizations</html>"
-            topic_cluster_visualization = html_str
-            topic_word_visualization = html_str
+        else:
+            topic_word_visualization = "<html>No topics to display</html>"
 
         return BasicInferenceOutputs(
             documents=documents,
