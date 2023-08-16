@@ -1,5 +1,6 @@
 import uuid
 from sqlalchemy.orm import Session
+from app.core.config import settings, environment_settings
 from app.mattermost.models.mattermost_channels import MattermostChannelModel
 from app.mattermost.models.mattermost_users import MattermostUserModel
 from app.mattermost.models.mattermost_documents import MattermostDocumentModel
@@ -58,3 +59,14 @@ def test_crud_mattermost(db: Session):
     assert db_obj.root_message_id == obj_in.root_message_id
     assert db_obj.channel == obj_in.channel
     assert db_obj.user == obj_in.user
+
+# test user info in database
+def test_populate_mm_user_info(db: Session):
+
+    if environment_settings.environment == 'test':
+        return
+
+    mm_name = 'nitmre-bot'
+    user_obj = crud.populate_mm_user_info(db, user_name=mm_name)
+
+    assert user_obj.user_name == mm_name
