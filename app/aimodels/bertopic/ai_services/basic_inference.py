@@ -14,6 +14,7 @@ from ..models.topic import TopicSummaryModel
 from ..schemas.topic import TopicSummaryCreate
 from ..crud import crud_topic
 from .weak_learning import WeakLearner
+from .topic_summarization import TopicSummarizer, topic_summarizer
 
 BASE_CKPT_DIR = os.path.join(os.path.abspath(
     os.path.dirname(__file__)), "./data")
@@ -145,7 +146,7 @@ class BuildTopicModelInputs(BaseModel):
 
 class BasicInference:
 
-    def __init__(self, sentence_transformer_obj, s3, weak_learner_obj=None):
+    def __init__(self, sentence_transformer_obj, s3, map_prompt_template, combine_prompt_template, weak_learner_obj=None, topic_summarizer_obj=None):
 
         # validate input
         InitInputs(
@@ -175,6 +176,12 @@ class BasicInference:
                 self.vectorizer, self.svm, self.mlp, self.label_model)
             labeling_functions, self.label_applier = self.weak_learner.create_label_applier()
 
+        self.topic_summarizer = None
+        if topic_summarizer_obj:
+            if not topic_summarizer.check_parameters(topic_summarizer_obj.id, map_prompt_template, combine_prompt_template):
+                topic_summarizer.initialize_llm(s3, topic_summarizer_obj, map_prompt_template, combine_prompt_template)
+            self.topic_summarizer = topic_summarizer
+
     def train_bertopic_on_documents(self, db, documents, precalculated_embeddings, num_topics, seed_topic_list=None, num_related_docs=5) -> BasicInferenceOutputs:
         # validate input
         TrainBertopicOnDocumentsInput(
@@ -197,18 +204,28 @@ class BasicInference:
             if row['Topic'] < 0:
                 continue
 
-            # note: research/validation of Representative_document needed
+            # TODO integrate custom function (increase_rep_documents) for representative docs
+            # https://github.com/orgs/MIT-AI-Accelerator/projects/2/views/1?pane=issue&itemId=36313087
+            # see Bertopic_MM_production.ipynb on bertopic_cv branch, chat-models repo
             topic_docs = document_info[document_info.Representative_document][document_info['Topic'] ==
                 row['Topic']].sort_values('Probability', ascending=False).head(num_related_docs).reset_index()
 
-            # TODO integrate summarization here
+            summary_text = 'topic summarization disabled'
+            if self.topic_summarizer:
+
+                # saves only the summary (but output includes intermediate steps of how we get to the summary 
+                # if we want to save that in the future for XAI or other reason e.g., output_summary['intermediate_steps'])
+                output_summary = self.topic_summarizer.get_summary(topic_docs['Document'].to_list())
+                if output_summary:
+                    # summary_text = output_summary['intermediate_steps'][0]
+                    summary_text = output_summary['output_text']
 
             new_topic_obj_list = new_topic_obj_list + [TopicSummaryCreate(
                 topic_id = row['Topic'],
                 name = row['Name'],
                 top_n_words = topic_docs['Top_n_words'].unique()[0],
                 top_n_documents = topic_docs[['Document', 'Probability']].to_dict(),
-                summary="i like cats")]
+                summary=summary_text)]
 
         topic_objs = crud_topic.topic_summary.create_all_using_id(
             db, obj_in_list=new_topic_obj_list)
@@ -279,6 +296,10 @@ class BasicInference:
             embeddings = embeddings[data_test['y_pred'] < 2]
             data_test = data_test[data_test['y_pred'] < 2]
             documents_text_list = list(data_test['message'])
+
+        # TODO convert message utterances to conversation threads
+        # https://github.com/orgs/MIT-AI-Accelerator/projects/2/views/1?pane=issue&itemId=36313268
+        # see convertThreads in aimodels_test_plus_summarization
 
         hdbscan_model = hdbscan.HDBSCAN(min_cluster_size=10, min_samples=10,
                                         metric='euclidean', prediction_data=True)

@@ -1,9 +1,10 @@
 
 
+import json
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_versioning import VersionedFastAPI
-from .core.config import settings, OriginationEnum
+from .core.config import settings, OriginationEnum, set_acronym_dictionary
 from .core.logging import logger, LogConfig
 from logging.config import dictConfig
 from .aimodels.router import router as aimodels_router
@@ -55,6 +56,11 @@ async def originated_from_app():
 async def originated_from_test():
     settings.originated_from = OriginationEnum.ORIGINATED_FROM_TEST
     return settings.originated_from
+
+# upload acronym list
+@app.post('/upload_acronym_dictionary/')
+async def upload_acronym_list(acronym_dictionary: str):
+    return set_acronym_dictionary(json.loads(acronym_dictionary))
 
 # setup for major versioning
 # ensure to copy over all the non-title args to the original FastAPI call...read docs here: https://pypi.org/project/fastapi-versioning/

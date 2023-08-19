@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     docs_ui_root_path: str = ""
     log_level: str = "INFO"
     originated_from: OriginationEnum = OriginationEnum.ORIGINATED_FROM_APP
+    acronym_dictionary = {}
 
     # minio settings
     minio_bucket_name: str = ""
@@ -98,3 +99,11 @@ settings = Settings(_env_file=get_env_file(
 
 def get_originated_from():
     return settings.originated_from
+
+# Produces dictionary of acronym, meaning pairs from a csv file
+def set_acronym_dictionary(acronym_dictionary):
+    settings.acronym_dictionary = acronym_dictionary
+    return settings.acronym_dictionary
+
+def get_acronym_dictionary():
+    return settings.acronym_dictionary
