@@ -93,6 +93,29 @@ def test_get_bertopic_trained_topics_invalid_id(client: TestClient):
     assert response.status_code == 422
     assert 'BERTopic trained model not found' in response.json()['detail']
 
+# test visualize_topic_timeline endpoint with invalid request
+def test_get_bertopic_visualize_topic_timeline_invalid_request(client: TestClient):
+
+    response = client.get(
+        "/aimodels/bertopic/topic/%d/visualize_topic_timeline" % 0,
+        headers={}
+    )
+
+    assert response.status_code == 422
+    assert 'value is not a valid uuid' in response.json()['detail'][0]['msg']
+
+# test visualize_topic_timeline endpoint with invalid model id
+def test_get_bertopic_visualize_topic_timeline_invalid_id(client: TestClient):
+
+    response = client.get(
+        "/aimodels/bertopic/topic/%s/visualize_topic_timeline" % str(
+            uuid.uuid4()),
+        headers={}
+    )
+
+    assert response.status_code == 422
+    assert 'BERTopic topic summary not found' in response.json()['detail']
+
 # test visualization endpoints with valid model id
 def test_get_bertopic_visualizations(client: TestClient, db: Session):
 
@@ -153,8 +176,9 @@ def test_get_bertopic_summary(client: TestClient, db: Session):
         topic_id=0,
         name='my topic',
         top_n_words='some_words',
-        top_n_documents=dict(),
-        summary='a summary'
+        top_n_documents=dict({'0': 'a document', '1': 'another document'}),
+        summary='a summary',
+        topic_timeline_visualization='<html>it works</html>'
     )
 
     topic_db_obj = crud_topic.topic_summary.create(
@@ -164,4 +188,12 @@ def test_get_bertopic_summary(client: TestClient, db: Session):
         "/aimodels/bertopic/topic/%s" % topic_db_obj.id,
         headers={}
     )
+    rdata = response.json()
+
     assert response.status_code == 200
+    assert rdata['topic_id'] == topic_obj.topic_id
+    assert rdata['name'] == topic_obj.name
+    assert rdata['top_n_words'] == topic_obj.top_n_words
+    assert rdata['top_n_documents'] == topic_obj.top_n_documents
+    assert rdata['summary'] == topic_obj.summary
+    assert rdata['topic_timeline_visualization'] == topic_obj.topic_timeline_visualization

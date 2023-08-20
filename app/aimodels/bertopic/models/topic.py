@@ -16,4 +16,5 @@ class TopicSummaryModel(Base):
     top_n_words = Column(String, default="")
     top_n_documents = Column(MutableDict.as_mutable(JSON))
     summary = Column(String)
+    topic_timeline_visualization = Column(String)
     trained_model = relationship("BertopicTrainedModel", back_populates="topic_summaries")
