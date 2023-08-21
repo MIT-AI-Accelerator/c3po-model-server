@@ -1,4 +1,5 @@
 import os
+from tqdm import tqdm
 from typing import Union
 from datetime import datetime
 import numpy as np
@@ -186,7 +187,7 @@ class BasicInference:
                     s3, topic_summarizer_obj, map_prompt_template, combine_prompt_template)
             self.topic_summarizer = topic_summarizer
 
-    def get_document_info(self, topic_model, documents, num_documents=DEFAULT_N_REPR_DOCS):
+    def get_document_info(self, topic_model, documents, timestamps, num_documents=DEFAULT_N_REPR_DOCS):
 
         # increase number of representative documents (BERTopic default is 3)
         document_info = topic_model.get_document_info(documents)
@@ -197,7 +198,9 @@ class BasicInference:
                                                                    nr_repr_docs=num_documents)
         topic_model.representative_docs_ = repr_docs
 
-        return topic_model.get_document_info(documents)
+        document_info = topic_model.get_document_info(documents)
+        document_info['Timestamp'] = timestamps
+        return document_info
 
     def train_bertopic_on_documents(self, db, documents, precalculated_embeddings, num_topics, seed_topic_list=None, num_related_docs=DEFAULT_N_REPR_DOCS) -> BasicInferenceOutputs:
         # validate input
@@ -214,16 +217,15 @@ class BasicInference:
         (topic_model, filtered_embeddings, filtered_documents_text_list, filtered_timestamps) = self.build_topic_model(
             documents_text_list, document_timestamps, embeddings, num_topics, seed_topic_list)
 
+        # per topic documents and summary
+        document_info = self.get_document_info(
+            topic_model, filtered_documents_text_list, filtered_timestamps, num_related_docs)
         topics_over_time = topic_model.topics_over_time(
             filtered_documents_text_list, filtered_timestamps)
 
-        # per topic documents and summary
-        document_info = self.get_document_info(
-            topic_model, filtered_documents_text_list, num_related_docs)
-
         topic_info = topic_model.get_topic_info()
         new_topic_obj_list = []
-        for key, row in topic_info.iterrows():
+        for key, row in tqdm(topic_info.iterrows()):
             if row['Topic'] < 0:
                 continue
 
@@ -249,7 +251,7 @@ class BasicInference:
                 name=row['Name'],
                 top_n_words=topic_docs['Top_n_words'].unique()[0],
                 top_n_documents=topic_docs[[
-                    'Document', 'Probability']].to_dict(),
+                    'Document', 'Timestamp', 'Probability']].to_dict(),
                 summary=summary_text,
                 topic_timeline_visualization=topic_timeline_visualization)]
 
