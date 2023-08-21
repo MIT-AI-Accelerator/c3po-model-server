@@ -31,6 +31,7 @@ TEXT SUMMARY:
 """
 
 # default parameters for topic summarization
+DEFAULT_N_REPR_DOCS = 5
 DEFAULT_LLM_TEMP = 0.8
 DEFAULT_LLM_TOP_P = 0.95
 DEFAULT_LLM_REPEAT_PENALTY = 1.3

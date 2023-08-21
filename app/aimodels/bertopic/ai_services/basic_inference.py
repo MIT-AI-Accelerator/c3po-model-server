@@ -1,8 +1,8 @@
 import os
 from typing import Union
+from datetime import datetime
 import numpy as np
 import pandas as pd
-from datetime import datetime
 from sklearn.feature_extraction.text import CountVectorizer
 from bertopic import BERTopic
 import hdbscan
@@ -15,7 +15,7 @@ from ..models.topic import TopicSummaryModel
 from ..schemas.topic import TopicSummaryCreate
 from ..crud import crud_topic
 from .weak_learning import WeakLearner
-from .topic_summarization import TopicSummarizer, topic_summarizer
+from .topic_summarization import TopicSummarizer, topic_summarizer, DEFAULT_N_REPR_DOCS
 
 BASE_CKPT_DIR = os.path.join(os.path.abspath(
     os.path.dirname(__file__)), "./data")
@@ -186,7 +186,20 @@ class BasicInference:
                     s3, topic_summarizer_obj, map_prompt_template, combine_prompt_template)
             self.topic_summarizer = topic_summarizer
 
-    def train_bertopic_on_documents(self, db, documents, precalculated_embeddings, num_topics, seed_topic_list=None, num_related_docs=5) -> BasicInferenceOutputs:
+    def get_document_info(self, topic_model, documents, num_documents=DEFAULT_N_REPR_DOCS):
+
+        # increase number of representative documents (BERTopic default is 3)
+        document_info = topic_model.get_document_info(documents)
+        repr_docs, _, _ = topic_model._extract_representative_docs(topic_model.c_tf_idf_,
+                                                                   document_info,
+                                                                   topic_model.topic_representations_,
+                                                                   nr_samples=500,
+                                                                   nr_repr_docs=num_documents)
+        topic_model.representative_docs_ = repr_docs
+
+        return topic_model.get_document_info(documents)
+
+    def train_bertopic_on_documents(self, db, documents, precalculated_embeddings, num_topics, seed_topic_list=None, num_related_docs=DEFAULT_N_REPR_DOCS) -> BasicInferenceOutputs:
         # validate input
         TrainBertopicOnDocumentsInput(
             documents=documents, precalculated_embeddings=precalculated_embeddings, num_topics=num_topics)
@@ -205,19 +218,17 @@ class BasicInference:
             filtered_documents_text_list, filtered_timestamps)
 
         # per topic documents and summary
-        document_info = topic_model.get_document_info(
-            filtered_documents_text_list)
+        document_info = self.get_document_info(
+            topic_model, filtered_documents_text_list, num_related_docs)
+
         topic_info = topic_model.get_topic_info()
         new_topic_obj_list = []
         for key, row in topic_info.iterrows():
             if row['Topic'] < 0:
                 continue
 
-            # TODO integrate custom function (increase_rep_documents) for representative docs
-            # https://github.com/orgs/MIT-AI-Accelerator/projects/2/views/1?pane=issue&itemId=36313087
-            # see Bertopic_MM_production.ipynb on bertopic_cv branch, chat-models repo
             topic_docs = document_info[document_info.Representative_document][document_info['Topic'] ==
-                                                                              row['Topic']].sort_values('Probability', ascending=False).head(num_related_docs).reset_index()
+                row['Topic']].sort_values('Probability', ascending=False).head(num_related_docs).reset_index()
 
             summary_text = 'topic summarization disabled'
             if self.topic_summarizer:
@@ -304,7 +315,8 @@ class BasicInference:
             documents_text_list=documents_text_list, document_timestamps=document_timestamps, embeddings=embeddings, num_topics=num_topics, seed_topic_list=seed_topic_list)
 
         if self.weak_learner_obj:
-            data_test = pd.DataFrame({'message': documents_text_list, 'timestamp': document_timestamps})
+            data_test = pd.DataFrame(
+                {'message': documents_text_list, 'timestamp': document_timestamps})
             l_test = self.label_applier.apply(
                 pd.DataFrame(data_test['message']))
             data_test['y_pred'] = self.label_model.predict(l_test)
