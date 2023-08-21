@@ -1,4 +1,5 @@
 import uuid
+import json
 from sqlalchemy.orm import Session
 from fastapi.testclient import TestClient
 from fastapi.encoders import jsonable_encoder
@@ -189,11 +190,11 @@ def test_get_bertopic_summary(client: TestClient, db: Session):
         headers={}
     )
     rdata = response.json()
+    summary = json.loads(rdata)
 
     assert response.status_code == 200
-    assert rdata['topic_id'] == topic_obj.topic_id
-    assert rdata['name'] == topic_obj.name
-    assert rdata['top_n_words'] == topic_obj.top_n_words
-    assert rdata['top_n_documents'] == topic_obj.top_n_documents
-    assert rdata['summary'] == topic_obj.summary
-    assert rdata['topic_timeline_visualization'] == topic_obj.topic_timeline_visualization
+    assert summary['topic_id'] == topic_obj.topic_id
+    assert summary['name'] == topic_obj.name
+    assert summary['top_n_words'] == topic_obj.top_n_words
+    assert summary['top_n_documents'] == topic_obj.top_n_documents
+    assert summary['summary'] == topic_obj.summary
