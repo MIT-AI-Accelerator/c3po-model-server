@@ -21,6 +21,9 @@ from .topic_summarization import TopicSummarizer, topic_summarizer, DEFAULT_N_RE
 BASE_CKPT_DIR = os.path.join(os.path.abspath(
     os.path.dirname(__file__)), "./data")
 
+DEFAULT_HDBSCAN_MIN_CLUSTER_SIZE = 10
+DEFAULT_HDBSCAN_MIN_SAMPLES = 10
+DEFAULT_BERTOPIC_VISUALIZATION_WORDS = 5
 
 # keep this approach or change to pydantic.dataclasses?
 # see here: https://docs.pydantic.dev/usage/dataclasses/
@@ -266,7 +269,8 @@ class BasicInference:
         if len(topic_info) > 1:
             # output topic word visualization as an html string
             topic_word_visualization = topic_model.visualize_barchart(
-                top_n_topics=num_topics, n_words=5, title='Topic Word Scores').to_html()
+                top_n_topics=num_topics, n_words=DEFAULT_BERTOPIC_VISUALIZATION_WORDS,
+                title='Topic Word Scores').to_html()
         else:
             topic_word_visualization = "<html>No topics to display</html>"
 
@@ -331,7 +335,8 @@ class BasicInference:
         # https://github.com/orgs/MIT-AI-Accelerator/projects/2/views/1?pane=issue&itemId=36313268
         # see convertThreads in aimodels_test_plus_summarization
 
-        hdbscan_model = hdbscan.HDBSCAN(min_cluster_size=10, min_samples=10,
+        hdbscan_model = hdbscan.HDBSCAN(min_cluster_size=DEFAULT_HDBSCAN_MIN_CLUSTER_SIZE,
+                                        min_samples=DEFAULT_HDBSCAN_MIN_SAMPLES,
                                         metric='euclidean', prediction_data=True)
         topic_model = BERTopic(nr_topics=num_topics, seed_topic_list=seed_topic_list,
                                hdbscan_model=hdbscan_model, vectorizer_model=self.vectorizer)

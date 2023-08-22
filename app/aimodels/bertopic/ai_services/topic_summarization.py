@@ -6,6 +6,7 @@ from langchain.llms import GPT4All
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain.chains.summarize import load_summarize_chain
 from langchain.text_splitter import CharacterTextSplitter
+from langchain.llms.llamacpp import LlamaCpp
 from app.core.logging import logger
 from app.core.model_cache import MODEL_CACHE_BASEDIR
 from app.core.minio import download_file_from_minio
@@ -135,12 +136,10 @@ class TopicSummarizer:
 
         # replace acronyms and concatenate top n documents
         list_of_texts = '\n'.join(self.fix_text(documents))
-
-        # TODO temporary fix to avoid LLaMA ERROR: The prompt is XXXX tokens and the context window is 2048!
-        # https://github.com/orgs/MIT-AI-Accelerator/projects/2/views/1?pane=issue&itemId=36312834
-        # see https://api.python.langchain.com/en/latest/llms/langchain.llms.gpt4all.GPT4All.html
-        # see get_num_tokens_from_messages(), get_num_tokens()
-        list_of_texts = (list_of_texts[:2048]) if len(list_of_texts) > 2048 else list_of_texts
+        num_tokens = self.llm.get_num_tokens(list_of_texts)
+        if num_tokens > self.llm.max_tokens:
+            logger.error("Skipping summarization, exceeded max tokens: %d" % num_tokens)
+            return None
 
         text_splitter = CharacterTextSplitter()
         # stuffs the lists of text into "Document" objects for LangChain
@@ -156,7 +155,7 @@ class TopicSummarizer:
         # Takes a list of documents, combines them into a single string, and passes this to an LLMChain
         chain = load_summarize_chain(self.llm,
                                      chain_type="map_reduce",
-                                     verbose=True,
+                                     verbose=False,
                                      map_prompt=map_prompt,
                                      combine_prompt=combine_prompt,
                                      return_intermediate_steps=True,
