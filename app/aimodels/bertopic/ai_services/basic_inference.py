@@ -24,6 +24,7 @@ BASE_CKPT_DIR = os.path.join(os.path.abspath(
 DEFAULT_HDBSCAN_MIN_CLUSTER_SIZE = 10
 DEFAULT_HDBSCAN_MIN_SAMPLES = 10
 DEFAULT_BERTOPIC_VISUALIZATION_WORDS = 5
+DEFAULT_BERTOPIC_TIME_BINS = 20
 
 # keep this approach or change to pydantic.dataclasses?
 # see here: https://docs.pydantic.dev/usage/dataclasses/
@@ -224,7 +225,7 @@ class BasicInference:
         document_info = self.get_document_info(
             topic_model, filtered_documents_text_list, filtered_timestamps, num_related_docs)
         topics_over_time = topic_model.topics_over_time(
-            filtered_documents_text_list, filtered_timestamps)
+            filtered_documents_text_list, filtered_timestamps, nr_bins=DEFAULT_BERTOPIC_TIME_BINS)
 
         topic_info = topic_model.get_topic_info()
         new_topic_obj_list = []
@@ -247,7 +248,8 @@ class BasicInference:
                     summary_text = output_summary['output_text']
 
             topic_timeline_visualization = topic_model.visualize_topics_over_time(
-                topics_over_time, topics=[row['Topic']], title='Topic Over Time: ' + row['Name']).to_html()
+                topics_over_time, topics=[row['Topic']], title='Topic Over Time: ' + row['Name'],
+                top_n_topics=num_topics).to_html()
 
             new_topic_obj_list = new_topic_obj_list + [TopicSummaryCreate(
                 topic_id=row['Topic'],
