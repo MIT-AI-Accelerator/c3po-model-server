@@ -1,4 +1,5 @@
 import uuid
+import pandas as pd
 from sqlalchemy.orm import Session
 from app.core.config import environment_settings
 from app.mattermost.models.mattermost_channels import MattermostChannelModel
@@ -73,3 +74,18 @@ def test_populate_mm_user_info(db: Session):
     user_obj = crud.populate_mm_user_info(db, user_name=mm_name)
 
     assert user_obj.user_name == mm_name
+
+def test_convert_conversation_threads():
+
+    msg1 = 'message 1.'
+    msg2 = 'message 2.'
+
+    # construct message data frame with reply and convert to conversation thread
+    document_df = pd.DataFrame()
+    document_df = pd.concat([document_df,  pd.DataFrame([{'id': '1', 'message': msg1, 'root_id': ''}])])
+    document_df = pd.concat([document_df,  pd.DataFrame([{'id': '2', 'message': msg2, 'root_id': '1'}])])
+
+    conversation_df = crud.convert_conversation_threads(document_df)
+
+    assert len(conversation_df) == (len(document_df) - 1)
+    assert conversation_df['message'].iloc[0] == '%s\n%s' % (msg1, msg2)
