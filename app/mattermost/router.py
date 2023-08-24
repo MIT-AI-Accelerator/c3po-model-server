@@ -19,8 +19,10 @@ router = APIRouter(
     prefix="", tags=["Mattermost"]
 )
 
+
 class UploadUserRequest(BaseModel):
     user_name: str
+
 
 @router.post(
     "/mattermost/user/upload",
@@ -37,7 +39,8 @@ async def upload_mm_user_info(request: UploadUserRequest, db: Session = Depends(
     - **user_name**: Required.  Mattermost user name.
     """
 
-    user_obj = crud_mattermost.populate_mm_user_info(db, user_name=request.user_name)
+    user_obj = crud_mattermost.populate_mm_user_info(
+        db, user_name=request.user_name)
     if not user_obj:
         raise HTTPException(
             status_code=422, detail="Mattermost user not found")
@@ -68,8 +71,11 @@ async def get_mm_user_info(user_name: str, db: Session = Depends(get_db)) -> (
 
     return user_obj
 
+
 class UploadDocumentRequest(BaseModel):
     channel_ids: list[str] = []
+    history_depth: int = mattermost_utils.DEFAULT_HISTORY_DEPTH_DAYS
+
 
 @router.post(
     "/mattermost/documents/upload",
@@ -87,7 +93,8 @@ async def upload_mm_channel_docs(request: UploadDocumentRequest, db: Session = D
     """
 
     if not request.channel_ids:
-        raise HTTPException(status_code=422, detail="No Mattermost channels requested")
+        raise HTTPException(
+            status_code=422, detail="No Mattermost channels requested")
 
     adf = pd.DataFrame()
     for channel_id in request.channel_ids:
@@ -102,7 +109,7 @@ async def upload_mm_channel_docs(request: UploadDocumentRequest, db: Session = D
             channel_obj = crud_mattermost.populate_mm_channel_info(
                 db, channel_info=channel_info)
         df = mattermost_utils.get_channel_posts(
-            settings.mm_base_url, settings.mm_token, channel_id).assign(channel=channel_obj.id)
+            settings.mm_base_url, settings.mm_token, channel_id, request.history_depth).assign(channel=channel_obj.id)
         adf = pd.concat([adf, df], ignore_index=True)
     channel_uuids = adf['channel'].unique()
 
@@ -138,8 +145,10 @@ async def upload_mm_channel_docs(request: UploadDocumentRequest, db: Session = D
             channel=row['channel'],
             user=row['user'],
             document=document_obj.id)]
+    crud_mattermost.mattermost_documents.create_all_using_id(db, obj_in_list=mattermost_documents)
 
-    return channel_document_objs + crud_mattermost.mattermost_documents.create_all_using_id(db, obj_in_list=mattermost_documents)
+    return crud_mattermost.mattermost_documents.get_all_channel_documents(
+        db, channels=channel_uuids, history_depth=request.history_depth)
 
 
 @router.get(
@@ -148,7 +157,9 @@ async def upload_mm_channel_docs(request: UploadDocumentRequest, db: Session = D
     responses={'422': {'model': HTTPValidationError}},
     summary="Retrieve Mattermost documents",
     response_description="Retrieved Mattermost documents")
-async def get_mm_channel_docs(team_name: str, channel_name: str, db: Session = Depends(get_db)) -> (
+async def get_mm_channel_docs(team_name: str, channel_name: str,
+                              history_depth: int = mattermost_utils.DEFAULT_HISTORY_DEPTH_DAYS,
+                              db: Session = Depends(get_db)) -> (
     Union[list[MattermostDocument], HTTPValidationError]
 ):
     """
@@ -164,9 +175,8 @@ async def get_mm_channel_docs(team_name: str, channel_name: str, db: Session = D
         raise HTTPException(
             status_code=422, detail="Mattermost channel not found")
 
-    # TODO filter on time
     documents_obj = crud_mattermost.mattermost_documents.get_all_channel_documents(
-        db, channels=[channel_obj.id])
+        db, channels=[channel_obj.id], history_depth=history_depth)
     if not documents_obj:
         raise HTTPException(
             status_code=422, detail=f"Mattermost documents not found for channel: {channel_obj.id}")

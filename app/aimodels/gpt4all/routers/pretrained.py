@@ -10,7 +10,7 @@ from ..schemas import Gpt4AllPretrained, Gpt4AllPretrainedCreate, Gpt4AllPretrai
 from app.dependencies import get_db, get_minio
 from sqlalchemy.orm import Session
 from .. import crud
-from ..models.gpt4all_pretrained import Gpt4AllPretrainedModel
+from ..models.gpt4all_pretrained import Gpt4AllPretrainedModel, Gpt4AllModelFilenameEnum
 from app.core.errors import HTTPValidationError
 from aiofiles import open as open_aio
 from minio import Minio
@@ -90,3 +90,28 @@ async def upload_gpt4all_post(new_file: UploadFile, id: UUID4, db: Session = Dep
         db, db_obj=gpt4all_pretrained_obj, obj_in=Gpt4AllPretrainedUpdate(uploaded=True))
 
     return new_gpt4all_pretrained_obj
+
+
+@router.get(
+    "/",
+    response_model=Union[Gpt4AllPretrained, HTTPValidationError],
+    responses={'422': {'model': HTTPValidationError}},
+    summary="Get latest uploaded gpt4all Pretrained Model object",
+    response_description="Retrieved latest gpt4all Pretrained Model object"
+)
+def get_latest_gpt4all_pretrained_object(model_type: Gpt4AllModelFilenameEnum =
+                                         Gpt4AllModelFilenameEnum.L13B_SNOOZY,
+                                         db: Session = Depends(get_db)) -> (
+    Union[Gpt4AllPretrained, HTTPValidationError]
+):
+    """
+    Get latest uploaded gpt4all Pretrained Model object.
+    """
+    gpt4all_pretrained_obj = crud.gpt4all_pretrained.get_latest_uploaded_by_model_type(
+        db, model_type=model_type
+    )
+
+    if not gpt4all_pretrained_obj:
+        raise HTTPException(status_code=422, detail="gpt4all Pretrained Model not found")
+
+    return gpt4all_pretrained_obj

@@ -1,5 +1,6 @@
-
 from typing import Union
+from datetime import datetime
+import pandas as pd
 from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.logging import logger
@@ -11,7 +12,7 @@ from ..models.mattermost_users import MattermostUserModel
 from ..schemas.mattermost_users import MattermostUserCreate, MattermostUserUpdate
 from ..models.mattermost_documents import MattermostDocumentModel
 from ..schemas.mattermost_documents import MattermostDocumentCreate
-
+from app.aimodels.bertopic.models import DocumentModel
 
 class CRUDMattermostChannel(CRUDBase[MattermostChannelModel, MattermostChannelCreate, MattermostChannelCreate]):
     def get_by_channel_id(self, db: Session, *, channel_id: str) -> Union[MattermostChannelModel, None]:
@@ -53,8 +54,22 @@ class CRUDMattermostDocument(CRUDBase[MattermostDocumentModel, MattermostDocumen
 
         return db.query(self.model).filter(self.model.message_id == message_id).first()
 
-    def get_all_channel_documents(self, db: Session, channels: list[str]) -> Union[list[MattermostDocumentModel], None]:
-        return sum([db.query(self.model).filter(self.model.channel == cuuid).all() for cuuid in channels], [])
+    def get_all_channel_documents(self, db: Session, channels: list[str], history_depth: int=0) -> Union[list[MattermostDocumentModel], None]:
+
+        # get documents <= history_depth days old
+        if history_depth > 0:
+            ctime = datetime.now()
+            stime = ctime - pd.DateOffset(days=history_depth)
+            documents = sum([db.query(self.model).join(DocumentModel).filter(self.model.channel == cuuid,
+                                                                             DocumentModel.original_created_time >= stime,
+                                                                             DocumentModel.original_created_time <= ctime)
+                                                                             .all() for cuuid in channels], [])
+
+        # get all documents
+        else:
+            documents = sum([db.query(self.model).filter(self.model.channel == cuuid).all() for cuuid in channels], [])
+
+        return documents
 
 
 def populate_mm_user_info(db: Session, *, user_name: str) -> MattermostUserModel:

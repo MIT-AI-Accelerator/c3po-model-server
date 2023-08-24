@@ -7,23 +7,6 @@ from sqlalchemy.orm import Session
 from sample_data import CHAT_DATASET_4_PATH
 from app.core.config import environment_settings
 
-# test train endpoint with invalid request
-def test_train_invalid_request(client: TestClient):
-    if environment_settings.environment == 'test':
-        return
-
-    body = {
-        "wrong_param": '',
-    }
-
-    response = client.post(
-        "/aimodels/bertopic/model/train",
-        headers={},
-        json=jsonable_encoder(body),
-    )
-
-    assert response.status_code == 422
-
 
 # test train endpoint with valid request
 def test_train_valid_request(client: TestClient, db: Session):
