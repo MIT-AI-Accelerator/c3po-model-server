@@ -1,10 +1,11 @@
 """mattermost utilities"""
+from datetime import datetime
 import pandas as pd
 import requests
 from app.core.logging import logger
 
 HTTP_REQUEST_TIMEOUT_S = 60
-
+DEFAULT_HISTORY_DEPTH_DAYS = 45
 
 def get_all_pages(url, mm_token, is_channel=False):
     """iterate through pages of an http request"""
@@ -128,11 +129,19 @@ def get_channel_info(mm_base_url, mm_token, channel_id):
     return channel
 
 
-def get_channel_posts(mm_base_url, mm_token, channel_id):
+def get_channel_posts(mm_base_url, mm_token, channel_id, history_depth=0):
     """get a list of posts for a single channel"""
 
     url = f'{mm_base_url}/api/v4/channels/%s/posts' % channel_id
-    return get_all_pages(url, mm_token, is_channel=True)
+    posts = get_all_pages(url, mm_token, is_channel=True)
+    posts['datetime'] = [datetime.fromtimestamp(x / 1000) for x in posts['create_at']]
+
+    if history_depth > 0:
+        ctime = datetime.now()
+        stime = ctime - pd.DateOffset(days=history_depth)
+        posts = posts[(posts.datetime >= stime) & (posts.datetime <= ctime)]
+
+    return posts
 
 
 def get_all_user_channel_posts(mm_base_url, mm_token, channel_ids):

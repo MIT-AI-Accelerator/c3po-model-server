@@ -108,10 +108,8 @@ def get_latest_bertopic_embedding_pretrained_object(model_name: str, db: Session
     """
     Get latest uploaded BERTopic Embedding Pretrained Model object.
     """
-    bertopic_embedding_pretrained_obj = db.query(BertopicEmbeddingPretrainedModel).filter(
-        BertopicEmbeddingPretrainedModel.model_name == model_name,
-        BertopicEmbeddingPretrainedModel.uploaded).order_by(
-        BertopicEmbeddingPretrainedModel.version.desc()).first()
+    bertopic_embedding_pretrained_obj = crud.bertopic_embedding_pretrained.get_by_model_name(
+        db, model_name=model_name)
 
     if not bertopic_embedding_pretrained_obj:
         raise HTTPException(status_code=422, detail="BERTopic Embedding Pretrained Model not found")

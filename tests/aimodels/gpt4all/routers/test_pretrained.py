@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 import uuid
 from fastapi.testclient import TestClient
 from app.aimodels.gpt4all.schemas.gpt4all_pretrained import Gpt4AllPretrainedCreate
+from app.aimodels.gpt4all.models.gpt4all_pretrained import Gpt4AllModelFilenameEnum
 from fastapi.encoders import jsonable_encoder
 
 def test_create_gpt4all_pretrained_object_post_valid_request(client: TestClient, valid_sha256: str):
@@ -197,3 +198,26 @@ def test_upload_gpt4all_pretrained_object_post_invalid_id(client: TestClient, mo
     assert response.status_code == 422
     assert response.json() == {'detail': [{'loc': [
         'path', 'id'], 'msg': 'value is not a valid uuid', 'type': 'type_error.uuid'}]}
+
+def test_get_gpt4all_pretrained_object_invalid_name(client: TestClient):
+    body = {'model_type': 'not_a_name.bin'}
+
+    response = client.get(
+        "/aimodels/gpt4all/pretrained",
+        headers={},
+        params=jsonable_encoder(body)
+    )
+
+    assert response.status_code == 422
+    assert 'value is not a valid enumeration' in response.json()['detail'][0]['msg']
+
+def test_get_gpt4all_pretrained_object_valid_name(client: TestClient):
+    body = {'model_type': Gpt4AllModelFilenameEnum.L13B_SNOOZY}
+
+    response = client.get(
+        "/aimodels/gpt4all/pretrained",
+        headers={},
+        params=jsonable_encoder(body)
+    )
+
+    assert response.status_code == 200

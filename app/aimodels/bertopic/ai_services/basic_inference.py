@@ -1,5 +1,7 @@
 import os
+from tqdm import tqdm
 from typing import Union
+from datetime import datetime
 import numpy as np
 import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer
@@ -14,10 +16,15 @@ from ..models.topic import TopicSummaryModel
 from ..schemas.topic import TopicSummaryCreate
 from ..crud import crud_topic
 from .weak_learning import WeakLearner
+from .topic_summarization import TopicSummarizer, topic_summarizer, DEFAULT_N_REPR_DOCS
 
 BASE_CKPT_DIR = os.path.join(os.path.abspath(
     os.path.dirname(__file__)), "./data")
 
+DEFAULT_HDBSCAN_MIN_CLUSTER_SIZE = 10
+DEFAULT_HDBSCAN_MIN_SAMPLES = 10
+DEFAULT_BERTOPIC_VISUALIZATION_WORDS = 5
+DEFAULT_BERTOPIC_TIME_BINS = 20
 
 # keep this approach or change to pydantic.dataclasses?
 # see here: https://docs.pydantic.dev/usage/dataclasses/
@@ -111,8 +118,10 @@ class TrainBertopicOnDocumentsInput(BaseModel):
 
 class BuildTopicModelInputs(BaseModel):
     documents_text_list: list[str]
+    document_timestamps: list[datetime]
     embeddings: np.ndarray
     num_topics: StrictInt
+    seed_topic_list: list[list]
 
     @validator('documents_text_list')
     def documents_text_list_must_be_large_enough_for_inference(cls, v):
@@ -145,7 +154,7 @@ class BuildTopicModelInputs(BaseModel):
 
 class BasicInference:
 
-    def __init__(self, sentence_transformer_obj, s3, weak_learner_obj=None):
+    def __init__(self, sentence_transformer_obj, s3, map_prompt_template, combine_prompt_template, weak_learner_obj=None, topic_summarizer_obj=None):
 
         # validate input
         InitInputs(
@@ -175,57 +184,97 @@ class BasicInference:
                 self.vectorizer, self.svm, self.mlp, self.label_model)
             labeling_functions, self.label_applier = self.weak_learner.create_label_applier()
 
-    def train_bertopic_on_documents(self, db, documents, precalculated_embeddings, num_topics, seed_topic_list=None, num_related_docs=5) -> BasicInferenceOutputs:
+        self.topic_summarizer = None
+        if topic_summarizer_obj:
+            if not topic_summarizer.check_parameters(topic_summarizer_obj.id, map_prompt_template, combine_prompt_template):
+                topic_summarizer.initialize_llm(
+                    s3, topic_summarizer_obj, map_prompt_template, combine_prompt_template)
+            self.topic_summarizer = topic_summarizer
+
+    def get_document_info(self, topic_model, documents, timestamps, num_documents=DEFAULT_N_REPR_DOCS):
+
+        # increase number of representative documents (BERTopic default is 3)
+        document_info = topic_model.get_document_info(documents)
+        repr_docs, _, _ = topic_model._extract_representative_docs(topic_model.c_tf_idf_,
+                                                                   document_info,
+                                                                   topic_model.topic_representations_,
+                                                                   nr_samples=500,
+                                                                   nr_repr_docs=num_documents)
+        topic_model.representative_docs_ = repr_docs
+
+        document_info = topic_model.get_document_info(documents)
+        document_info['Timestamp'] = timestamps
+        return document_info
+
+    def train_bertopic_on_documents(self, db, documents, precalculated_embeddings, num_topics, seed_topic_list=None, num_related_docs=DEFAULT_N_REPR_DOCS) -> BasicInferenceOutputs:
         # validate input
         TrainBertopicOnDocumentsInput(
             documents=documents, precalculated_embeddings=precalculated_embeddings, num_topics=num_topics)
 
         documents_text_list = [document.text for document in documents]
+        document_timestamps = [
+            document.original_created_time for document in documents]
 
         (embeddings, updated_document_indicies) = self.calculate_document_embeddings(
             documents_text_list, precalculated_embeddings)
 
-        (topic_model, filtered_embeddings, filtered_documents_text_list) = self.build_topic_model(
-            documents_text_list, embeddings, num_topics, seed_topic_list)
+        (topic_model, filtered_embeddings, filtered_documents_text_list, filtered_timestamps) = self.build_topic_model(
+            documents_text_list, document_timestamps, embeddings, num_topics, seed_topic_list)
 
         # per topic documents and summary
-        document_info = topic_model.get_document_info(
-            filtered_documents_text_list)
+        document_info = self.get_document_info(
+            topic_model, filtered_documents_text_list, filtered_timestamps, num_related_docs)
+        topics_over_time = topic_model.topics_over_time(
+            filtered_documents_text_list, filtered_timestamps, nr_bins=DEFAULT_BERTOPIC_TIME_BINS)
+
         topic_info = topic_model.get_topic_info()
         new_topic_obj_list = []
-        for key, row in topic_info.iterrows():
+        for key, row in tqdm(topic_info.iterrows()):
             if row['Topic'] < 0:
                 continue
 
-            # note: research/validation of Representative_document needed
             topic_docs = document_info[document_info.Representative_document][document_info['Topic'] ==
                 row['Topic']].sort_values('Probability', ascending=False).head(num_related_docs).reset_index()
 
-            # TODO integrate summarization here
+            summary_text = 'topic summarization disabled'
+            if self.topic_summarizer:
+
+                # saves only the summary (but output includes intermediate steps of how we get to the summary
+                # if we want to save that in the future for XAI or other reason e.g., output_summary['intermediate_steps'])
+                output_summary = self.topic_summarizer.get_summary(
+                    topic_docs['Document'].to_list())
+                if output_summary:
+                    # summary_text = output_summary['intermediate_steps'][0]
+                    summary_text = output_summary['output_text']
+
+            topic_timeline_visualization = topic_model.visualize_topics_over_time(
+                topics_over_time, topics=[row['Topic']], title='Topic Over Time: ' + row['Name'],
+                top_n_topics=num_topics).to_html()
 
             new_topic_obj_list = new_topic_obj_list + [TopicSummaryCreate(
-                topic_id = row['Topic'],
-                name = row['Name'],
-                top_n_words = topic_docs['Top_n_words'].unique()[0],
-                top_n_documents = topic_docs[['Document', 'Probability']].to_dict(),
-                summary="i like cats")]
+                topic_id=row['Topic'],
+                name=row['Name'],
+                top_n_words=topic_docs['Top_n_words'].unique()[0],
+                top_n_documents=topic_docs[[
+                    'Document', 'Timestamp', 'Probability']].to_dict(),
+                summary=summary_text,
+                topic_timeline_visualization=topic_timeline_visualization)]
 
         topic_objs = crud_topic.topic_summary.create_all_using_id(
             db, obj_in_list=new_topic_obj_list)
 
-        try:
-            # output topic cluster visualization as an html string
-            topic_cluster_visualization = topic_model.visualize_documents(
-                filtered_documents_text_list, embeddings=filtered_embeddings, title='Topic Analysis').to_html()
+        # output topic cluster visualization as an html string
+        topic_cluster_visualization = topic_model.visualize_documents(
+            filtered_documents_text_list, embeddings=filtered_embeddings, title='Topic Analysis').to_html()
 
-            # output topic word visualization as an html string FIXME check before convert to html, pytest failing
+        # visualize_barchart will error if only default cluster (topic id -1) is available
+        if len(topic_info) > 1:
+            # output topic word visualization as an html string
             topic_word_visualization = topic_model.visualize_barchart(
-                top_n_topics=num_topics, n_words=5, title='Topic Word Scores').to_html()
-
-        except ValueError:
-            html_str = "<html>Error generating BERTopic visualizations</html>"
-            topic_cluster_visualization = html_str
-            topic_word_visualization = html_str
+                top_n_topics=num_topics, n_words=DEFAULT_BERTOPIC_VISUALIZATION_WORDS,
+                title='Topic Word Scores').to_html()
+        else:
+            topic_word_visualization = "<html>No topics to display</html>"
 
         return BasicInferenceOutputs(
             documents=documents,
@@ -267,25 +316,32 @@ class BasicInference:
 
         return (np.array(embeddings), updated_indices)
 
-    def build_topic_model(self, documents_text_list, embeddings, num_topics, seed_topic_list) -> BERTopic:
+    def build_topic_model(self, documents_text_list, document_timestamps, embeddings, num_topics, seed_topic_list) -> BERTopic:
 
         # validate input
         BuildTopicModelInputs(
-            documents_text_list=documents_text_list, embeddings=embeddings, num_topics=num_topics)
+            documents_text_list=documents_text_list, document_timestamps=document_timestamps, embeddings=embeddings, num_topics=num_topics, seed_topic_list=seed_topic_list)
 
         if self.weak_learner_obj:
-            data_test = pd.DataFrame({'message': documents_text_list})
+            data_test = pd.DataFrame(
+                {'message': documents_text_list, 'timestamp': document_timestamps})
             l_test = self.label_applier.apply(
                 pd.DataFrame(data_test['message']))
             data_test['y_pred'] = self.label_model.predict(l_test)
             embeddings = embeddings[data_test['y_pred'] < 2]
             data_test = data_test[data_test['y_pred'] < 2]
             documents_text_list = list(data_test['message'])
+            document_timestamps = list(data_test['timestamp'])
 
-        hdbscan_model = hdbscan.HDBSCAN(min_cluster_size=10, min_samples=10,
+        # TODO convert message utterances to conversation threads
+        # https://github.com/orgs/MIT-AI-Accelerator/projects/2/views/1?pane=issue&itemId=36313268
+        # see convertThreads in aimodels_test_plus_summarization
+
+        hdbscan_model = hdbscan.HDBSCAN(min_cluster_size=DEFAULT_HDBSCAN_MIN_CLUSTER_SIZE,
+                                        min_samples=DEFAULT_HDBSCAN_MIN_SAMPLES,
                                         metric='euclidean', prediction_data=True)
         topic_model = BERTopic(nr_topics=num_topics, seed_topic_list=seed_topic_list,
                                hdbscan_model=hdbscan_model, vectorizer_model=self.vectorizer)
         topic_model = topic_model.fit(documents_text_list, embeddings)
 
-        return (topic_model, embeddings, documents_text_list)
+        return (topic_model, embeddings, documents_text_list, document_timestamps)

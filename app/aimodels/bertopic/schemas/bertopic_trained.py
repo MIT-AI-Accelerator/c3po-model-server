@@ -12,8 +12,11 @@ class BertopicTrainedBase(BaseModel):
     weak_learner_id: Optional[UUID4] = None
     summarization_model_id: Optional[UUID4] = None
     seed_topics: Optional[dict] = None
+    map_prompt_template: Optional[str] = None
+    combine_prompt_template: Optional[str] = None
     topic_word_visualization: Optional[str] = None
     topic_cluster_visualization: Optional[str] = None
+
 
 # Properties to receive on BertopicTrained creation
 class BertopicTrainedCreate(BertopicTrainedBase):
