@@ -59,8 +59,6 @@ class RetrievalService(BaseModel):
         self,
         channel_names=[],
     ):
-        # TODO: pull from minio
-        # model_name = os.path.join(MODEL_CACHE_BASEDIR, "all-MiniLM-L6-v2")
         if self.sentence_model is None:
             try:
 
