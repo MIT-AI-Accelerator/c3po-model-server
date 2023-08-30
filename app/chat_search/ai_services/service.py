@@ -107,8 +107,17 @@ class RetrievalService(BaseModel):
             retrievers=[bm25_retriever, chat_retriever], weights=[0.5, 0.5]
         )
 
+        # download marco rerank model
+        marco_pretrained_obj = bertopic_embedding_pretrained.get_by_model_name(
+            db=self.db, model_name="ms-marco-TinyBERT-L-6")
+
+        cross_model = download_pickled_object_from_minio(
+            id=marco_pretrained_obj.id, s3=self.s3)
+
+        # initialize the rerank retriever
         rerank_retriever = MarcoRerankRetriever(
             base_retriever=ensemble_retriever,
+            cross_model=cross_model,
             rerank_model_name_or_path="cross-encoder/ms-marco-TinyBERT-L-6",
             max_relevant_documents=10,
         )
