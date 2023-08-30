@@ -63,9 +63,10 @@ class RetrievalService(BaseModel):
         # model_name = os.path.join(MODEL_CACHE_BASEDIR, "all-MiniLM-L6-v2")
         if self.sentence_model is None:
             try:
-                sentence_model_db_obj = bertopic_embedding_pretrained.get_by_sha256(
+
+                sentence_model_db_obj = bertopic_embedding_pretrained.get_by_model_name(
                     db=self.db,
-                    sha256="ad2efe50dfaeea5243da9476d25249496872aa3dd8bfa5a3bbd05014f2822abc"
+                    model_name="all-MiniLM-L6-v2"
                 )
 
                 self.sentence_model = download_pickled_object_from_minio(
@@ -75,7 +76,7 @@ class RetrievalService(BaseModel):
                 local_embeddings = InitializedHuggingFaceEmbeddings(
                     loaded_model=self.sentence_model
                 )
-            except:
+            except Exception as _:
                 # failed to load from db or minio, so load from huggingface if possible
 
                 model_name = "sentence-transformers/all-MiniLM-L6-v2"
