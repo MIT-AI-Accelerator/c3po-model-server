@@ -73,8 +73,15 @@
     <ol class="alternating-colors">
         {% for document in result['source_documents'] %}
         <li>
-            <p><strong>Source:</strong> {{ document['metadata']['source'] }}</p>
-            <p><strong>Content:</strong> {{ document['page_content'] }}</p> <!-- Changed "Page Content" to "Content" -->
+            <p><strong>Content:</strong> {{ document['page_content'] }}</p>
+            <p><strong>Source Link:</strong>
+                {% if document['metadata']['link'] %}
+                    <a target="_blank" href="{{ document['metadata']['link'] }}">{{ document['metadata']['link'] }}</a>
+                {% else %}
+                    None
+                {% endif %}
+            </p>
+            <p><strong>Timestamp:</strong> {{ document['metadata']['original_created_time'] }}</p>
         </li>
         {% endfor %}
     </ol>
