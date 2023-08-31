@@ -67,7 +67,8 @@
     </style>
 </head>
 <body>
-    <strong>Result</strong>
+    <p><strong>Result:</strong> {{ result['result'] }}</p>
+    <p><strong>Query:</strong> {{ result['input'] }}</p>
 
     <ol class="alternating-colors">
         {% for document in result['source_documents'] %}
