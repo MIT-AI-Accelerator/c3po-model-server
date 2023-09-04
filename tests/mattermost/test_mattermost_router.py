@@ -1,3 +1,4 @@
+import uuid
 from fastapi.testclient import TestClient
 from app.core.config import environment_settings
 
@@ -112,6 +113,28 @@ def test_get_mattermost_documents_invalid_input(client: TestClient):
         "/mattermost/documents/get",
         headers={},
         params={"team_name": "notachannelname", "channel_name": "notachannelname"}
+    )
+
+    assert response.status_code == 422
+    assert 'Mattermost' in response.json()['detail']
+
+# returns 422
+def test_mattermost_convseration_thread_invalid_format(client: TestClient):
+    response = client.post(
+        "/mattermost/conversation_threads",
+        headers={},
+        json={"mattermost_document_ids": "notadocumentlist"}
+    )
+
+    assert response.status_code == 422
+    assert 'value is not a valid list' in response.json()['detail'][0]['msg']
+
+# returns 422
+def test_mattermost_convseration_thread_invalid_input(client: TestClient):
+    response = client.post(
+        "/mattermost/conversation_threads",
+        headers={},
+        json={"mattermost_document_ids": [f"{uuid.uuid4()}"]}
     )
 
     assert response.status_code == 422

@@ -14,6 +14,7 @@ from ..models.mattermost_documents import MattermostDocumentModel
 from ..schemas.mattermost_documents import MattermostDocumentCreate
 from app.aimodels.bertopic.models import DocumentModel
 
+
 class CRUDMattermostChannel(CRUDBase[MattermostChannelModel, MattermostChannelCreate, MattermostChannelCreate]):
     def get_by_channel_id(self, db: Session, *, channel_id: str) -> Union[MattermostChannelModel, None]:
         if not channel_id:
@@ -54,7 +55,8 @@ class CRUDMattermostDocument(CRUDBase[MattermostDocumentModel, MattermostDocumen
 
         return db.query(self.model).filter(self.model.message_id == message_id).first()
 
-    def get_all_channel_documents(self, db: Session, channels: list[str], history_depth: int=0) -> Union[list[MattermostDocumentModel], None]:
+    def get_all_channel_documents(self, db: Session, channels: list[str], history_depth: int = 0) -> Union[list[MattermostDocumentModel], None]:
+
 
         # get documents <= history_depth days old
         if history_depth > 0:
@@ -63,13 +65,32 @@ class CRUDMattermostDocument(CRUDBase[MattermostDocumentModel, MattermostDocumen
             documents = sum([db.query(self.model).join(DocumentModel).filter(self.model.channel == cuuid,
                                                                              DocumentModel.original_created_time >= stime,
                                                                              DocumentModel.original_created_time <= ctime)
-                                                                             .all() for cuuid in channels], [])
+
+                             .all() for cuuid in channels], [])
 
         # get all documents
         else:
-            documents = sum([db.query(self.model).filter(self.model.channel == cuuid).all() for cuuid in channels], [])
+            documents = sum([db.query(self.model).filter(
+                self.model.channel == cuuid).all() for cuuid in channels], [])
 
         return documents
+
+    def get_document_dataframe(self, db: Session, *, document_uuids: list[str]) -> Union[pd.DataFrame, None]:
+
+        ddf = pd.DataFrame()
+        for duuid in document_uuids:
+            document = db.query(self.model, DocumentModel, MattermostUserModel, MattermostChannelModel).join(DocumentModel, DocumentModel.id == self.model.document).join(
+                MattermostUserModel, MattermostUserModel.id == self.model.user).join(MattermostChannelModel, MattermostChannelModel.id == self.model.channel).filter(self.model.id == duuid).all()
+            if document:
+                ddf = pd.concat([ddf, pd.DataFrame([{'id': document[0][0].message_id,
+                                                     'message': document[0][1].text,
+                                                     'root_id': document[0][0].root_message_id,
+                                                     'user_id': document[0][2].user_id,
+                                                     'channel_id': document[0][3].channel_id,
+                                                     'create_at': document[0][1].original_created_time}])])
+
+        return ddf
+
 
 
 def populate_mm_user_info(db: Session, *, user_name: str) -> MattermostUserModel:
@@ -132,6 +153,40 @@ def populate_mm_channel_info(db: Session, *, channel_info: dict) -> MattermostCh
         team_id=channel_info['team_id'],
         team_name=channel_info['team_name'])
     return mattermost_channels.create(db, obj_in=channel)
+
+
+# Takes message utterances (i.e. individual rows) from chat dataframe, and converts them to conversation threads
+# Returns a dataframe with original structure; messages updated to include full conversation
+def convert_conversation_threads(df: pd.DataFrame):
+
+    df['root_id'] = df['root_id'].fillna('')
+    df['message'] = df['message'].fillna('')
+    threads = {}
+    threads_row = {}
+    for index, row in df.iterrows():
+        thread = row['root_id']
+        utterance = row['message']
+        p_id = row['id']
+        if utterance.find("added to the channel") < 0 and utterance.find("joined the channel") < 0 and utterance.find("left the channel") < 0:
+            if len(thread) > 0:
+                if thread not in threads:
+                    threads[thread] = [utterance.replace("\n", " ")]
+                else:
+                    threads[thread].append(utterance.replace("\n", " "))
+            else:
+                t = []
+                t.append(utterance.replace("\n", " "))
+                threads[p_id] = t
+                threads_row[p_id] = row
+    keys = sorted(threads.keys())
+
+    data = []
+    for index, key in enumerate(keys):
+        row = threads_row[key]
+        row['message'] = "\n".join(threads[key])
+        data.append(row)
+
+    return pd.DataFrame(data, columns=df.columns)
 
 
 mattermost_channels = CRUDMattermostChannel(MattermostChannelModel)
