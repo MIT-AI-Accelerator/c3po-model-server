@@ -14,6 +14,7 @@ class EmbeddingModelTypeEnum(str, enum.Enum):
     SENTENCE_TRANSFORMERS = "sentence_transformers"
     WEAK_LEARNERS = "weak_learners"
     DIFF_CSE = "diff_cse"
+    CROSS_ENCODERS = "cross_encoders"
 
 class BertopicEmbeddingPretrainedModel(Base):
     id = Column(UUID, primary_key=True, unique=True, default=uuid.uuid4)

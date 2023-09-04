@@ -57,6 +57,7 @@ class CRUDMattermostDocument(CRUDBase[MattermostDocumentModel, MattermostDocumen
 
     def get_all_channel_documents(self, db: Session, channels: list[str], history_depth: int = 0) -> Union[list[MattermostDocumentModel], None]:
 
+
         # get documents <= history_depth days old
         if history_depth > 0:
             ctime = datetime.now()
@@ -64,6 +65,7 @@ class CRUDMattermostDocument(CRUDBase[MattermostDocumentModel, MattermostDocumen
             documents = sum([db.query(self.model).join(DocumentModel).filter(self.model.channel == cuuid,
                                                                              DocumentModel.original_created_time >= stime,
                                                                              DocumentModel.original_created_time <= ctime)
+
                              .all() for cuuid in channels], [])
 
         # get all documents
@@ -88,6 +90,7 @@ class CRUDMattermostDocument(CRUDBase[MattermostDocumentModel, MattermostDocumen
                                                      'create_at': document[0][1].original_created_time}])])
 
         return ddf
+
 
 
 def populate_mm_user_info(db: Session, *, user_name: str) -> MattermostUserModel:

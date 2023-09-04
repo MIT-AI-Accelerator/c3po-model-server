@@ -75,6 +75,7 @@ def test_populate_mm_user_info(db: Session):
 
     assert user_obj.user_name == mm_name
 
+
 def test_convert_conversation_threads():
 
     msg1 = 'message 1.'
@@ -89,3 +90,4 @@ def test_convert_conversation_threads():
 
     assert len(conversation_df) == (len(document_df) - 1)
     assert conversation_df['message'].iloc[0] == '%s\n%s' % (msg1, msg2)
+

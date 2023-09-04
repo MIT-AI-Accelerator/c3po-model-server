@@ -27,7 +27,7 @@ from app.aimodels.gpt4all import crud as gpt4all_crud
 
 from app.mattermost.crud import crud_mattermost
 
-from sentence_transformers import SentenceTransformer
+from sentence_transformers import SentenceTransformer, CrossEncoder
 
 from sqlalchemy.orm import Session
 from minio import Minio
@@ -58,7 +58,14 @@ def init_minio_bucket(s3: Minio) -> None:
 def init_sentence_embedding_object(s3: Minio, db: Session, model_path: str) -> None:
     # Create the SentenceTransformer object
     model_name = model_path.split('/')[-1]
-    embedding_pretrained_model_obj = SentenceTransformer(model_name)
+
+    # if model type given, it is here
+    model_type = model_path.split('/')[0]
+
+    if model_type == 'cross-encoder':
+        embedding_pretrained_model_obj = CrossEncoder(model_path, max_length=512)
+    else:
+        embedding_pretrained_model_obj = SentenceTransformer(model_name)
 
     # Serialize the object
     serialized_obj = pickle.dumps(embedding_pretrained_model_obj)
@@ -81,8 +88,12 @@ def init_sentence_embedding_object(s3: Minio, db: Session, model_path: str) -> N
         # Move the file cursor to the beginning of the file
         file_obj.seek(0)
 
-        bertopic_embedding_pretrained_obj = BertopicEmbeddingPretrainedCreate(
-            sha256=hex_dig, model_name=model_name)
+        if model_type == 'cross-encoder':
+            bertopic_embedding_pretrained_obj = BertopicEmbeddingPretrainedCreate(
+                sha256=hex_dig, model_name=model_name, model_type=EmbeddingModelTypeEnum.CROSS_ENCODERS)
+        else:
+            bertopic_embedding_pretrained_obj = BertopicEmbeddingPretrainedCreate(
+                sha256=hex_dig, model_name=model_name)
 
         new_bertopic_embedding_pretrained_obj: BertopicEmbeddingPretrainedModel = bertopic_crud.bertopic_embedding_pretrained.create(
             db, obj_in=bertopic_embedding_pretrained_obj)
@@ -309,17 +320,17 @@ def main() -> None:
     ########## large object uploads ################
     if (environment == 'local'):
         # Sentence Transformer
-        logger.info("Uploading SentenceTransformer object to MinIO")
+        logger.info("Uploading all-MiniLM-L6-v2 object to MinIO")
         embedding_pretrained_obj1 = init_sentence_embedding_object(
             s3, db, "all-MiniLM-L6-v2")
-        logger.info("SentenceTransformer object uploaded to MinIO.")
+        logger.info("all-MiniLM-L6-v2 object uploaded to MinIO.")
         logger.info(
-            f"Embedding Pretrained Object ID: {embedding_pretrained_obj1.id}, SHA256: {embedding_pretrained_obj1.sha256}")
+            f"all-MiniLM-L6-v2 Embedding Pretrained Object ID: {embedding_pretrained_obj1.id}, SHA256: {embedding_pretrained_obj1.sha256}")
         embedding_pretrained_obj2 = init_sentence_embedding_object(
             s3, db, "sentence-transformers/all-mpnet-base-v2")
-        logger.info("SentenceTransformer object uploaded to MinIO.")
+        logger.info("all-mpnet-base-v2 object uploaded to MinIO.")
         logger.info(
-            f"Embedding Pretrained Object ID: {embedding_pretrained_obj2.id}, SHA256: {embedding_pretrained_obj2.sha256}")
+            f"all-mpnet-base-v2 Embedding Pretrained Object ID: {embedding_pretrained_obj2.id}, SHA256: {embedding_pretrained_obj2.sha256}")
 
         # Weak learner
         logger.info("Uploading WeakLearner object to MinIO")
@@ -328,12 +339,13 @@ def main() -> None:
         logger.info(
             f"Weak learner Pretrained Object ID: {embedding_pretrained_obj.id}, SHA256: {embedding_pretrained_obj.sha256}")
 
-        # Gpt4All
-        logger.info("Uploading Gpt4All object to MinIO")
-        gpt4all_pretrained_obj = init_gpt4all_pretrained_model(s3, db)
-        logger.info("Gpt4All object uploaded to MinIO.")
+        # MARCO reranker
+        logger.info("Uploading MARCO cross-encoder object to MinIO")
+        marco_pretrained_obj = init_sentence_embedding_object(
+            s3, db, "cross-encoder/ms-marco-TinyBERT-L-6")
+        logger.info("MARCO cross-encoder object uploaded to MinIO.")
         logger.info(
-            f"Gpt4All Object ID: {gpt4all_pretrained_obj.id}, SHA256: {gpt4all_pretrained_obj.sha256}")
+            f"MARCO cross-encoder Pretrained Object ID: {marco_pretrained_obj.id}, SHA256: {marco_pretrained_obj.sha256}")
 
         # Mattermost user
         logger.info("Uploading Mattermost bot user")
@@ -344,6 +356,13 @@ def main() -> None:
                 f"Mattermost bot user object ID: {user_obj.id}, mattermost ID: {user_obj.user_id}")
         else:
             logger.info("Unable to load Mattermost bot user")
+
+        # Gpt4All
+        logger.info("Uploading Gpt4All object to MinIO")
+        gpt4all_pretrained_obj = init_gpt4all_pretrained_model(s3, db)
+        logger.info("Gpt4All object uploaded to MinIO.")
+        logger.info(
+            f"Gpt4All Object ID: {gpt4all_pretrained_obj.id}, SHA256: {gpt4all_pretrained_obj.sha256}")
 
     if (environment == 'staging' or (environment == 'production' and migration_toggle is True)):
         logger.info("Verifying Gpt4All object in MinIO")

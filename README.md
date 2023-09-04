@@ -39,6 +39,7 @@ MM_TOKEN="<your_preprod_mattermost_token>"
 
 13. Set up the precommit hook with `pre-commit install`.
 
+
 # Adding a package
 Note: instructions included in [tutorial linked here](https://realpython.com/dependency-management-python-poetry/)
 1. Add the package, e.g., `poetry add transformers` or `poetry add transformers --group <group_name>` where `<group_name>` is the dependency group name, e.g., `test` or `dev`.
