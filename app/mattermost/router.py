@@ -1,13 +1,13 @@
 """mattermost router"""
 from typing import Union
-from pydantic import BaseModel, UUID4
+from pydantic import BaseModel
 from fastapi import Depends, APIRouter, HTTPException
 import pandas as pd
 from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.errors import HTTPValidationError
 from app.dependencies import get_db
-from app.aimodels.bertopic.schemas.document import Document, DocumentCreate
+from app.aimodels.bertopic.schemas.document import DocumentCreate
 from app.aimodels.bertopic import crud as crud_document
 from app.mattermost.services import mattermost_utils
 from app.mattermost.crud import crud_mattermost
@@ -182,37 +182,3 @@ async def get_mm_channel_docs(team_name: str, channel_name: str,
             status_code=422, detail=f"Mattermost documents not found for channel: {channel_obj.id}")
 
     return documents_obj
-
-class ConversationThreadRequest(BaseModel):
-    mattermost_document_ids: list[UUID4] = []
-
-@router.post(
-    "/mattermost/conversation_threads",
-    response_model=Union[list[Document], HTTPValidationError],
-    responses={'422': {'model': HTTPValidationError}},
-    summary="Retrieve Mattermost conversation documents",
-    response_description="Retrieved Mattermost conversation documents")
-async def convert_conversation_threads(request: ConversationThreadRequest,
-                              db: Session = Depends(get_db)) -> (
-    Union[list[Document], HTTPValidationError]
-):
-    """
-    Retrieve Mattermost conversation documents
-
-    - **mattermost_document_uuids**: Required.  List of Mattermost document UUIDs.
-    """
-
-    # get joined document and mattermost info
-    document_df = crud_mattermost.mattermost_documents.get_document_dataframe(db, document_uuids=request.mattermost_document_ids)
-    if document_df.empty:
-        raise HTTPException(status_code=422, detail="Mattermost documents not found")
-
-    # convert message utterances to conversation threads
-    conversation_df = crud_mattermost.convert_conversation_threads(df=document_df)
-
-    # create new document objects
-    document_objs = [crud_document.document.create(db, obj_in=DocumentCreate(text=row['message'], original_created_time=row['create_at'])) for key, row in conversation_df.iterrows()]
-    if not document_objs:
-        raise HTTPException(status_code=422, detail="Unable to create conversation threads")
-
-    return document_objs
