@@ -39,7 +39,7 @@ async def upload_mm_user_info(request: UploadUserRequest, db: Session = Depends(
     - **user_name**: Required.  Mattermost user name.
     """
 
-    user_obj = crud_mattermost.populate_mm_user_info(
+    user_obj = crud_mattermost.populate_mm_user_team_info(
         db, user_name=request.user_name)
     if not user_obj:
         raise HTTPException(
@@ -120,7 +120,7 @@ async def upload_mm_channel_docs(request: UploadDocumentRequest, db: Session = D
         if user_obj is None:
             user_name = mattermost_utils.get_user_name(
                 settings.mm_base_url, settings.mm_token, uid)
-            user_obj = crud_mattermost.populate_mm_user_info(
+            user_obj = crud_mattermost.populate_mm_user_team_info(
                 db, user_name=user_name)
         adf.loc[adf['user_id'] == uid, 'user'] = user_obj.id
 

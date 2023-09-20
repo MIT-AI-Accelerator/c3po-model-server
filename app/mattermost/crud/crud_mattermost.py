@@ -57,7 +57,6 @@ class CRUDMattermostDocument(CRUDBase[MattermostDocumentModel, MattermostDocumen
 
     def get_all_channel_documents(self, db: Session, channels: list[str], history_depth: int = 0) -> Union[list[MattermostDocumentModel], None]:
 
-
         # get documents <= history_depth days old
         if history_depth > 0:
             ctime = datetime.now()
@@ -92,8 +91,26 @@ class CRUDMattermostDocument(CRUDBase[MattermostDocumentModel, MattermostDocumen
         return ddf
 
 
+def populate_mm_user_info(db: Session, *, mm_user: dict, teams: dict) -> MattermostUserModel:
 
-def populate_mm_user_info(db: Session, *, user_name: str) -> MattermostUserModel:
+    user_obj = mattermost_users.get_by_user_name(db, user_name=mm_user['username'])
+    if user_obj is None:
+        create_user = MattermostUserCreate(
+            user_id=mm_user['id'], user_name=mm_user['username'], teams=teams)
+        user_obj = mattermost_users.create(db, obj_in=create_user)
+    else:
+        update_user = MattermostUserUpdate(
+            user_id=mm_user['id'], user_name=mm_user['username'], teams=teams)
+        user_obj = mattermost_users.update(
+            db, db_obj=user_obj, obj_in=update_user)
+
+    if user_obj is None:
+        logger.debug(f"Unable to retrieve user: {user_name}")
+
+    return user_obj
+
+
+def populate_mm_user_team_info(db: Session, *, user_name: str) -> MattermostUserModel:
 
     # add or update user info in db
     (mm_user, tdf) = mattermost_utils.get_user_info(
@@ -108,19 +125,7 @@ def populate_mm_user_info(db: Session, *, user_name: str) -> MattermostUserModel
     else:
         logger.debug(f"Unable to access teams for user: {user_name}")
 
-    user_obj = mattermost_users.get_by_user_name(db, user_name=user_name)
-    if user_obj is None:
-        create_user = MattermostUserCreate(
-            user_id=mm_user['id'], user_name=mm_user['username'], teams=teams)
-        user_obj = mattermost_users.create(db, obj_in=create_user)
-    else:
-        update_user = MattermostUserUpdate(
-            user_id=mm_user['id'], user_name=mm_user['username'], teams=teams)
-        user_obj = mattermost_users.update(
-            db, db_obj=user_obj, obj_in=update_user)
-
-    if user_obj is None:
-        logger.debug(f"Unable to retrieve user: {user_name}")
+    user_obj = populate_mm_user_info(db, mm_user=mm_user, teams=teams)
 
     # retrieve existing channels from db
     cdf = mattermost_utils.get_all_user_channels(
