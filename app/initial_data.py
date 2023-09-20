@@ -7,6 +7,7 @@ import logging
 import requests
 from pathlib import Path
 from tqdm import tqdm
+from typing import Union
 from fastapi import UploadFile
 from fastapi.encoders import jsonable_encoder
 from minio.error import InvalidResponseError
@@ -46,6 +47,28 @@ def init() -> None:
     init_db()
 
 
+def get_db(environment: str, migration_toggle: bool) -> Union[Session, None]:
+    db = None
+
+    # clear DB if local or staging as long as not actively testing migrating
+    if (environment in ['local', 'staging'] and migration_toggle is False):
+        logger.info("Clearing database")
+        wipe_db()
+        logger.info("Database cleared")
+
+    # all environments need to initialize the database
+    # prod only if migration toggle is on
+    if (environment in ['local', 'development', 'test', 'staging'] or (environment == 'production' and migration_toggle is True)):
+        logger.info("Creating database schema and tables")
+        db = SessionLocal()
+        init()
+        logger.info("Initial database schema and tables created.")
+    else:
+        logger.info("Skipping database initialization")
+
+    return db
+
+
 def init_minio_bucket(s3: Minio) -> None:
     bucket_name = settings.minio_bucket_name
     try:
@@ -53,6 +76,29 @@ def init_minio_bucket(s3: Minio) -> None:
             s3.make_bucket(bucket_name)
     except InvalidResponseError as err:
         logger.error(err)
+
+
+def get_s3(environment: str, db: Session) -> Union[Minio, None]:
+    s3 = None
+
+    # setup minio client if available (i.e., not in unit tests)
+    if (environment in ['local', 'development', 'staging', 'production']):
+        logger.info("Connecting MinIO client")
+        s3 = build_client()
+        logger.info("MinIO client connected")
+
+    if (environment in ['local', 'development']):
+        logger.info("Setting up MinIO bucket")
+        init_minio_bucket(s3)
+        logger.info("MinIO bucket set up.")
+
+    if (environment != 'production'):
+        logger.info("Creating documents from chats")
+        swagger_string = init_documents_from_chats(db)
+        logger.info("Documents created.")
+        logger.info(f"Documents: {swagger_string}")
+
+    return s3
 
 
 def init_sentence_embedding_object(s3: Minio, db: Session, model_path: str) -> None:
@@ -63,7 +109,8 @@ def init_sentence_embedding_object(s3: Minio, db: Session, model_path: str) -> N
     model_type = model_path.split('/')[0]
 
     if model_type == 'cross-encoder':
-        embedding_pretrained_model_obj = CrossEncoder(model_path, max_length=512)
+        embedding_pretrained_model_obj = CrossEncoder(
+            model_path, max_length=512)
     else:
         embedding_pretrained_model_obj = SentenceTransformer(model_name)
 
@@ -268,54 +315,10 @@ def init_documents_from_chats(db: Session) -> str:
 
 
 def init_mattermost_bot_user(db: Session, user_name: str) -> None:
-    return crud_mattermost.populate_mm_user_info(db, user_name=user_name)
+    return crud_mattermost.populate_mm_user_team_info(db, user_name=user_name)
 
 
-def main() -> None:
-    args = sys.argv[1:]
-
-    migration_toggle = False
-    if len(args) == 1 and args[0] == '--toggle-migration':
-        migration_toggle = True
-
-    # environment can be one of 'local', 'test', 'staging', 'production'
-    environment = environment_settings.environment
-
-    logger.info(f"Using initialization environment: {environment}")
-    logger.info(f"Using migration toggle: {migration_toggle}")
-
-    # clear DB if local or staging as long as not actively testing migrating
-    if (environment in ['local', 'staging'] and migration_toggle is False):
-        logger.info("Clearing database")
-        wipe_db()
-        logger.info("Database cleared")
-
-    # all environments need to initialize the database
-    # prod only if migration toggle is on
-    if (environment in ['local', 'development', 'test', 'staging'] or (environment == 'production' and migration_toggle is True)):
-        logger.info("Creating database schema and tables")
-        db = SessionLocal()
-        init()
-        logger.info("Initial database schema and tables created.")
-    else:
-        logger.info("Skipping database initialization")
-
-    # setup minio client if available (i.e., not in unit tests)
-    if (environment in ['local', 'development', 'staging', 'production']):
-        logger.info("Connecting MinIO client")
-        s3 = build_client()
-        logger.info("MinIO client connected")
-
-    if (environment in ['local', 'development']):
-        logger.info("Setting up MinIO bucket")
-        init_minio_bucket(s3)
-        logger.info("MinIO bucket set up.")
-
-    if (environment != 'production'):
-        logger.info("Creating documents from chats")
-        swagger_string = init_documents_from_chats(db)
-        logger.info("Documents created.")
-        logger.info(f"Documents: {swagger_string}")
+def init_large_objects(environment: str, migration_toggle: bool, s3: Minio, db: Session) -> None:
 
     ########## large object uploads ################
     if (environment == 'local'):
@@ -371,6 +374,26 @@ def main() -> None:
         logger.info(
             f"Gpt4All Object ID: {gpt4all_pretrained_obj.id}, SHA256: {gpt4all_pretrained_obj.sha256}")
     ########## large object uploads ################
+
+
+def main() -> None:
+    args = sys.argv[1:]
+
+    migration_toggle = False
+    if len(args) == 1 and args[0] == '--toggle-migration':
+        migration_toggle = True
+
+    # environment can be one of 'local', 'test', 'staging', 'production'
+    environment = environment_settings.environment
+
+    logger.info(f"Using initialization environment: {environment}")
+    logger.info(f"Using migration toggle: {migration_toggle}")
+
+    db = get_db(environment, migration_toggle)
+
+    s3 = get_s3(environment, db)
+
+    init_large_objects(environment, migration_toggle, s3, db)
 
 
 if __name__ == "__main__":
