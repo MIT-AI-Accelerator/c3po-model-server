@@ -14,35 +14,25 @@ from app.aimodels.bertopic.crud import crud_document
 def test_crud_mattermost(db: Session):
 
     # test mattermost channel
-    channel_obj_in = MattermostChannelModel(
-        channel_id=str(uuid.uuid4()),
-        channel_name='my channel',
-        team_id=str(uuid.uuid4()),
-        team_name='my team'
-    )
+    channel_info = dict({'id': str(uuid.uuid4()), 'name': 'my channel', 'team_id': str(uuid.uuid4()), 'team_name': 'my team'})
+    channel_db_obj = crud.populate_mm_channel_info(db, channel_info=channel_info)
 
-    channel_db_obj = crud.mattermost_channels.create(db, obj_in=channel_obj_in)
-
-    assert channel_db_obj.channel_id == channel_obj_in.channel_id
-    assert channel_db_obj.channel_name == channel_obj_in.channel_name
-    assert channel_db_obj.team_id == channel_obj_in.team_id
-    assert channel_db_obj.team_name == channel_obj_in.team_name
-    assert crud.mattermost_channels.get_by_channel_id(db, channel_id=channel_obj_in.channel_id) is not None
+    assert channel_db_obj.channel_id == channel_info['id']
+    assert channel_db_obj.channel_name == channel_info['name']
+    assert channel_db_obj.team_id == channel_info['team_id']
+    assert channel_db_obj.team_name == channel_info['team_name']
+    assert crud.mattermost_channels.get_by_channel_id(db, channel_id=channel_info['id']) is not None
 
     # test mattermost user
     user = str(uuid.uuid4())
-    user_obj_in = MattermostUserModel(
-        user_id=user,
-        user_name=user,
-        teams=dict({'0': 'a team', '1': 'another team'})
-    )
+    mm_user = dict({'id': user, 'username': user})
+    teams=dict({'0': 'a team', '1': 'another team'})
+    user_db_obj = crud.populate_mm_user_info(db, mm_user=mm_user, teams=teams)
 
-    user_db_obj = crud.mattermost_users.create(db, obj_in=user_obj_in)
-
-    assert user_db_obj.user_id == user_obj_in.user_id
-    assert user_db_obj.user_name == user_obj_in.user_name
-    assert user_db_obj.teams == user_obj_in.teams
-    assert crud.mattermost_users.get_by_user_id(db, user_id=user_obj_in.user_id) is not None
+    assert user_db_obj.user_id == mm_user['id']
+    assert user_db_obj.user_name == mm_user['username']
+    assert user_db_obj.teams == teams
+    assert crud.mattermost_users.get_by_user_id(db, user_id=mm_user['id']) is not None
 
     # test mattermost document
     doc_db_obj = crud_document.document.create(db,
@@ -64,14 +54,15 @@ def test_crud_mattermost(db: Session):
     assert db_obj.user == obj_in.user
     assert crud.mattermost_documents.get_by_message_id(db, message_id=obj_in.message_id) is not None
 
+
 # test user info in database
-def test_populate_mm_user_info(db: Session):
+def test_populate_mm_user_team_info(db: Session):
 
     if environment_settings.environment == 'test':
         return
 
     mm_name = 'nitmre-bot'
-    user_obj = crud.populate_mm_user_info(db, user_name=mm_name)
+    user_obj = crud.populate_mm_user_team_info(db, user_name=mm_name)
 
     assert user_obj.user_name == mm_name
 
