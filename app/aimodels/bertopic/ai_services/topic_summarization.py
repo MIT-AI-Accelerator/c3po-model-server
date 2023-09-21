@@ -24,11 +24,7 @@ Write a concise summary in 1-3 sentences which covers the key points of the text
 {text}
 TEXT SUMMARY:
 """
-# COMBINE_PROMPT_TEMPLATE = """
-# Write a concise summary of the following text delimited by triple backquotes.
-# ```{text}```
-# TEXT SUMMARY:
-# """
+
 
 # default parameters for topic summarization
 DEFAULT_N_REPR_DOCS = 5

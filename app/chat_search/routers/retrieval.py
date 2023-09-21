@@ -54,7 +54,7 @@ def _render_result_as_html(result):
     # Create a Jinja2 environment and load the template
 
     env = Environment(
-        loader=FileSystemLoader(os.path.abspath(os.path.dirname(__file__)))
+        loader=FileSystemLoader(os.path.abspath(os.path.dirname(__file__)),autoescape=True)
     )
     template = env.get_template("template.html")
 
