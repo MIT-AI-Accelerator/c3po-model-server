@@ -244,7 +244,6 @@ class BasicInference:
                 output_summary = self.topic_summarizer.get_summary(
                     topic_docs['Document'].to_list())
                 if output_summary:
-                    # summary_text = output_summary['intermediate_steps'][0]
                     summary_text = output_summary['output_text']
 
             topic_timeline_visualization = topic_model.visualize_topics_over_time(
