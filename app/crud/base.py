@@ -92,7 +92,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     # *************** additional custom methods *********************
     # see here for using populate_existing for multi-refresh
     # https://docs.sqlalchemy.org/en/20/orm/queryguide/api.html#orm-queryguide-populate-existing
-    def refresh_all_by_id(self, db: Session, *, db_obj_ids: list[UUID]) -> ModelType:
+    def refresh_all_by_id(self, db: Session, *, db_obj_ids: list[UUID]) -> list[ModelType]:
         if not db_obj_ids:
             return []
         stmt = (
@@ -102,7 +102,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         )
         return db.execute(stmt).scalars().all() # no mutation so no need to commit
 
-    def create_all_using_id(self, db: Session, *, obj_in_list: list[CreateSchemaType]) -> ModelType:
+    def create_all_using_id(self, db: Session, *, obj_in_list: list[CreateSchemaType]) -> list[ModelType]:
         if not obj_in_list:
             return []
         db_obj_list = [self.model(**jsonable_encoder(obj_in), id=uuid4())
