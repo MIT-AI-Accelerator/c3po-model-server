@@ -24,6 +24,7 @@ from ..ai_services.service import RetrievalService
 
 router = APIRouter(prefix="", tags=["Query Retrieval"])
 
+
 @router.get(
     "/retrieval",
     response_class=HTMLResponse,
@@ -41,8 +42,12 @@ async def chat_query_retrieval_get(
     """
 
     api_inputs = CompletionInferenceInputs(prompt=prompt)
-    completion_inference_service: CompletionInference = validate_inputs_and_generate_service(api_inputs, db, s3)
-    retrieval_service = RetrievalService(completion_inference=completion_inference_service, db=db, s3=s3)
+    completion_inference_service: CompletionInference = (
+        validate_inputs_and_generate_service(api_inputs, db, s3)
+    )
+    retrieval_service = RetrievalService(
+        completion_inference=completion_inference_service, db=db, s3=s3
+    )
 
     results = retrieval_service.retrieve(api_inputs, summarize)
 
@@ -54,7 +59,8 @@ def _render_result_as_html(result):
     # Create a Jinja2 environment and load the template
 
     env = Environment(
-        loader=FileSystemLoader(os.path.abspath(os.path.dirname(__file__)),autoescape=True)
+        loader=FileSystemLoader(os.path.abspath(os.path.dirname(__file__))),
+        autoescape=True,
     )
     template = env.get_template("template.html")
 
