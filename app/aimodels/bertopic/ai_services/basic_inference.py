@@ -135,7 +135,7 @@ class BuildTopicModelInputs(BaseModel):
     @validator('embeddings')
     def embeddings_must_be_same_length_as_documents_text_list(cls, v, values):
         # pylint: disable=no-self-argument
-        if v.shape[0] != len(values['documents_text_list']):
+        if values.get('documents_text_list') and v.shape[0] != len(values['documents_text_list']):
             raise ValueError(
                 'embeddings must be same length as documents_text_list')
         return v
