@@ -50,8 +50,8 @@ def init() -> None:
 def get_db(environment: str, migration_toggle: bool) -> Union[Session, None]:
     db = None
 
-    # clear DB if local or staging as long as not actively testing migrating
-    if (environment in ['local', 'staging'] and migration_toggle is False):
+    clear DB if local or staging as long as not actively testing migrating
+    if (environment in ['local'] and migration_toggle is False):
         logger.info("Clearing database")
         wipe_db()
         logger.info("Database cleared")
