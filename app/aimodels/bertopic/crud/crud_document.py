@@ -1,3 +1,4 @@
+from sqlalchemy import desc
 from app.crud.base import CRUDBase
 from ..models.document import DocumentModel
 from ..schemas.document import DocumentCreate
@@ -20,8 +21,9 @@ class CRUDDocument(CRUDBase[DocumentModel, DocumentCreate, DocumentCreate]):
         return (
             db.query(self.model)
             .filter(self.model.original_created_time.between(start_date, end_date))
+            .order_by(desc(self.model.original_created_time))  # Order by original_created_time in descending order
+            .limit(1000)  # Limit the number of returned rows to 1000
             .all()
         )
-
 
 document = CRUDDocument(DocumentModel)
