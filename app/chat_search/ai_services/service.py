@@ -38,12 +38,12 @@ class RetrievalService(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
-    def retrieve(self, api_inputs: CompletionInferenceInputs, summarize=False):
+    def retrieve(self, api_inputs: CompletionInferenceInputs, summarize=False, max_docs=1000):
         # validate input
         if not isinstance(api_inputs, CompletionInferenceInputs):
             raise ValidationError("must input type CompletionInferenceInputs")
 
-        retriever = self._build_retriever(channel_names=[CHAT_DATASET_1_PATH])
+        retriever = self._build_retriever(channel_names=[CHAT_DATASET_1_PATH], max_docs=max_docs)
 
         if summarize:
             llm = self.completion_inference._build_llm(api_inputs)
@@ -63,6 +63,7 @@ class RetrievalService(BaseModel):
     def _build_retriever(
         self,
         channel_names=[],
+        max_docs=1000,
     ):
         if self.sentence_model is None:
             try:
@@ -87,7 +88,7 @@ class RetrievalService(BaseModel):
 
         # get DocumentModel objects from the database
         document_models = document_crud.get_by_created_date_range(
-            db=self.db, start_date=None, end_date=None
+            db=self.db, start_date=None, end_date=None, limit=max_docs
         )
 
         # convert DocumentModel objects to Document objects
