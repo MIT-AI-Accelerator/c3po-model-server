@@ -34,6 +34,7 @@ router = APIRouter(prefix="", tags=["Query Retrieval"])
 async def chat_query_retrieval_get(
     prompt: str,
     summarize: bool = False,
+    max_docs: int = 1000,
     db: Session = Depends(get_db),
     s3: Minio = Depends(get_minio),
 ) -> (HTMLResponse):
@@ -49,7 +50,7 @@ async def chat_query_retrieval_get(
         completion_inference=completion_inference_service, db=db, s3=s3
     )
 
-    results = retrieval_service.retrieve(api_inputs, summarize)
+    results = retrieval_service.retrieve(api_inputs, summarize, max_docs=max_docs)
 
     return _render_result_as_html(results)
 

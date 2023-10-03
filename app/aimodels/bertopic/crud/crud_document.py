@@ -9,9 +9,13 @@ import datetime
 
 class CRUDDocument(CRUDBase[DocumentModel, DocumentCreate, DocumentCreate]):
     def get_by_created_date_range(
-        self, db: Session, *, start_date: datetime.datetime, end_date: datetime.datetime
+        self,
+        db: Session,
+        *,
+        start_date: datetime.datetime,
+        end_date: datetime.datetime,
+        limit: int = 100000
     ) -> List[DocumentModel]:
-
         if not end_date:
             end_date = datetime.datetime.now()
 
@@ -21,9 +25,12 @@ class CRUDDocument(CRUDBase[DocumentModel, DocumentCreate, DocumentCreate]):
         return (
             db.query(self.model)
             .filter(self.model.original_created_time.between(start_date, end_date))
-            .order_by(desc(self.model.original_created_time))  # Order by original_created_time in descending order
-            .limit(1000)  # Limit the number of returned rows to 1000
+            .order_by(
+                desc(self.model.original_created_time)
+            )  # Order by original_created_time in descending order
+            .limit(limit)  # Limit the number of returned rows to 1000
             .all()
         )
+
 
 document = CRUDDocument(DocumentModel)
