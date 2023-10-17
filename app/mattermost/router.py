@@ -16,7 +16,7 @@ from .schemas.mattermost_users import MattermostUser
 
 """mattermost section"""
 router = APIRouter(
-    prefix="", tags=["Mattermost"]
+    prefix="", tags=["Mattermost - Experimental"]
 )
 
 
