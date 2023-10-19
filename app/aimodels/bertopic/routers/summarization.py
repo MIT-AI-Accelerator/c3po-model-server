@@ -7,12 +7,31 @@ from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 from app.dependencies import get_db
 from app.core.errors import ValidationError, HTTPValidationError
+from ..schemas.bertopic_trained import BertopicTrained
 from ..schemas.topic import TopicSummary
 from .. import crud
+from ..crud.crud_bertopic_trained import BertopicTrainedModelSummary
 
 router = APIRouter(
     prefix=""
 )
+
+@router.get(
+    "/models",
+    response_model=Union[str, HTTPValidationError],
+    summary="Retrieve all available trained BERTopic models",
+    response_description="Retrieved trained BERTopic models")
+async def get_model_topics(limit: int = 1, db: Session = Depends(get_db)) -> (
+    Union[str, HTTPValidationError]
+):
+    """
+    Retrieve all available trained BERTopic models
+
+    - **limit**: Optional.  Maximum number of trained model IDs to return.
+    """
+    summary_objs = crud.bertopic_trained.get_trained_models(db, row_limit=limit)
+    json_obj = jsonable_encoder(summary_objs)
+    return json.dumps(json_obj, indent=2)
 
 @router.get(
     "/model/{id}/visualize_topic_clusters",
@@ -56,11 +75,11 @@ async def visualize_topic_words(id: UUID4, db: Session = Depends(get_db)):
 
 @router.get(
     "/model/{id}/topics",
-    response_model=Union[list[TopicSummary], HTTPValidationError],
+    response_model=Union[str, HTTPValidationError],
     summary="Retrieve topics for a trained BERTopic model",
     response_description="Retrieved topics for a trained BERTopic model")
 async def get_model_topics(id: UUID4, db: Session = Depends(get_db)) -> (
-    Union[list[TopicSummary], HTTPValidationError]
+    Union[str, HTTPValidationError]
 ):
     """
     Retrieve topics for a trained BERTopic model
@@ -72,7 +91,13 @@ async def get_model_topics(id: UUID4, db: Session = Depends(get_db)) -> (
         raise HTTPException(
             status_code=422, detail=f"BERTopic trained model not found")
 
-    return crud.topic_summary.get_by_model_id(db, model_id=id)
+    topic_objs = crud.topic_summary.get_by_model_id(db, model_id=id)
+
+    # drop topic_timeline_visualization from topic summary
+    json_objs = jsonable_encoder(topic_objs)
+    [json_obj.pop('topic_timeline_visualization') for json_obj in json_objs]
+    return json.dumps(json_objs, indent=2)
+
 
 @router.get(
     "/topic/{id}",
