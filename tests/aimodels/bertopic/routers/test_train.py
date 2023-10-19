@@ -149,6 +149,26 @@ def test_get_bertopic_visualizations(client: TestClient, db: Session):
     assert response.status_code == 200
 
 
+# test trained module summaries endpoint
+def test_get_bertopic_trained_models(client: TestClient, db: Session):
+
+    limit = 2
+    db_objs = crud_bertopic_trained.bertopic_trained.get_trained_models(db, row_limit=limit)
+    assert len(db_objs) == limit
+
+    response = client.get("/aimodels/bertopic/models", headers={}, params={'limit': limit-1})
+    assert response.status_code == 200
+
+    rdata = response.json()
+    summary_obj = json.loads(rdata)
+    assert len(summary_obj) == limit-1
+
+    assert str(db_objs[0].id) == summary_obj[-1]['id']
+    assert str(db_objs[0].sentence_transformer_id) == summary_obj[-1]['sentence_transformer_id']
+    assert str(db_objs[0].weak_learner_id) == summary_obj[-1]['weak_learner_id']
+    assert str(db_objs[0].summarization_model_id) == summary_obj[-1]['summarization_model_id']
+
+
 # test topic summarization endpoint with invalid request
 def test_get_bertopic_summarization_invalid_request(client: TestClient):
     response = client.get("/aimodels/bertopic/topic/%d" % 0, headers={})
