@@ -110,11 +110,11 @@ def populate_mm_user_info(db: Session, *, mm_user: dict, teams: dict) -> Matterm
     return user_obj
 
 
-def populate_mm_user_team_info(db: Session, *, user_name: str) -> MattermostUserModel:
+def populate_mm_user_team_info(db: Session, *, user_name: str, get_teams = False) -> MattermostUserModel:
 
     # add or update user info in db
     (mm_user, tdf) = mattermost_utils.get_user_info(
-        settings.mm_base_url, settings.mm_token, user_name)
+        settings.mm_base_url, settings.mm_token, user_name, get_teams)
     if mm_user is None:
         logger.debug(f"Mattermost user not found: {user_name}")
         return None
@@ -122,7 +122,7 @@ def populate_mm_user_team_info(db: Session, *, user_name: str) -> MattermostUser
     teams = dict()
     if not tdf.empty:
         teams = tdf['name'].to_dict()
-    else:
+    elif get_teams:
         logger.debug(f"Unable to access teams for user: {user_name}")
 
     user_obj = populate_mm_user_info(db, mm_user=mm_user, teams=teams)
@@ -183,7 +183,7 @@ def convert_conversation_threads(df: pd.DataFrame):
                 t.append(utterance.replace("\n", " "))
                 threads[p_id] = t
                 threads_row[p_id] = row
-    keys = sorted(threads.keys())
+    keys = set(sorted(threads.keys())).intersection(threads_row.keys())
 
     data = []
     for index, key in enumerate(keys):

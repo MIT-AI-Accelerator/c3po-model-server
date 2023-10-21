@@ -37,11 +37,11 @@ def get_all_pages(url, mm_token, is_channel=False):
     return rdf
 
 
-def get_user_info(mm_base_url, mm_token, mm_user):
+def get_user_info(mm_base_url, mm_token, mm_user, get_teams = False):
     """get a list of teams by user"""
 
     user = None
-    tdf = None
+    tdf = tdf = pd.DataFrame()
 
     # user info
     resp = requests.get(f'{mm_base_url}/api/v4/users/username/%s' % mm_user,
@@ -53,7 +53,7 @@ def get_user_info(mm_base_url, mm_token, mm_user):
         logger.debug(f"{resp.url} request failed: {resp.status_code}")
 
     # team info
-    if user:
+    if user and get_teams:
         url = f'{mm_base_url}/api/v4/users/%s/teams' % user['id']
         tdf = get_all_pages(url, mm_token)
         if not tdf.empty:

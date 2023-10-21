@@ -1,6 +1,7 @@
 import hashlib
 import os
 import io
+from sqlalchemy.orm import Session
 from unittest.mock import MagicMock
 import uuid
 import pickle
@@ -8,6 +9,8 @@ import string
 import random
 import pandas as pd
 from fastapi.testclient import TestClient
+from app.core.config import OriginationEnum
+from app.aimodels.bertopic.crud.crud_bertopic_embedding_pretrained import bertopic_embedding_pretrained
 from app.aimodels.bertopic.schemas.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedCreate
 from app.aimodels.bertopic.ai_services.weak_learning import WeakLearner
 from fastapi.encoders import jsonable_encoder
@@ -300,9 +303,17 @@ def test_get_latest_bertopic_embedding_pretrained_object_invalid_name(client: Te
     assert response.status_code == 422
 
 
-def test_get_latest_bertopic_embedding_pretrained_object_valid_name(client: TestClient):
+def test_get_latest_bertopic_embedding_pretrained_object_valid_name(client: TestClient, db: Session, mocker: MagicMock):
     my_model = 'test'
     body = {'model_name': my_model}
+
+    mocked_model = bertopic_embedding_pretrained.get_by_model_name(db,
+                                                                model_name=my_model,
+                                                                originated_from=OriginationEnum.ORIGINATED_FROM_TEST)
+    mocker.patch(
+        "app.aimodels.bertopic.crud.crud_bertopic_embedding_pretrained.bertopic_embedding_pretrained.get_by_model_name",
+        return_value=mocked_model
+    )
 
     response = client.get(
         "/aimodels/bertopic/bertopic-embedding-pretrained",

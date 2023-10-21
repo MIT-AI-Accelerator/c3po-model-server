@@ -2,7 +2,9 @@ from unittest.mock import create_autospec
 import uuid
 import json
 from sqlalchemy.orm import Session
+from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
+from app.core.config import OriginationEnum
 from fastapi.encoders import jsonable_encoder
 from app.aimodels.bertopic.models.bertopic_embedding_pretrained import (
     BertopicEmbeddingPretrainedModel,
@@ -150,23 +152,28 @@ def test_get_bertopic_visualizations(client: TestClient, db: Session):
 
 
 # test trained module summaries endpoint
-def test_get_bertopic_trained_models(client: TestClient, db: Session):
+def test_get_bertopic_trained_models(client: TestClient, db: Session, mocker: MagicMock):
 
-    limit = 2
-    db_objs = crud_bertopic_trained.bertopic_trained.get_trained_models(db, row_limit=limit)
-    assert len(db_objs) == limit
+    limit = 1
+    mocked_model = crud_bertopic_trained.bertopic_trained.get_trained_models(db,
+                                                                             row_limit=limit,
+                                                                             originated_from=OriginationEnum.ORIGINATED_FROM_TEST)
+    mocker.patch(
+        "app.aimodels.bertopic.crud.crud_bertopic_trained.bertopic_trained.get_trained_models",
+        return_value=mocked_model
+    )
 
-    response = client.get("/aimodels/bertopic/models", headers={}, params={'limit': limit-1})
+    response = client.get("/aimodels/bertopic/models", headers={}, params={'limit': limit})
     assert response.status_code == 200
 
     rdata = response.json()
     summary_obj = json.loads(rdata)
-    assert len(summary_obj) == limit-1
+    assert len(summary_obj) == limit
 
-    assert str(db_objs[0].id) == summary_obj[-1]['id']
-    assert str(db_objs[0].sentence_transformer_id) == summary_obj[-1]['sentence_transformer_id']
-    assert str(db_objs[0].weak_learner_id) == summary_obj[-1]['weak_learner_id']
-    assert str(db_objs[0].summarization_model_id) == summary_obj[-1]['summarization_model_id']
+    assert str(mocked_model[0].id) == str(summary_obj[0]['id'])
+    assert str(mocked_model[0].sentence_transformer_id) == str(summary_obj[0]['sentence_transformer_id'])
+    assert str(mocked_model[0].weak_learner_id) == str(summary_obj[0]['weak_learner_id'])
+    assert str(mocked_model[0].summarization_model_id) == str(summary_obj[0]['summarization_model_id'])
 
 
 # test topic summarization endpoint with invalid request
