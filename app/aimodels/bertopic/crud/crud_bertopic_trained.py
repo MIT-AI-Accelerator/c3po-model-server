@@ -54,9 +54,9 @@ class CRUDBertopicTrained(CRUDBase[BertopicTrainedModel, BertopicTrainedCreate, 
             .all()
         )
 
-    def get_trained_models(self, db: Session, *, row_limit = 1) -> list[BertopicTrainedModelSummary]:
+    def get_trained_models(self, db: Session, *, row_limit = 1, originated_from = OriginationEnum.ORIGINATED_FROM_APP) -> list[BertopicTrainedModelSummary]:
 
-        db_objs = db.query(self.model).filter(self.model.originated_from == OriginationEnum.ORIGINATED_FROM_APP,
+        db_objs = db.query(self.model).filter(self.model.originated_from == originated_from,
                                               self.model.uploaded == True).order_by(desc(self.model.time)).limit(row_limit)
         return [BertopicTrainedModelSummary(trained_model=db_obj) for db_obj in db_objs]
 
