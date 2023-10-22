@@ -1,8 +1,8 @@
 
 from typing import Union
 from sqlalchemy.orm import Session
-from app.crud.base import CRUDBase
 from app.core.config import OriginationEnum, get_originated_from
+from app.crud.base import CRUDBase
 from ..models import Gpt4AllPretrainedModel
 from ..models.gpt4all_pretrained import Gpt4AllModelFilenameEnum
 from ..schemas import Gpt4AllPretrainedCreate, Gpt4AllPretrainedUpdate
@@ -21,8 +21,8 @@ class CRUDGpt4AllPretrained(CRUDBase[Gpt4AllPretrainedModel, Gpt4AllPretrainedCr
             return None
 
         return db.query(self.model).filter(self.model.model_type == model_type,
-                                           self.model.uploaded == True,self.
-                                           model.originated_from == originated_from).order_by(self.model.version.desc()).first()
+                                           self.model.uploaded == True,
+                                           self.model.originated_from == originated_from).order_by(self.model.version.desc()).first()
 
 
 gpt4all_pretrained = CRUDGpt4AllPretrained(

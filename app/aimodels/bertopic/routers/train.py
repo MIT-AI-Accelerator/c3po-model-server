@@ -11,8 +11,10 @@ from app.dependencies import get_db, get_minio
 from sqlalchemy.orm import Session
 from .. import crud
 from ..models.bertopic_trained import BertopicTrainedModel
+from ..models.bertopic_visualization import BertopicVisualizationTypeEnum
 from ..schemas.bertopic_trained import BertopicTrained, BertopicTrainedCreate, BertopicTrainedUpdate
-from ..schemas.topic import TopicSummary, TopicSummaryUpdate
+from ..schemas.bertopic_visualization import BertopicVisualization, BertopicVisualizationCreate
+from ..schemas.topic import TopicSummaryUpdate
 from ..ai_services.topic_summarization import MAP_PROMPT_TEMPLATE, COMBINE_PROMPT_TEMPLATE
 from app.core.errors import ValidationError, HTTPValidationError
 from app.core.config import settings
@@ -105,9 +107,6 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
                                                                    documents, precalculated_embeddings=precalculated_embeddings, num_topics=request.num_topics,
                                                                    seed_topic_list=request.seed_topics)
 
-    new_topic_cluster_visualization = inference_output.topic_cluster_visualization
-    new_topic_word_visualization = inference_output.topic_word_visualization
-
     # save calculated embeddings computations
     new_embedding_computation_obj_list = [DocumentEmbeddingComputationCreate(
         document_id=documents[i].id,
@@ -132,8 +131,6 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
             'seed_topics'].to_dict(),
         map_prompt_template=request.map_prompt_template,
         combine_prompt_template=request.combine_prompt_template,
-        topic_word_visualization=new_topic_word_visualization,
-        topic_cluster_visualization=new_topic_cluster_visualization,
         uploaded=False
     )
 
@@ -161,8 +158,39 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
     # (see docs here for info: https://docs.sqlalchemy.org/en/20/orm/session_state_management.html#refreshing-expiring)
     db.refresh(new_bertopic_trained_obj)
 
-    [crud.topic_summary.update(db, db_obj=topic, obj_in=TopicSummaryUpdate(
-        model_id=new_bertopic_trained_obj.id)) for topic in inference_output.topics]
+    # upload model-level visualizations
+    visualize_model_words = BertopicVisualizationCreate(
+        model_or_topic_id=new_bertopic_trained_obj.id,
+        visualization_type=BertopicVisualizationTypeEnum.MODEL_WORDS,
+        html_string=inference_output.model_word_visualization.to_html(),
+        json_string=inference_output.model_word_visualization.to_json()
+    )
+    crud.bertopic_visualization.create(db, obj_in=visualize_model_words)
+    visualize_model_clusters = BertopicVisualizationCreate(
+        model_or_topic_id=new_bertopic_trained_obj.id,
+        visualization_type=BertopicVisualizationTypeEnum.MODEL_CLUSTERS,
+        html_string=inference_output.model_cluster_visualization.to_html(),
+        json_string=inference_output.model_cluster_visualization.to_json()
+    )
+    crud.bertopic_visualization.create(db, obj_in=visualize_model_clusters)
+
+    # upload topics and topic-level visualizations
+    if len(inference_output.topics) != len(inference_output.topic_timeline_visualization):
+            raise HTTPException(
+            status_code=422, detail="topic summary and visualization length mismatch")
+
+    for tid in range(len(inference_output.topics)):
+        crud.topic_summary.update(db,
+                                  db_obj=inference_output.topics[tid],
+                                  obj_in=TopicSummaryUpdate(model_id=new_bertopic_trained_obj.id))
+
+        visualize_topic_timeline = BertopicVisualizationCreate(
+            model_or_topic_id=inference_output.topics[tid].id,
+            visualization_type=BertopicVisualizationTypeEnum.TOPIC_TIMELINE,
+            html_string=inference_output.topic_timeline_visualization[tid].to_html(),
+            json_string=inference_output.topic_timeline_visualization[tid].to_json()
+        )
+        crud.bertopic_visualization.create(db, obj_in=visualize_topic_timeline)
 
     return new_bertopic_trained_obj
 

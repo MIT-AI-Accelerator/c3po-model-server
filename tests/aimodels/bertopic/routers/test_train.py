@@ -1,20 +1,20 @@
-from unittest.mock import create_autospec
 import uuid
 import json
+from unittest.mock import MagicMock, create_autospec
 from sqlalchemy.orm import Session
-from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
-from app.core.config import OriginationEnum
 from fastapi.encoders import jsonable_encoder
+from plotly.graph_objs import Figure
+from app.core.config import OriginationEnum
 from app.aimodels.bertopic.models.bertopic_embedding_pretrained import (
     BertopicEmbeddingPretrainedModel,
     EmbeddingModelTypeEnum,
 )
 from app.aimodels.bertopic.models.bertopic_trained import BertopicTrainedModel
-from app.aimodels.bertopic.crud import crud_bertopic_trained, document
+from app.aimodels.bertopic.crud import crud_bertopic_trained, crud_bertopic_visualization, document, crud_topic, bertopic_embedding_pretrained
 from app.aimodels.bertopic.models.document import DocumentModel
 from app.aimodels.bertopic.models.topic import TopicSummaryModel
-from app.aimodels.bertopic.crud import crud_topic, bertopic_embedding_pretrained
+from app.aimodels.bertopic.models.bertopic_visualization import BertopicVisualizationModel, BertopicVisualizationTypeEnum
 from app.aimodels.bertopic.ai_services.basic_inference import (
     BasicInference,
     BasicInferenceOutputs,
@@ -57,7 +57,7 @@ def test_get_bertopic_visualize_topic_clusters_invalid_id(client: TestClient):
     )
 
     assert response.status_code == 422
-    assert "BERTopic trained model not found" in response.json()["detail"]
+    assert "BERTopic visualization not found" in response.json()["detail"]
 
 
 # test visualize_topic_words endpoint with invalid request
@@ -78,7 +78,7 @@ def test_get_bertopic_visualize_topic_words_invalid_id(client: TestClient):
     )
 
     assert response.status_code == 422
-    assert "BERTopic trained model not found" in response.json()["detail"]
+    assert "BERTopic visualization not found" in response.json()["detail"]
 
 
 # test trained topic endpoint with invalid request
@@ -117,19 +117,27 @@ def test_get_bertopic_visualize_topic_timeline_invalid_id(client: TestClient):
     )
 
     assert response.status_code == 422
-    assert "BERTopic topic summary not found" in response.json()["detail"]
+    assert "BERTopic visualization not found" in response.json()["detail"]
 
 
 # test visualization endpoints with valid model id
 def test_get_bertopic_visualizations(client: TestClient, db: Session):
     trained_model_obj = BertopicTrainedModel(
-        sentence_transformer_id=uuid.uuid4(),
-        topic_cluster_visualization="<html>hi</html>",
-        topic_word_visualization="<html>bye</html>",
+        sentence_transformer_id=uuid.uuid4()
     )
-
     trained_model_db_obj = crud_bertopic_trained.bertopic_trained.create(
         db, obj_in=trained_model_obj
+    )
+
+    # test visualize_topic_clusters
+    visualization_obj = BertopicVisualizationModel(
+        model_or_topic_id = trained_model_db_obj.id,
+        visualization_type = BertopicVisualizationTypeEnum.MODEL_CLUSTERS,
+        html_string = "<html>hi</html>",
+        json_string = "[{'name': 'a dict'}]",
+    )
+    crud_bertopic_visualization.bertopic_visualization.create(
+        db, obj_in=visualization_obj
     )
 
     response = client.get(
@@ -138,6 +146,17 @@ def test_get_bertopic_visualizations(client: TestClient, db: Session):
         headers={},
     )
     assert response.status_code == 200
+
+    # test visualize_topic_words
+    visualization_obj = BertopicVisualizationModel(
+        model_or_topic_id = trained_model_db_obj.id,
+        visualization_type = BertopicVisualizationTypeEnum.MODEL_WORDS,
+        html_string = "<html>hi</html>",
+        json_string = "[{'name': 'a dict'}]",
+    )
+    crud_bertopic_visualization.bertopic_visualization.create(
+        db, obj_in=visualization_obj
+    )
 
     response = client.get(
         "/aimodels/bertopic/model/%s/visualize_topic_words" % trained_model_db_obj.id,
@@ -199,15 +218,13 @@ def test_get_bertopic_summary(client: TestClient, db: Session):
         name="my topic",
         top_n_words="some_words",
         top_n_documents=dict({"0": "a document", "1": "another document"}),
-        summary="a summary",
-        topic_timeline_visualization="<html>it works</html>",
+        summary="a summary"
     )
 
     topic_db_obj = crud_topic.topic_summary.create(db, obj_in=topic_obj)
 
     response = client.get("/aimodels/bertopic/topic/%s" % topic_db_obj.id, headers={})
-    rdata = response.json()
-    summary = json.loads(rdata)
+    summary = response.json()
 
     assert response.status_code == 200
     assert summary["topic_id"] == topic_obj.topic_id
@@ -215,6 +232,24 @@ def test_get_bertopic_summary(client: TestClient, db: Session):
     assert summary["top_n_words"] == topic_obj.top_n_words
     assert summary["top_n_documents"] == topic_obj.top_n_documents
     assert summary["summary"] == topic_obj.summary
+
+    # test visualize_topic_words
+    visualization_obj = BertopicVisualizationModel(
+        model_or_topic_id = topic_db_obj.id,
+        visualization_type = BertopicVisualizationTypeEnum.TOPIC_TIMELINE,
+        html_string = "<html>hi</html>",
+        json_string = "[{'name': 'a dict'}]",
+    )
+    crud_bertopic_visualization.bertopic_visualization.create(
+        db, obj_in=visualization_obj
+    )
+
+    response = client.get(
+        "/aimodels/bertopic/topic/%s/visualize_topic_timeline"
+        % topic_db_obj.id,
+        headers={},
+    )
+    assert response.status_code == 200
 
 
 def test_train_valid_input_request(
@@ -263,8 +298,10 @@ def test_train_valid_input_request(
 
     # mock the return value of inference
     mock_inference_outputs = create_autospec(BasicInferenceOutputs)
-    mock_inference_outputs.topic_cluster_visualization = "<html>hi</html>"
-    mock_inference_outputs.topic_word_visualization = "<html>bye</html>"
+    mock_inference_outputs.model_word_visualization = Figure()
+    mock_inference_outputs.model_cluster_visualization = Figure()
+    mock_inference_outputs.model_timeline_visualization = Figure()
+    mock_inference_outputs.topic_timeline_visualization = []
     mock_inference_outputs.topic_model = object()
     mock_inference_outputs.topics = list()
     mock_inference_outputs.embeddings = [[1, 1] for _ in documents_db]
@@ -297,3 +334,18 @@ def test_train_valid_input_request(
 
     assert response.status_code == 200
     assert response.json()["id"] is not None
+
+
+# test trained module summaries endpoint
+def test_get_bertopic_trained_models(client: TestClient, db: Session):
+
+    limit = 0
+    db_objs = crud_bertopic_trained.bertopic_trained.get_trained_models(db, row_limit=limit)
+    assert len(db_objs) == limit
+
+    response = client.get("/aimodels/bertopic/models", headers={}, params={'limit': limit})
+    assert response.status_code == 200
+
+    rdata = response.json()
+    summary_obj = json.loads(rdata)
+    assert len(summary_obj) == limit

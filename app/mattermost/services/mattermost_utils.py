@@ -41,7 +41,7 @@ def get_user_info(mm_base_url, mm_token, mm_user, get_teams = False):
     """get a list of teams by user"""
 
     user = None
-    tdf = tdf = pd.DataFrame()
+    tdf = pd.DataFrame()
 
     # user info
     resp = requests.get(f'{mm_base_url}/api/v4/users/username/%s' % mm_user,
