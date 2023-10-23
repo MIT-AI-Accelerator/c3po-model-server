@@ -117,6 +117,48 @@ async def visualize_topic_words(id: UUID4, db: Session = Depends(get_db)):
 
 
 @router.get(
+    "/model/{id}/visualize_topic_timeline",
+    response_class=HTMLResponse,
+    summary="Retrieve a BERTopic model-level topic timeline visualization",
+    response_description="Retrieved a BERTopic model-level topic timeline visualization")
+async def visualize_topic_words(id: UUID4, db: Session = Depends(get_db)):
+    """
+    Retrieve a BERTopic model-level topic timeline visualization
+
+    - **trained_model_id**: Required.  Trained BERTopic model ID.
+    """
+    vis_obj = crud.bertopic_visualization.get_by_model_or_topic_id(db,
+                                                                   model_or_topic_id=id,
+                                                                   visualization_type=BertopicVisualizationTypeEnum.MODEL_TIMELINE)
+    if not vis_obj:
+        raise HTTPException(
+            status_code=422, detail=f"BERTopic visualization not found")
+
+    return vis_obj.html_string
+
+
+@router.get(
+    "/model/{id}/visualize_topic_timeline/json",
+    response_model=Union[str, HTTPValidationError],
+    summary="Retrieve a BERTopic model-level topic timeline visualization",
+    response_description="Retrieved a BERTopic model-level topic timeline visualization")
+async def visualize_topic_words(id: UUID4, db: Session = Depends(get_db)):
+    """
+    Retrieve a BERTopic model-level topic timeline visualization
+
+    - **trained_model_id**: Required.  Trained BERTopic model ID.
+    """
+    vis_obj = crud.bertopic_visualization.get_by_model_or_topic_id(db,
+                                                                   model_or_topic_id=id,
+                                                                   visualization_type=BertopicVisualizationTypeEnum.MODEL_TIMELINE)
+    if not vis_obj:
+        raise HTTPException(
+            status_code=422, detail=f"BERTopic visualization not found")
+
+    return vis_obj.json_string
+
+
+@router.get(
     "/model/{id}/topics",
     response_model=Union[list[TopicSummary], HTTPValidationError],
     summary="Retrieve topics for a trained BERTopic model",

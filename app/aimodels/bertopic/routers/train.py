@@ -173,6 +173,13 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
         json_string=inference_output.model_cluster_visualization.to_json()
     )
     crud.bertopic_visualization.create(db, obj_in=visualize_model_clusters)
+    visualize_model_timeline = BertopicVisualizationCreate(
+        model_or_topic_id=new_bertopic_trained_obj.id,
+        visualization_type=BertopicVisualizationTypeEnum.MODEL_TIMELINE,
+        html_string=inference_output.model_timeline_visualization.to_html(),
+        json_string=inference_output.model_timeline_visualization.to_json()
+    )
+    crud.bertopic_visualization.create(db, obj_in=visualize_model_timeline)
 
     # upload topics and topic-level visualizations
     if len(inference_output.topics) != len(inference_output.topic_timeline_visualization):

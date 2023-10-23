@@ -250,6 +250,7 @@ class BasicInference:
                 if output_summary:
                     summary_text = output_summary['output_text']
 
+            # topic-level timeline visualization
             topic_timeline_visualization_list = topic_timeline_visualization_list + [topic_model.visualize_topics_over_time(
                 topics_over_time, topics=[row['Topic']], title='Topic Over Time: ' + row['Name'],
                 top_n_topics=num_topics)]
@@ -265,20 +266,26 @@ class BasicInference:
         topic_objs = crud_topic.topic_summary.create_all_using_id(
             db, obj_in_list=new_topic_obj_list)
 
-        # output topic cluster visualization as an html string
+        # model-level topic cluster visualization
         model_cluster_visualization = topic_model.visualize_documents(
             filtered_documents_text_list, embeddings=filtered_embeddings, title='Topic Analysis')
 
         # visualize_barchart will error if only default cluster (topic id -1) is available
         model_word_visualization = Figure()
+        model_timeline_visualization = Figure()
         if len(topic_info) > 1:
-            # output topic word visualization as an html string
+            # model-level topic word visualization
             model_word_visualization = topic_model.visualize_barchart(
                 top_n_topics=num_topics, n_words=DEFAULT_BERTOPIC_VISUALIZATION_WORDS,
                 title='Topic Word Scores')
 
-        # TODO: add model level timeline visualization and endpoints
-        model_timeline_visualization = Figure()
+            # model-level topic timeline visualization
+            model_timeline_visualization = topic_model.visualize_topics_over_time(
+                topics_over_time,
+                topics=topic_info['Topic'].values[1:],
+                title='Topics Over Time',
+                top_n_topics=num_topics
+            )
 
         return BasicInferenceOutputs(
             documents=documents,

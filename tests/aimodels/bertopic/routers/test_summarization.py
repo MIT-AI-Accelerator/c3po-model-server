@@ -183,6 +183,30 @@ def test_get_bertopic_model_visualizations(client: TestClient, db: Session):
     assert response.status_code == 200
     assert response.json() == visualization_obj.json_string
 
+    # test visualize_model_timeline
+    visualization_obj = BertopicVisualizationModel(
+        model_or_topic_id = trained_model_db_obj.id,
+        visualization_type = BertopicVisualizationTypeEnum.MODEL_TIMELINE,
+        html_string = "<html>hi</html>",
+        json_string = "[{'name': 'a dict'}]",
+    )
+    crud_bertopic_visualization.bertopic_visualization.create(
+        db, obj_in = visualization_obj
+    )
+
+    response = client.get(
+        "/aimodels/bertopic/model/%s/visualize_topic_timeline" % trained_model_db_obj.id,
+        headers = {},
+    )
+    assert response.status_code == 200
+
+    response = client.get(
+        "/aimodels/bertopic/model/%s/visualize_topic_timeline/json" % trained_model_db_obj.id,
+        headers = {},
+    )
+    assert response.status_code == 200
+    assert response.json() == visualization_obj.json_string
+
     response = client.get(
         "/aimodels/bertopic/model/%s/topics" % trained_model_db_obj.id, headers = {}
     )
