@@ -3,6 +3,7 @@ from pydantic import ValidationError
 import pytest
 import numpy as np
 from bertopic import BERTopic
+from plotly.graph_objs import Figure
 
 from app.aimodels.bertopic.models.bertopic_embedding_pretrained import (
     BertopicEmbeddingPretrainedModel,
@@ -43,8 +44,10 @@ def test_basic_inference_outputs_embeddings_validator():
             updated_document_indicies=[],
             topic_model=create_autospec(BERTopic),
             topics=[],
-            topic_word_visualization="",
-            topic_cluster_visualization="",
+            model_word_visualization = Figure(),
+            model_cluster_visualization = Figure(),
+            model_timeline_visualization = Figure(),
+            topic_timeline_visualization = []
         )
     assert "embeddings must be same length as documents" in str(excinfo.value)
 

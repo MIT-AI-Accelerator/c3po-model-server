@@ -13,7 +13,7 @@ def test_mattermost_bot():
     # test get user, teams
     mm_name = 'nitmre-bot'
     user, teams = mattermost_utils.get_user_info(
-        settings.mm_base_url, settings.mm_token, mm_name)
+        settings.mm_base_url, settings.mm_token, mm_name, get_teams = True)
 
     assert user['username'] == mm_name
     assert not teams.empty

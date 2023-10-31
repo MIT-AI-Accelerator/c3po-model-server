@@ -22,8 +22,6 @@ class BertopicTrainedModel(Base):
     seed_topics = Column(MutableDict.as_mutable(JSON))
     map_prompt_template = Column(String)
     combine_prompt_template = Column(String)
-    topic_word_visualization = Column(String)
-    topic_cluster_visualization = Column(String)
     originated_from = Column(Enum(OriginationEnum), default=get_originated_from)
 
     embedding_pretrained_id = Column(UUID, ForeignKey("bertopicembeddingpretrainedmodel.id"))

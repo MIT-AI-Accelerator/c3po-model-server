@@ -16,7 +16,7 @@ from .schemas.mattermost_users import MattermostUser
 
 """mattermost section"""
 router = APIRouter(
-    prefix="", tags=["Mattermost"]
+    prefix="", tags=["Mattermost - Experimental"]
 )
 
 
@@ -40,7 +40,7 @@ async def upload_mm_user_info(request: UploadUserRequest, db: Session = Depends(
     """
 
     user_obj = crud_mattermost.populate_mm_user_team_info(
-        db, user_name=request.user_name)
+        db, user_name=request.user_name, get_teams=True)
     if not user_obj:
         raise HTTPException(
             status_code=422, detail="Mattermost user not found")

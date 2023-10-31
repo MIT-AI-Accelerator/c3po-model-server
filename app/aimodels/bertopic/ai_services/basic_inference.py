@@ -9,6 +9,7 @@ from bertopic import BERTopic
 import hdbscan
 from pydantic import BaseModel, StrictFloat, StrictInt, StrictBool, validator
 from minio import Minio
+from plotly.graph_objs import Figure
 from app.core.minio import download_pickled_object_from_minio
 from ..models.document import DocumentModel
 from ..models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedModel
@@ -57,8 +58,10 @@ class BasicInferenceOutputs(BaseModel):
     updated_document_indicies: list[StrictBool]
     topic_model: BERTopic
     topics: list[TopicSummaryModel]
-    topic_word_visualization: str
-    topic_cluster_visualization: str
+    model_word_visualization: Figure
+    model_cluster_visualization: Figure
+    model_timeline_visualization: Figure
+    topic_timeline_visualization: list[Figure]
 
     # ensure that documents is same length as embeddings
     @validator('embeddings')
@@ -229,6 +232,7 @@ class BasicInference:
 
         topic_info = topic_model.get_topic_info()
         new_topic_obj_list = []
+        topic_timeline_visualization_list = []
         for key, row in tqdm(topic_info.iterrows()):
             if row['Topic'] < 0:
                 continue
@@ -246,9 +250,10 @@ class BasicInference:
                 if output_summary:
                     summary_text = output_summary['output_text']
 
-            topic_timeline_visualization = topic_model.visualize_topics_over_time(
+            # topic-level timeline visualization
+            topic_timeline_visualization_list = topic_timeline_visualization_list + [topic_model.visualize_topics_over_time(
                 topics_over_time, topics=[row['Topic']], title='Topic Over Time: ' + row['Name'],
-                top_n_topics=num_topics).to_html()
+                top_n_topics=num_topics)]
 
             new_topic_obj_list = new_topic_obj_list + [TopicSummaryCreate(
                 topic_id=row['Topic'],
@@ -256,24 +261,31 @@ class BasicInference:
                 top_n_words=topic_docs['Top_n_words'].unique()[0],
                 top_n_documents=topic_docs[[
                     'Document', 'Timestamp', 'Probability']].to_dict(),
-                summary=summary_text,
-                topic_timeline_visualization=topic_timeline_visualization)]
+                summary=summary_text)]
 
         topic_objs = crud_topic.topic_summary.create_all_using_id(
             db, obj_in_list=new_topic_obj_list)
 
-        # output topic cluster visualization as an html string
-        topic_cluster_visualization = topic_model.visualize_documents(
-            filtered_documents_text_list, embeddings=filtered_embeddings, title='Topic Analysis').to_html()
+        # model-level topic cluster visualization
+        model_cluster_visualization = topic_model.visualize_documents(
+            filtered_documents_text_list, embeddings=filtered_embeddings, title='Topic Analysis')
 
         # visualize_barchart will error if only default cluster (topic id -1) is available
+        model_word_visualization = Figure()
+        model_timeline_visualization = Figure()
         if len(topic_info) > 1:
-            # output topic word visualization as an html string
-            topic_word_visualization = topic_model.visualize_barchart(
+            # model-level topic word visualization
+            model_word_visualization = topic_model.visualize_barchart(
                 top_n_topics=num_topics, n_words=DEFAULT_BERTOPIC_VISUALIZATION_WORDS,
-                title='Topic Word Scores').to_html()
-        else:
-            topic_word_visualization = "<html>No topics to display</html>"
+                title='Topic Word Scores')
+
+            # model-level topic timeline visualization
+            model_timeline_visualization = topic_model.visualize_topics_over_time(
+                topics_over_time,
+                topics=topic_info['Topic'].values[1:],
+                title='Topics Over Time',
+                top_n_topics=num_topics
+            )
 
         return BasicInferenceOutputs(
             documents=documents,
@@ -281,8 +293,10 @@ class BasicInference:
             updated_document_indicies=updated_document_indicies,
             topic_model=topic_model,
             topics=topic_objs,
-            topic_word_visualization=topic_word_visualization,
-            topic_cluster_visualization=topic_cluster_visualization
+            model_word_visualization=model_word_visualization,
+            model_cluster_visualization=model_cluster_visualization,
+            model_timeline_visualization=model_timeline_visualization,
+            topic_timeline_visualization=topic_timeline_visualization_list
         )
 
     def calculate_document_embeddings(
