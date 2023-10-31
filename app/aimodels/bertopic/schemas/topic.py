@@ -9,7 +9,6 @@ class TopicSummaryBase(BaseModel):
     top_n_words: Optional[str] = None
     top_n_documents: Optional[dict] = None
     summary: Optional[str] = None
-    topic_timeline_visualization: Optional[str] = None
 
 # Properties to receive on TopicSummary creation
 class TopicSummaryCreate(TopicSummaryBase):

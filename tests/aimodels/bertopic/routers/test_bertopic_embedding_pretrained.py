@@ -1,13 +1,16 @@
 import hashlib
 import os
 import io
-from unittest.mock import MagicMock
 import uuid
 import pickle
 import string
 import random
 import pandas as pd
+from sqlalchemy.orm import Session
+from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
+from app.core.config import OriginationEnum
+from app.aimodels.bertopic.crud.crud_bertopic_embedding_pretrained import bertopic_embedding_pretrained
 from app.aimodels.bertopic.schemas.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedCreate
 from app.aimodels.bertopic.ai_services.weak_learning import WeakLearner
 from fastapi.encoders import jsonable_encoder
@@ -101,7 +104,7 @@ def test_create_bertopic_embedding_pretrained_object_post_sha256_converted_to_lo
 # ************ upload ************
 
 
-def test_upload_bertopic_embedding_pretrained_object_post_valid_request(client: TestClient, mocker):
+def test_upload_bertopic_embedding_pretrained_object_post_valid_request(client: TestClient, mocker: MagicMock):
 
     # Create a file to upload
     test_file = "test_file"
@@ -144,7 +147,7 @@ def test_upload_bertopic_embedding_pretrained_object_post_valid_request(client: 
 
 
 # test upload with sha256 not matching the one in the database
-def test_upload_bertopic_embedding_pretrained_object_post_invalid_sha256(client: TestClient, valid_sha256: str, mocker):
+def test_upload_bertopic_embedding_pretrained_object_post_invalid_sha256(client: TestClient, valid_sha256: str, mocker: MagicMock):
 
     # Create a file to upload
     test_file = "test_file_invalid_sha256"
@@ -199,7 +202,7 @@ def test_upload_bertopic_embedding_pretrained_object_post_empty_file(client: Tes
 
 
 
-def test_upload_bertopic_embedding_pretrained_object_post_invalid_id(client: TestClient, mocker):
+def test_upload_bertopic_embedding_pretrained_object_post_invalid_id(client: TestClient, mocker: MagicMock):
 
     test_file = "test_file_invalid_id"
     with open(test_file, "wb") as f:
@@ -300,9 +303,17 @@ def test_get_latest_bertopic_embedding_pretrained_object_invalid_name(client: Te
     assert response.status_code == 422
 
 
-def test_get_latest_bertopic_embedding_pretrained_object_valid_name(client: TestClient):
+def test_get_latest_bertopic_embedding_pretrained_object_valid_name(client: TestClient, db: Session, mocker: MagicMock):
     my_model = 'test'
     body = {'model_name': my_model}
+
+    mocked_model = bertopic_embedding_pretrained.get_by_model_name(db,
+                                                                   model_name=my_model,
+                                                                   originated_from=OriginationEnum.ORIGINATED_FROM_TEST)
+    mocker.patch(
+        "app.aimodels.bertopic.crud.crud_bertopic_embedding_pretrained.bertopic_embedding_pretrained.get_by_model_name",
+        return_value=mocked_model
+    )
 
     response = client.get(
         "/aimodels/bertopic/bertopic-embedding-pretrained",

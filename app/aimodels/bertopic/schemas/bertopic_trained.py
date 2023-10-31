@@ -14,9 +14,6 @@ class BertopicTrainedBase(BaseModel):
     seed_topics: Optional[dict] = None
     map_prompt_template: Optional[str] = None
     combine_prompt_template: Optional[str] = None
-    topic_word_visualization: Optional[str] = None
-    topic_cluster_visualization: Optional[str] = None
-
 
 # Properties to receive on BertopicTrained creation
 class BertopicTrainedCreate(BertopicTrainedBase):

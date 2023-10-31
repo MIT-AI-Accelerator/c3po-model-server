@@ -2,6 +2,7 @@
 from typing import Union
 from sqlalchemy.orm import Session
 from app.crud.base import CRUDBase
+from app.core.config import OriginationEnum, get_originated_from
 from ..models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedModel
 from ..schemas.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedCreate, BertopicEmbeddingPretrainedUpdate
 
@@ -13,12 +14,13 @@ class CRUDBertopicEmbeddingPretrained(CRUDBase[BertopicEmbeddingPretrainedModel,
 
         return db.query(self.model).filter(self.model.sha256 == sha256).first()
 
-    def get_by_model_name(self, db: Session, *, model_name: str) -> Union[BertopicEmbeddingPretrainedModel, None]:
+    def get_by_model_name(self, db: Session, *, model_name: str, originated_from = OriginationEnum.ORIGINATED_FROM_APP) -> Union[BertopicEmbeddingPretrainedModel, None]:
         if not model_name:
             return None
 
         return db.query(self.model).filter(self.model.model_name == model_name,
-                                           self.model.uploaded).order_by(self.model.version.desc()).first()
+                                           self.model.uploaded,
+                                           self.model.originated_from == originated_from).order_by(self.model.version.desc()).first()
 
 
 bertopic_embedding_pretrained = CRUDBertopicEmbeddingPretrained(

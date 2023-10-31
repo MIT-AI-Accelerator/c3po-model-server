@@ -1,13 +1,31 @@
+import uuid
 from typing import Union
-from pydantic import UUID4
+from pydantic import UUID4, BaseModel
+from datetime import datetime
 
 from fastapi.encoders import jsonable_encoder
+from sqlalchemy import desc
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
+from app.core.config import OriginationEnum
 from app.crud.base import CRUDBase
 from app.aimodels.bertopic.models.bertopic_trained import BertopicTrainedModel
 from app.aimodels.bertopic.schemas.bertopic_trained import BertopicTrainedCreate, BertopicTrainedUpdate
+
+class BertopicTrainedModelSummary(BaseModel):
+    time: datetime
+    id: UUID4
+    sentence_transformer_id: UUID4
+    weak_learner_id: Union[UUID4, None]
+    summarization_model_id: Union[UUID4, None]
+
+    def __init__(self, trained_model: BertopicTrainedModel):
+        super().__init__(time=trained_model.time,
+                         id=trained_model.id,
+                         sentence_transformer_id=trained_model.sentence_transformer_id,
+                         weak_learner_id = trained_model.weak_learner_id,
+                         summarization_model_id = trained_model.summarization_model_id)
 
 # CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType])
 class CRUDBertopicTrained(CRUDBase[BertopicTrainedModel, BertopicTrainedCreate, BertopicTrainedUpdate]  ):
@@ -35,5 +53,12 @@ class CRUDBertopicTrained(CRUDBase[BertopicTrainedModel, BertopicTrainedCreate, 
             .limit(limit)
             .all()
         )
+
+    def get_trained_models(self, db: Session, *, row_limit = 1, originated_from = OriginationEnum.ORIGINATED_FROM_APP) -> list[BertopicTrainedModelSummary]:
+
+        db_objs = db.query(self.model).filter(self.model.originated_from == originated_from,
+                                              self.model.uploaded == True).order_by(desc(self.model.time)).limit(row_limit)
+        return [BertopicTrainedModelSummary(trained_model=db_obj) for db_obj in db_objs]
+
 
 bertopic_trained = CRUDBertopicTrained(BertopicTrainedModel)

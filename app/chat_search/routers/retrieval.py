@@ -22,7 +22,7 @@ from app.aimodels.gpt4all.ai_services.completion_inference import (
 )
 from ..ai_services.service import RetrievalService
 
-router = APIRouter(prefix="", tags=["Query Retrieval"])
+router = APIRouter(prefix="", tags=["Query Retrieval - Experimental"])
 
 
 @router.get(
