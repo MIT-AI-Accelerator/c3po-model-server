@@ -12,7 +12,7 @@ conda activate transformers-api
 # Getting Started Locally (Start here if not using conda, just make sure you have the right version of python and pip installed)
 1. Install `poetry`: `pip install poetry` (or use `pipx` [on link here](https://python-poetry.org/docs/1.4#installing-with-pipx) if you prefer isolated envs and you don't have `conda` managing your env)
 
-2. Create and enter the virtual environment: `poetry shell`
+2. Create and enter the virtual environment: `poetry shell`. Note: if you use conda, this step may not be necessary.
 
 3. Install the dependencies `poetry install`
 
