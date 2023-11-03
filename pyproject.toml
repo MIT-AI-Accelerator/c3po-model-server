@@ -40,6 +40,7 @@ rank-bm25 = "^0.2.2"
 jinja2 = "^3.1.2"
 cython = "^0.29"
 typing-extensions = "4.2.0"
+werkzeug = "3.0.1"
 
 [tool.poetry.group.test.dependencies]
 pylint = "^2.17.4"
