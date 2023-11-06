@@ -2,9 +2,13 @@ import hashlib
 import os
 from unittest.mock import MagicMock
 import uuid
+from sqlalchemy.orm import Session
+from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
+from app.core.config import OriginationEnum
 from app.aimodels.gpt4all.schemas.gpt4all_pretrained import Gpt4AllPretrainedCreate
 from app.aimodels.gpt4all.models.gpt4all_pretrained import Gpt4AllModelFilenameEnum
+import app.aimodels.gpt4all.crud.crud_gpt4all_pretrained as crud
 from fastapi.encoders import jsonable_encoder
 
 def test_create_gpt4all_pretrained_object_post_valid_request(client: TestClient, valid_sha256: str):
@@ -211,8 +215,16 @@ def test_get_gpt4all_pretrained_object_invalid_name(client: TestClient):
     assert response.status_code == 422
     assert 'value is not a valid enumeration' in response.json()['detail'][0]['msg']
 
-def test_get_gpt4all_pretrained_object_valid_name(client: TestClient):
+def test_get_gpt4all_pretrained_object_valid_name(client: TestClient, db: Session, mocker: MagicMock):
     body = {'model_type': Gpt4AllModelFilenameEnum.L13B_SNOOZY}
+
+    mocked_model = crud.gpt4all_pretrained.get_latest_uploaded_by_model_type(db,
+                                                                        model_type=Gpt4AllModelFilenameEnum.L13B_SNOOZY,
+                                                                        originated_from=OriginationEnum.ORIGINATED_FROM_TEST)
+    mocker.patch(
+        "app.aimodels.gpt4all.crud.crud_gpt4all_pretrained.gpt4all_pretrained.get_latest_uploaded_by_model_type",
+        return_value=mocked_model
+    )
 
     response = client.get(
         "/aimodels/gpt4all/pretrained",
