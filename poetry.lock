@@ -1096,6 +1096,17 @@ files = [
 ]
 
 [[package]]
+name = "glibc"
+version = "0.6.1"
+description = "Pure-Python bindings to glibc (based on ctypes)"
+optional = false
+python-versions = "*"
+files = [
+    {file = "glibc-0.6.1-py2.py3-none-any.whl", hash = "sha256:5059d33b744ed95931802f8a5ac628e86a2e8dc4e7e15bb86bccfc1e72ec063b"},
+    {file = "glibc-0.6.1.tar.gz", hash = "sha256:22a39c34742a60e739cfc501bd1fa7b4c529aa0f13cd612a83186ecc087b22c5"},
+]
+
+[[package]]
 name = "google-auth"
 version = "2.22.0"
 description = "Google Authentication Library"
@@ -4963,4 +4974,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "~3.11"
-content-hash = "61a19e7b07f7e54e07b77ce108ccecc77b1138d8e024d4c363c46e9cd27431f3"
+content-hash = "ede6244da4736d50eba30dba2c6b33c406a05b9d9f6b03653dd620c2ef5bd43b"
