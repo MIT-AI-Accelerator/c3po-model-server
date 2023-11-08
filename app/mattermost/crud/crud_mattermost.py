@@ -1,6 +1,8 @@
 from typing import Union
 from datetime import datetime
 import pandas as pd
+import numpy as np
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.logging import logger
@@ -134,6 +136,14 @@ def populate_mm_user_team_info(db: Session, *, user_name: str, get_teams = False
         existing_ids = mattermost_channels.get_all_channel_ids(db)
         cdf = cdf[~cdf.id.isin(existing_ids)]
 
+        # group messages including the user will appear as duplicate channels
+        # https://github.com/orgs/MIT-AI-Accelerator/projects/2/views/1?pane=issue&itemId=44028044
+        v = cdf.id.value_counts()
+        dcdf = cdf[cdf.id.isin(v.index[v.gt(1)])]
+        if dcdf.type.unique() != np.array(['G']):
+            logger.warn(f"Duplicate Mattermost channels found: {dcdf.id.unique()}")
+        cdf.drop_duplicates(subset=['id'], keep='first', inplace=True)
+
         # add new channels to db
         channels = [MattermostChannelCreate(
             channel_id=row['id'],
@@ -152,12 +162,17 @@ def populate_mm_user_team_info(db: Session, *, user_name: str, get_teams = False
 
 
 def populate_mm_channel_info(db: Session, *, channel_info: dict) -> MattermostChannelModel:
-    channel = MattermostChannelCreate(
-        channel_id=channel_info['id'],
-        channel_name=channel_info['name'],
-        team_id=channel_info['team_id'],
-        team_name=channel_info['team_name'])
-    return mattermost_channels.create(db, obj_in=channel)
+    channel_obj = mattermost_channels.get_by_channel_id(db, channel_id=channel_info['id'])
+    if not channel_obj:
+        channel = MattermostChannelCreate(
+            channel_id=channel_info['id'],
+            channel_name=channel_info['name'],
+            team_id=channel_info['team_id'],
+            team_name=channel_info['team_name'])
+        channel_obj = mattermost_channels.create(db, obj_in=channel)
+    else:
+        logger.warn(f"Duplicate Mattermost channel found: {channel_info['id']}")
+    return channel_obj
 
 
 # Takes message utterances (i.e. individual rows) from chat dataframe, and converts them to conversation threads
