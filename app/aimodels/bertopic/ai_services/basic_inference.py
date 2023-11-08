@@ -282,7 +282,7 @@ class BasicInference:
             # model-level topic timeline visualization
             model_timeline_visualization = topic_model.visualize_topics_over_time(
                 topics_over_time,
-                topics=topic_info['Topic'].values[1:],
+                topics=topic_info['Topic'].values,
                 title='Topics Over Time',
                 top_n_topics=num_topics
             )
