@@ -113,21 +113,24 @@ async def upload_mm_channel_docs(request: UploadDocumentRequest, db: Session = D
         adf = pd.concat([adf, df], ignore_index=True)
     channel_uuids = adf['channel'].unique()
 
-    user_ids = adf['user_id'].unique()
-    for uid in user_ids:
-        user_obj = crud_mattermost.mattermost_users.get_by_user_id(
-            db, user_id=uid)
-        if user_obj is None:
-            user_name = mattermost_utils.get_user_name(
-                settings.mm_base_url, settings.mm_token, uid)
-            user_obj = crud_mattermost.populate_mm_user_team_info(
-                db, user_name=user_name)
-        adf.loc[adf['user_id'] == uid, 'user'] = user_obj.id
+    # handle empty channels
+    # https://github.com/orgs/MIT-AI-Accelerator/projects/2/views/1?pane=issue&itemId=44143308
+    if not adf.empty:
+        user_ids = adf['user_id'].unique()
+        for uid in user_ids:
+            user_obj = crud_mattermost.mattermost_users.get_by_user_id(
+                db, user_id=uid)
+            if user_obj is None:
+                user_name = mattermost_utils.get_user_name(
+                    settings.mm_base_url, settings.mm_token, uid)
+                user_obj = crud_mattermost.populate_mm_user_team_info(
+                    db, user_name=user_name)
+            adf.loc[adf['user_id'] == uid, 'user'] = user_obj.id
 
-    channel_document_objs = crud_mattermost.mattermost_documents.get_all_channel_documents(
-        db, channels=channel_uuids)
-    existing_ids = [obj.message_id for obj in channel_document_objs]
-    adf = adf[~adf.id.isin(existing_ids)].drop_duplicates(subset='id')
+        channel_document_objs = crud_mattermost.mattermost_documents.get_all_channel_documents(
+            db, channels=channel_uuids)
+        existing_ids = [obj.message_id for obj in channel_document_objs]
+        adf = adf[~adf.id.isin(existing_ids)].drop_duplicates(subset='id')
 
     # note: database objects are not returned in the same order as input!
     # do not use the following and try to align doc IDs with mattermost docs
