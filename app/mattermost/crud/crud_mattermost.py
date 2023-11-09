@@ -137,10 +137,13 @@ def populate_mm_user_team_info(db: Session, *, user_name: str, get_teams = False
         cdf = cdf[~cdf.id.isin(existing_ids)]
 
         # group messages including the user will appear as duplicate channels
+        # We think 'O' for a public channel, 'P' for a private channel, 'D' for direct message, 'G' for group message
         # https://github.com/orgs/MIT-AI-Accelerator/projects/2/views/1?pane=issue&itemId=44028044
         v = cdf.id.value_counts()
         dcdf = cdf[cdf.id.isin(v.index[v.gt(1)])]
-        if dcdf.type.unique() != np.array(['G']):
+        dcdf = dcdf[~dcdf['type'].str.contains("G")]
+        dcdf = dcdf[~dcdf['type'].str.contains("D")]
+        if not dcdf.empty:
             logger.warn(f"Duplicate Mattermost channels found: {dcdf.id.unique()}")
         cdf.drop_duplicates(subset=['id'], keep='first', inplace=True)
 
