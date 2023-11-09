@@ -134,12 +134,13 @@ def get_channel_posts(mm_base_url, mm_token, channel_id, history_depth=0):
 
     url = f'{mm_base_url}/api/v4/channels/%s/posts' % channel_id
     posts = get_all_pages(url, mm_token, is_channel=True)
-    posts['datetime'] = [datetime.fromtimestamp(x / 1000) for x in posts['create_at']]
+    if not posts.empty:
+        posts['datetime'] = [datetime.fromtimestamp(x / 1000) for x in posts['create_at']]
 
-    if history_depth > 0:
-        ctime = datetime.now()
-        stime = ctime - pd.DateOffset(days=history_depth)
-        posts = posts[(posts.datetime >= stime) & (posts.datetime <= ctime)]
+        if history_depth > 0:
+            ctime = datetime.now()
+            stime = ctime - pd.DateOffset(days=history_depth)
+            posts = posts[(posts.datetime >= stime) & (posts.datetime <= ctime)]
 
     return posts
 
