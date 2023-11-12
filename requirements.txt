@@ -33,7 +33,7 @@ fsspec==2023.6.0 ; python_version >= "3.11" and python_version < "3.12"
 gast==0.4.0 ; python_version >= "3.11" and python_version < "3.12" and (platform_machine == "x86_64" or platform_machine == "arm64") and (platform_machine == "x86_64" or sys_platform == "darwin")
 glibc==0.6.1 ; python_version >= "3.11" and python_version < "3.12"
 google-auth-oauthlib==1.0.0 ; python_version >= "3.11" and python_version < "3.12"
-google-auth==2.22.0 ; python_version >= "3.11" and python_version < "3.12"
+google-auth==2.23.4 ; python_version >= "3.11" and python_version < "3.12"
 google-pasta==0.2.0 ; python_version >= "3.11" and python_version < "3.12" and (platform_machine == "x86_64" or platform_machine == "arm64") and (platform_machine == "x86_64" or sys_platform == "darwin")
 gpt4all==1.0.8 ; python_version >= "3.11" and python_version < "3.12"
 greenlet==2.0.2 ; python_version >= "3.11" and python_version < "3.12" and (platform_machine == "aarch64" or platform_machine == "ppc64le" or platform_machine == "x86_64" or platform_machine == "amd64" or platform_machine == "AMD64" or platform_machine == "win32" or platform_machine == "WIN32")
@@ -148,7 +148,7 @@ typing-extensions==4.2.0 ; python_version >= "3.11" and python_version < "3.12"
 typing-inspect==0.9.0 ; python_version >= "3.11" and python_version < "3.12"
 tzdata==2023.3 ; python_version >= "3.11" and python_version < "3.12"
 umap-learn==0.5.3 ; python_version >= "3.11" and python_version < "3.12"
-urllib3==1.26.17 ; python_version >= "3.11" and python_version < "3.12"
+urllib3==2.0.7 ; python_version >= "3.11" and python_version < "3.12"
 uvicorn==0.22.0 ; python_version >= "3.11" and python_version < "3.12"
 werkzeug==3.0.1 ; python_version >= "3.11" and python_version < "3.12"
 wheel==0.41.2 ; python_version >= "3.11" and python_version < "3.12"

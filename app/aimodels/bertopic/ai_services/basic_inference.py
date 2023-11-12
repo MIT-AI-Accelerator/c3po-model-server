@@ -172,7 +172,7 @@ class BasicInference:
         self.sentence_transformer_obj = sentence_transformer_obj
 
         self.vectorizer = CountVectorizer(
-            stop_words="english", ngram_range=(1, 2))
+            stop_words="english", ngram_range=(1, 3))
 
         self.weak_learner_obj = weak_learner_obj
         self.label_model = None
