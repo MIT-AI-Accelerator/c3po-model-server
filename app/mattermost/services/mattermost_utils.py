@@ -7,19 +7,27 @@ from app.core.logging import logger
 HTTP_REQUEST_TIMEOUT_S = 60
 DEFAULT_HISTORY_DEPTH_DAYS = 45
 
-def get_all_pages(url, mm_token, is_channel=False):
+def get_all_pages(url, mm_token, is_channel=False, do_pagination=True):
     """iterate through pages of an http request"""
 
     per_page = 200
     page_num = 0
     rdf = pd.DataFrame()
+    do_loop = True
 
-    while True:
+    while do_loop:
+
+        # workaround for mattermost pagination issue
+        # https://github.com/orgs/MIT-AI-Accelerator/projects/2/views/1?pane=issue&itemId=44346553
+        if not do_pagination:
+            do_loop = False
+
         resp = requests.get(url, headers={'Authorization': f'Bearer {mm_token}'},
                             params={'page': page_num, 'per_page': per_page},
                             timeout=HTTP_REQUEST_TIMEOUT_S)
         if resp.status_code < 400:
             rdata = resp.json()
+
             if is_channel:
                 rdata = rdata['posts']
                 rdf = pd.concat(
@@ -27,10 +35,16 @@ def get_all_pages(url, mm_token, is_channel=False):
             else:
                 rdf = pd.concat([rdf, pd.DataFrame(rdata)], ignore_index=True)
 
+            if len(rdata) > per_page:
+                logger.warning(f"{resp.url} response length ({len(rdata)}) exceeds requested length ({per_page})")
+            else:
+                logger.debug(f"{resp.url} response length: {len(rdata)}")
+
             if len(rdata) < per_page:
                 break
+
         else:
-            logger.debug(f"{resp.url} request failed: {resp.status_code}")
+            logger.warning(f"{resp.url} request failed: {resp.status_code}")
             break
         page_num += 1
 
@@ -85,7 +99,7 @@ def get_team_channels(mm_base_url, mm_token, user_id, team_id):
 
     url = f'{mm_base_url}/api/v4/users/%s/teams/%s/channels' % (
         user_id, team_id)
-    df = get_all_pages(url, mm_token)
+    df = get_all_pages(url, mm_token, do_pagination=False)
     return df[df.total_msg_count > 1]
 
 
