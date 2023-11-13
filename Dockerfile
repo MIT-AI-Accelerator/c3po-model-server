@@ -1,4 +1,4 @@
-FROM registry1.dso.mil/ironbank/opensource/python:v3.11.4
+FROM registry1.dso.mil/ironbank/opensource/python:v3.11.6
 
 WORKDIR /home/python
 
