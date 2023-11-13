@@ -26,29 +26,38 @@ def get_all_pages(url, mm_token, is_channel=False, do_pagination=True):
                             params={'page': page_num, 'per_page': per_page},
                             timeout=HTTP_REQUEST_TIMEOUT_S)
         if resp.status_code < 400:
-            rdata = resp.json()
+            (rdf, rlen) = get_page_data(resp, rdf, per_page, is_channel)
 
-            if is_channel:
-                rdata = rdata['posts']
-                rdf = pd.concat(
-                    [rdf, pd.DataFrame(rdata).transpose()], ignore_index=True)
-            else:
-                rdf = pd.concat([rdf, pd.DataFrame(rdata)], ignore_index=True)
-
-            if len(rdata) > per_page:
-                logger.warning(f"{resp.url} response length ({len(rdata)}) exceeds requested length ({per_page})")
-            else:
-                logger.debug(f"{resp.url} response length: {len(rdata)}")
-
-            if len(rdata) < per_page:
+            if rlen < per_page:
                 break
 
         else:
             logger.warning(f"{resp.url} request failed: {resp.status_code}")
             break
+
         page_num += 1
 
     return rdf
+
+
+def get_page_data(resp, rdf, per_page, is_channel):
+    """get data for a single page of an http request"""
+
+    rdata = resp.json()
+
+    if is_channel:
+        rdata = rdata['posts']
+        rdf = pd.concat(
+            [rdf, pd.DataFrame(rdata).transpose()], ignore_index=True)
+    else:
+        rdf = pd.concat([rdf, pd.DataFrame(rdata)], ignore_index=True)
+
+    if len(rdata) > per_page:
+        logger.warning(f"{resp.url} response length ({len(rdata)}) exceeds requested length ({per_page})")
+    else:
+        logger.debug(f"{resp.url} response length: {len(rdata)}")
+
+    return (rdf, len(rdata))
 
 
 def get_user_info(mm_base_url, mm_token, mm_user, get_teams = False):
