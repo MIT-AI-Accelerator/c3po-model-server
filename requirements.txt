@@ -53,7 +53,7 @@ jsonpatch==1.33 ; python_version >= "3.11" and python_version < "3.12"
 jsonpointer==2.4 ; python_version >= "3.11" and python_version < "3.12"
 keras==2.13.1 ; python_version >= "3.11" and python_version < "3.12" and (platform_machine == "x86_64" or platform_machine == "arm64") and (platform_machine == "x86_64" or sys_platform == "darwin")
 kiwisolver==1.4.5 ; python_version >= "3.11" and python_version < "3.12"
-langchain==0.0.317 ; python_version >= "3.11" and python_version < "3.12"
+langchain==0.0.329 ; python_version >= "3.11" and python_version < "3.12"
 langsmith==0.0.56 ; python_version >= "3.11" and python_version < "3.12"
 lazy-object-proxy==1.9.0 ; python_version >= "3.11" and python_version < "3.12"
 libclang==16.0.6 ; python_version >= "3.11" and python_version < "3.12" and (platform_machine == "x86_64" or platform_machine == "arm64") and (platform_machine == "x86_64" or sys_platform == "darwin")
