@@ -27,6 +27,7 @@ from app.aimodels.bertopic import crud as bertopic_crud
 from app.aimodels.gpt4all import crud as gpt4all_crud
 
 from app.mattermost.crud import crud_mattermost
+from app.mattermost.services.mattermost_utils import MM_BOT_USERNAME
 
 from sentence_transformers import SentenceTransformer, CrossEncoder
 
@@ -353,7 +354,7 @@ def init_large_objects(environment: str, migration_toggle: bool, s3: Minio, db: 
 
         # Mattermost user
         logger.info("Uploading Mattermost bot user")
-        user_obj = init_mattermost_bot_user(db, "nitmre-bot")
+        user_obj = init_mattermost_bot_user(db, MM_BOT_USERNAME)
         if user_obj:
             logger.info("Mattermost bot user uploaded to DB")
             logger.info(

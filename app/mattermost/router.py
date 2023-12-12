@@ -6,6 +6,7 @@ import pandas as pd
 from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.errors import HTTPValidationError
+from app.core.logging import logger
 from app.dependencies import get_db
 from app.aimodels.bertopic.schemas.document import Document, DocumentCreate
 from app.aimodels.bertopic import crud as crud_document
@@ -75,6 +76,7 @@ async def get_mm_user_info(user_name: str, db: Session = Depends(get_db)) -> (
 class UploadDocumentRequest(BaseModel):
     channel_ids: list[str] = []
     history_depth: int = mattermost_utils.DEFAULT_HISTORY_DEPTH_DAYS
+    filter_bot_posts = True
 
 
 @router.post(
@@ -90,11 +92,17 @@ async def upload_mm_channel_docs(request: UploadDocumentRequest, db: Session = D
     Populate the db with mattermost posts from a list of channel ids
 
     - **channel_ids**: Required.  Mattermost channels to query for posts.
+    - **history_depth**: Optional.  Number of days (prior to request) to upload posts for.
+    - **filter_bot_posts**: Optional.  Eliminate bot posts from upload.
     """
 
     if not request.channel_ids:
         raise HTTPException(
             status_code=422, detail="No Mattermost channels requested")
+
+    usernames_to_filter = set()
+    if request.filter_bot_posts:
+        usernames_to_filter.add(mattermost_utils.MM_BOT_USERNAME)
 
     adf = pd.DataFrame()
     for channel_id in request.channel_ids:
@@ -109,7 +117,11 @@ async def upload_mm_channel_docs(request: UploadDocumentRequest, db: Session = D
             channel_obj = crud_mattermost.populate_mm_channel_info(
                 db, channel_info=channel_info)
         df = mattermost_utils.get_channel_posts(
-            settings.mm_base_url, settings.mm_token, channel_id, request.history_depth).assign(channel=channel_obj.id)
+            settings.mm_base_url,
+            settings.mm_token,
+            channel_id,
+            request.history_depth,
+            usernames_to_filter).assign(channel=channel_obj.id)
         adf = pd.concat([adf, df], ignore_index=True)
     channel_uuids = adf['channel'].unique()
 

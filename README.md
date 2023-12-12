@@ -113,8 +113,10 @@ In general, tensorflow and pytorch use the underlying `unittest` framework that 
 
 ## DevOps Links
 ### SonarQube
-- [SonarQube for dependency check](https://sonarqube.il4.dso.mil/dashboard?id=platform-one-products-ai-accel-transformers-c3po-model-server-dependencies)
-- [SonarQube for SCA & code coverage](https://sonarqube.il4.dso.mil/dashboard?id=platform-one-products-ai-accel-transformers-c3po-model-server)
+- [SonarQube for dependency check (data pipeline)](https://sonarqube.il4.dso.mil/dashboard?id=platform-one-products-ai-accel-transformers-c3po-model-server-dependencies)
+- [SonarQube for dependency check (model pipeline)](https://sonarqube.il4.dso.mil/dashboard?id=platform-one-products-ai-accel-transformers-c3po-model-gpu-dependencies)
+- [SonarQube for SCA & code coverage (data pipeline)](https://sonarqube.il4.dso.mil/dashboard?id=platform-one-products-ai-accel-transformers-c3po-model-server)
+- [SonarQube for SCA & code coverage (model pipeline)](https://sonarqube.il4.dso.mil/dashboard?id=platform-one-products-ai-accel-transformers-c3po-model-gpu)
 - [False Positive Clearing SQ and trufflehog](https://confluence.il2.dso.mil/display/PUCKBOARD/Sonarqube+False-Positive+Issue+Workflow)
 - [Argo page](https://argocd-il4.admin.dso.mil/applications/argocd/p1-il4-mission-staging-transformers-transformers?view=tree&resource=)
 
