@@ -6,6 +6,7 @@ from app.core.logging import logger
 
 HTTP_REQUEST_TIMEOUT_S = 60
 DEFAULT_HISTORY_DEPTH_DAYS = 45
+MM_BOT_USERNAME = "nitmre-bot"
 
 def get_all_pages(url, mm_token, is_channel=False, do_pagination=True):
     """iterate through pages of an http request"""
@@ -152,7 +153,7 @@ def get_channel_info(mm_base_url, mm_token, channel_id):
     return channel
 
 
-def get_channel_posts(mm_base_url, mm_token, channel_id, history_depth=0):
+def get_channel_posts(mm_base_url, mm_token, channel_id, history_depth=0, usernames_to_filter=set([MM_BOT_USERNAME])):
     """get a list of posts for a single channel"""
 
     url = f'{mm_base_url}/api/v4/channels/%s/posts' % channel_id
@@ -164,6 +165,17 @@ def get_channel_posts(mm_base_url, mm_token, channel_id, history_depth=0):
             ctime = datetime.now()
             stime = ctime - pd.DateOffset(days=history_depth)
             posts = posts[(posts.datetime >= stime) & (posts.datetime <= ctime)]
+
+        user_ids_to_filter = set()
+        for mm_user in usernames_to_filter:
+            (user, tdf) = get_user_info(mm_base_url, mm_token, mm_user)
+            if user:
+                user_ids_to_filter.add(user['id'])
+            else:
+                logger.warning(f"skipping user filter for channel {channel_id}, unable to find mattermost id for {mm_user}")
+
+        user_ids_to_filter = user_ids_to_filter.intersection(posts['user_id'].unique())
+        posts = posts[~posts['user_id'].isin(user_ids_to_filter)]
 
     return posts
 
