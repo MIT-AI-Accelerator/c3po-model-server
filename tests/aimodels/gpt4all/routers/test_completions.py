@@ -1,11 +1,13 @@
 from typing import Callable
 from unittest.mock import create_autospec
+from app.main import versioned_app
 from fastapi.testclient import TestClient
 from app.aimodels.gpt4all.ai_services.completion_inference import CompletionInference, CompletionInferenceInputs, CompletionInferenceOutputs
 from app.aimodels.gpt4all import crud as crud_gpt4all
 
-def test_gpt_completion_post_valid_input(client: TestClient,
-                                         mock_completion_inference_inputs: CompletionInferenceInputs,
+main_client = TestClient(versioned_app)
+
+def test_gpt_completion_post_valid_input(mock_completion_inference_inputs: CompletionInferenceInputs,
                                          mock_completion_inference_outputs: CompletionInferenceOutputs,
                                          mock_gpt4all_crud_sha256_return_vals: Callable,
                                          mocker):
@@ -28,8 +30,8 @@ def test_gpt_completion_post_valid_input(client: TestClient,
         "prompt": "This is a test prompt"
     }
 
-    response = client.post(
-        "/aimodels/gpt4all/basic/completions",
+    response = main_client.post(
+        "/backend/aimodels/gpt4all/basic/completions",
         headers={},
         json=body,
     )
@@ -42,7 +44,7 @@ def test_gpt_completion_post_valid_input(client: TestClient,
     assert response.json()["choices"][0]["text"] == "This is a test response"
 
 
-def test_gpt_completion_post_model_invalid_gpt4all_model_type(client: TestClient):
+def test_gpt_completion_post_model_invalid_gpt4all_model_type():
 
     # make the request with an invalid model_type
     body = {
@@ -50,8 +52,8 @@ def test_gpt_completion_post_model_invalid_gpt4all_model_type(client: TestClient
         "prompt": "This is a test prompt"
     }
 
-    response = client.post(
-        "/aimodels/gpt4all/basic/completions",
+    response = main_client.post(
+        "/backend/aimodels/gpt4all/basic/completions",
         headers={},
         json=body,
     )
@@ -60,11 +62,10 @@ def test_gpt_completion_post_model_invalid_gpt4all_model_type(client: TestClient
     assert response.status_code == 422
     assert response.json()['detail'] is not None
 
-def test_chat_completion_post_valid_input(client: TestClient,
-                                         mock_completion_inference_inputs: CompletionInferenceInputs,
-                                         mock_completion_inference_outputs: CompletionInferenceOutputs,
-                                         mock_gpt4all_crud_sha256_return_vals: Callable,
-                                         mocker):
+def test_chat_completion_post_valid_input(mock_completion_inference_inputs: CompletionInferenceInputs,
+                                          mock_completion_inference_outputs: CompletionInferenceOutputs,
+                                          mock_gpt4all_crud_sha256_return_vals: Callable,
+                                          mocker):
 
     # mock the return value
     mock_crud = create_autospec(crud_gpt4all)
@@ -84,8 +85,8 @@ def test_chat_completion_post_valid_input(client: TestClient,
         "prompt": "This is a test prompt"
     }
 
-    response = client.post(
-        "/aimodels/gpt4all/chat/completions",
+    response = main_client.post(
+        "/backend/aimodels/gpt4all/chat/completions",
         headers={},
         json=body,
     )

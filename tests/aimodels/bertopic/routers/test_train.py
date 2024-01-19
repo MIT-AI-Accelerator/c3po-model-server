@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from fastapi.testclient import TestClient
 from fastapi.encoders import jsonable_encoder
 from plotly.graph_objs import Figure
+from app.main import versioned_app
 from app.aimodels.bertopic.models.bertopic_embedding_pretrained import (
     BertopicEmbeddingPretrainedModel,
     EmbeddingModelTypeEnum,
@@ -15,15 +16,16 @@ from app.aimodels.bertopic.ai_services.basic_inference import (
     BasicInferenceOutputs,
 )
 
+main_client = TestClient(versioned_app)
 
 # test train endpoint with invalid request
-def test_train_invalid_request(client: TestClient):
+def test_train_invalid_request():
     body = {
         "wrong_param": "",
     }
 
-    response = client.post(
-        "/aimodels/bertopic/model/train",
+    response = main_client.post(
+        "/backend/aimodels/bertopic/model/train",
         headers = {},
         json = jsonable_encoder(body),
     )
@@ -32,9 +34,7 @@ def test_train_invalid_request(client: TestClient):
 
 
 # note: see tests/aimodels/bertopic/integration/test_train_valid_*
-def test_train_valid_input_request(
-    client: TestClient, db: Session, valid_sha256: str, mocker
-):
+def test_train_valid_input_request(db: Session, valid_sha256: str, mocker):
     """
     Given:
     - a valid sentence transformer id in the database
@@ -103,8 +103,8 @@ def test_train_valid_input_request(
         "document_ids": [str(d.id) for d in documents_db],
     }
 
-    response = client.post(
-        "/aimodels/bertopic/model/train",
+    response = main_client.post(
+        "/backend/aimodels/bertopic/model/train",
         headers = {},
         json = jsonable_encoder(body),
     )

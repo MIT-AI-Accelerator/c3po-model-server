@@ -1,4 +1,5 @@
 from fastapi.testclient import TestClient
+from app.main import versioned_app
 from app.aimodels.bertopic.models.document import DocumentModel
 
 from fastapi.encoders import jsonable_encoder
@@ -7,15 +8,16 @@ from sqlalchemy.orm import Session
 from sample_data import CHAT_DATASET_4_PATH
 from app.core.config import environment_settings
 
+main_client = TestClient(versioned_app)
 
 # test train endpoint with valid request
-def test_train_valid_request(client: TestClient, db: Session):
+def test_train_valid_request(db: Session):
     if environment_settings.environment == 'test':
         return
 
     my_model = 'all-MiniLM-L6-v2'
-    response = client.get(
-        "/aimodels/bertopic/bertopic-embedding-pretrained",
+    response = main_client.get(
+        "/backend/aimodels/bertopic/bertopic-embedding-pretrained",
         headers={},
         params=jsonable_encoder({'model_name': my_model})
     )
@@ -33,8 +35,8 @@ def test_train_valid_request(client: TestClient, db: Session):
         "document_ids": [str(d.id) for d in documents_db]
     }
 
-    response = client.post(
-        "/aimodels/bertopic/model/train",
+    response = main_client.post(
+        "/backend/aimodels/bertopic/model/train",
         headers={},
         json=jsonable_encoder(body),
     )
@@ -45,13 +47,13 @@ def test_train_valid_request(client: TestClient, db: Session):
 
 
 # test train endpoint with valid request
-def test_train_valid_request_seed_topics(client: TestClient, db: Session):
+def test_train_valid_request_seed_topics(db: Session):
     if environment_settings.environment == 'test':
         return
 
     my_model = 'all-MiniLM-L6-v2'
-    response = client.get(
-        "/aimodels/bertopic/bertopic-embedding-pretrained",
+    response = main_client.get(
+        "/backend/aimodels/bertopic/bertopic-embedding-pretrained",
         headers={},
         params=jsonable_encoder({'model_name': my_model})
     )
@@ -75,8 +77,8 @@ def test_train_valid_request_seed_topics(client: TestClient, db: Session):
         'seed_topics': seed_topics
     }
 
-    response = client.post(
-        "/aimodels/bertopic/model/train",
+    response = main_client.post(
+        "/backend/aimodels/bertopic/model/train",
         headers={},
         json=jsonable_encoder(body),
     )
@@ -87,14 +89,14 @@ def test_train_valid_request_seed_topics(client: TestClient, db: Session):
 
 
 # test train endpoint with valid request
-def test_train_valid_request_weak_learning(client: TestClient, db: Session):
+def test_train_valid_request_weak_learning(db: Session):
     if environment_settings.environment == 'test':
         return
 
     # get valid sentence transformer object
     my_model = 'all-MiniLM-L6-v2'
-    response = client.get(
-        "/aimodels/bertopic/bertopic-embedding-pretrained",
+    response = main_client.get(
+        "/backend/aimodels/bertopic/bertopic-embedding-pretrained",
         headers={},
         params=jsonable_encoder({'model_name': my_model})
     )
@@ -104,8 +106,8 @@ def test_train_valid_request_weak_learning(client: TestClient, db: Session):
 
     # get valid weak learner object
     my_model = CHAT_DATASET_4_PATH.split('/')[-1]
-    response = client.get(
-        "/aimodels/bertopic/bertopic-embedding-pretrained",
+    response = main_client.get(
+        "/backend/aimodels/bertopic/bertopic-embedding-pretrained",
         headers={},
         params=jsonable_encoder({'model_name': my_model})
     )
@@ -125,8 +127,8 @@ def test_train_valid_request_weak_learning(client: TestClient, db: Session):
         "document_ids": [d.id for d in documents_db]
     }
 
-    response = client.post(
-        "/aimodels/bertopic/model/train",
+    response = main_client.post(
+        "/backend/aimodels/bertopic/model/train",
         headers={},
         json=jsonable_encoder(body),
     )

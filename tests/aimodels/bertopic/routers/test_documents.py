@@ -1,17 +1,18 @@
-
 from fastapi.testclient import TestClient
-from app.aimodels.bertopic.schemas.document import DocumentCreate
-
-from app.core.config import OriginationEnum
 from fastapi.encoders import jsonable_encoder
+from app.main import versioned_app
+from app.aimodels.bertopic.schemas.document import DocumentCreate
+from app.core.config import OriginationEnum
 
-def test_create_document_object_post_valid_request(client: TestClient):
+main_client = TestClient(versioned_app)
+
+def test_create_document_object_post_valid_request():
     body = [DocumentCreate(
         text="This is a test document",
     )]
 
-    response = client.post(
-        "/aimodels/bertopic/documents",
+    response = main_client.post(
+        "/backend/aimodels/bertopic/documents",
         headers={},
         json=jsonable_encoder(body),
     )
@@ -25,22 +26,22 @@ def test_create_document_object_post_valid_request(client: TestClient):
     # originated_from_test called in pytest client fixture
     assert response.json()[0]['originated_from'] == OriginationEnum.ORIGINATED_FROM_TEST
 
-def test_create_document_object_post_invalid_request(client: TestClient):
+def test_create_document_object_post_invalid_request():
     body = None
 
-    response = client.post(
-        "/aimodels/bertopic/documents",
+    response = main_client.post(
+        "/backend/aimodels/bertopic/documents",
         headers={},
         json=jsonable_encoder(body),
     )
 
     assert response.status_code == 422
 
-def test_create_document_object_post_invalid_request_empty_list(client: TestClient):
+def test_create_document_object_post_invalid_request_empty_list():
     body = []
 
-    response = client.post(
-        "/aimodels/bertopic/documents",
+    response = main_client.post(
+        "/backend/aimodels/bertopic/documents",
         headers={},
         json=jsonable_encoder(body),
     )

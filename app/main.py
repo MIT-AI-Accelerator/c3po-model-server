@@ -9,6 +9,7 @@ from .core.logging import logger, LogConfig
 from logging.config import dictConfig
 from .experimental_features_router import router as experimental_router
 from .aimodels.router import router as aimodels_router
+from .mattermost.router import router as mattermost_router
 from .dependencies import httpx_client
 
 dictConfig(LogConfig().dict())
@@ -37,7 +38,7 @@ origins = [
 ]
 
 app.include_router(aimodels_router)
-app.include_router(experimental_router)
+app.include_router(mattermost_router)
 
 # set originated_from for standard app usage
 @app.get('/originated_from_app/')
@@ -76,3 +77,8 @@ versioned_app.add_middleware(
 @versioned_app.on_event('shutdown')
 async def shutdown_event():
     await httpx_client.aclose()
+
+modeling_app = FastAPI()
+modeling_app.include_router(experimental_router)
+
+versioned_app.mount("/backend", modeling_app)
