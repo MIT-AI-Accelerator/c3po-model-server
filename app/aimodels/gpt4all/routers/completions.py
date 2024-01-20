@@ -1,9 +1,9 @@
 from fastapi import Depends, APIRouter, HTTPException
 from minio import Minio
+from sqlalchemy.orm import Session
 from app.aimodels.gpt4all.models.gpt4all_pretrained import Gpt4AllModelFilenameEnum
 from app.dependencies import get_db, get_minio
 from app.core.config import settings
-from sqlalchemy.orm import Session
 from .. import crud
 from ..models import Gpt4AllPretrainedModel
 from ..ai_services.completion_inference import CompletionInference, CompletionInferenceInputs, CompletionInferenceOutputs

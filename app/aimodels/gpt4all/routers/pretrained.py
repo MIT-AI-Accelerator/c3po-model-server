@@ -1,19 +1,18 @@
-
 import hashlib
+from minio import Minio
 from typing import Union
 from fastapi import Depends, APIRouter, UploadFile, HTTPException
+from aiofiles import open as open_aio
 
 from pydantic import UUID4
+from sqlalchemy.orm import Session
 
 from app.core.minio import upload_file_to_minio
 from ..schemas import Gpt4AllPretrained, Gpt4AllPretrainedCreate, Gpt4AllPretrainedUpdate
 from app.dependencies import get_db, get_minio
-from sqlalchemy.orm import Session
 from .. import crud
 from ..models.gpt4all_pretrained import Gpt4AllPretrainedModel, Gpt4AllModelFilenameEnum
 from app.core.errors import HTTPValidationError
-from aiofiles import open as open_aio
-from minio import Minio
 
 
 

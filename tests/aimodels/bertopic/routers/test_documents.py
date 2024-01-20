@@ -1,8 +1,8 @@
 from fastapi.testclient import TestClient
 from fastapi.encoders import jsonable_encoder
+from ppg.config import OriginationEnum
 from app.main import versioned_app
 from app.aimodels.bertopic.schemas.document import DocumentCreate
-from app.core.config import OriginationEnum
 
 main_client = TestClient(versioned_app)
 

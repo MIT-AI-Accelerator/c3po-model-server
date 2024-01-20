@@ -1,7 +1,8 @@
 import json
 from fastapi.testclient import TestClient
+from ppg.config import OriginationEnum
 from app.main import versioned_app
-from app.core.config import OriginationEnum, get_acronym_dictionary
+from app.core.config import get_acronym_dictionary
 
 client = TestClient(versioned_app)
 

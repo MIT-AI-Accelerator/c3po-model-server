@@ -1,10 +1,11 @@
 import enum
+import uuid
 from typing import TYPE_CHECKING
 from sqlalchemy import Column, Enum, Integer, UUID, String, Boolean, Sequence
 from sqlalchemy.orm import relationship
+from ppg.config import OriginationEnum
 from app.db.base_class import Base
-from app.core.config import OriginationEnum, get_originated_from
-import uuid
+from app.core.config import get_originated_from
 
 # add in the TYPE_CHECKING check here if relationships are created
 

@@ -8,7 +8,8 @@ from sqlalchemy import desc
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
-from app.core.config import OriginationEnum
+from ppg.config import OriginationEnum
+
 from app.crud.base import CRUDBase
 from app.aimodels.bertopic.models.bertopic_trained import BertopicTrainedModel
 from app.aimodels.bertopic.schemas.bertopic_trained import BertopicTrainedCreate, BertopicTrainedUpdate

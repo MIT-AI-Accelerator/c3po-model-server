@@ -3,7 +3,7 @@ import json
 from unittest.mock import MagicMock
 from sqlalchemy.orm import Session
 from fastapi.testclient import TestClient
-from app.core.config import OriginationEnum
+from ppg.config import OriginationEnum
 from app.aimodels.bertopic.models.bertopic_trained import BertopicTrainedModel
 from app.aimodels.bertopic.crud import crud_bertopic_trained, crud_bertopic_visualization, crud_topic
 from app.aimodels.bertopic.models.topic import TopicSummaryModel

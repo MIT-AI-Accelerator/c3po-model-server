@@ -5,12 +5,12 @@ import uuid
 from sqlalchemy.orm import Session
 from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
-from app.core.config import OriginationEnum
+from fastapi.encoders import jsonable_encoder
+from ppg.config import OriginationEnum
 from app.main import versioned_app
 from app.aimodels.gpt4all.schemas.gpt4all_pretrained import Gpt4AllPretrainedCreate
 from app.aimodels.gpt4all.models.gpt4all_pretrained import Gpt4AllModelFilenameEnum
 import app.aimodels.gpt4all.crud.crud_gpt4all_pretrained as crud
-from fastapi.encoders import jsonable_encoder
 
 main_client = TestClient(versioned_app)
 

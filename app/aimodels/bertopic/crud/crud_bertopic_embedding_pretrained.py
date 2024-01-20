@@ -1,8 +1,8 @@
 
 from typing import Union
 from sqlalchemy.orm import Session
+from ppg.config import OriginationEnum
 from app.crud.base import CRUDBase
-from app.core.config import OriginationEnum, get_originated_from
 from ..models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedModel
 from ..schemas.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedCreate, BertopicEmbeddingPretrainedUpdate
 

@@ -1,11 +1,12 @@
+import uuid
 from typing import TYPE_CHECKING
 from sqlalchemy import Column, UUID, String, Enum, JSON, Integer
 from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+from ppg.config import OriginationEnum
 from app.db.base_class import Base
-from app.core.config import OriginationEnum, get_originated_from
-import uuid
+from app.core.config import get_originated_from
 
 class TopicSummaryModel(Base):
     id = Column(UUID, primary_key=True, unique=True, default=uuid.uuid4)

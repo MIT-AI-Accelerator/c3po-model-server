@@ -1,6 +1,5 @@
-from app.core.config import OriginationEnum
-
 from pydantic import BaseModel, UUID4
+from ppg.config import OriginationEnum
 
 
 class MattermostChannelBase(BaseModel):

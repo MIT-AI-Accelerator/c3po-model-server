@@ -1,10 +1,11 @@
+import uuid
 from typing import TYPE_CHECKING
 from sqlalchemy import Column, DateTime, UUID, String, Enum
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+from ppg.config import OriginationEnum
 from app.db.base_class import Base
-from app.core.config import OriginationEnum, get_originated_from
-import uuid
+from app.core.config import get_originated_from
 
 if TYPE_CHECKING:
     from .document_embedding_computation import DocumentEmbeddingComputationModel  # noqa: F401

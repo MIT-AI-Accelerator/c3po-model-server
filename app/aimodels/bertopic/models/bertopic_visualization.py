@@ -1,8 +1,9 @@
 import uuid
 import enum
 from sqlalchemy import Column, UUID, Enum, String
+from ppg.config import OriginationEnum
 from app.db.base_class import Base
-from app.core.config import OriginationEnum, get_originated_from
+from app.core.config import get_originated_from
 
 class BertopicVisualizationTypeEnum(str, enum.Enum):
     MODEL_CLUSTERS = "model_topic_clusters"

@@ -9,12 +9,12 @@ import pandas as pd
 from sqlalchemy.orm import Session
 from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
-from app.core.config import OriginationEnum
+from fastapi.encoders import jsonable_encoder
+from ppg.config import OriginationEnum
 from app.main import versioned_app
 from app.aimodels.bertopic.crud.crud_bertopic_embedding_pretrained import bertopic_embedding_pretrained
 from app.aimodels.bertopic.schemas.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedCreate
 from app.aimodels.bertopic.ai_services.weak_learning import WeakLearner
-from fastapi.encoders import jsonable_encoder
 
 main_client = TestClient(versioned_app)
 
