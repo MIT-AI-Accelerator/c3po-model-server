@@ -4,10 +4,10 @@ import pandas as pd
 import numpy as np
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
+import ppg.mattermost_utils as mattermost_utils
 from app.core.config import settings
 from app.core.logging import logger
 from app.crud.base import CRUDBase
-from ..services import mattermost_utils
 from ..models.mattermost_channels import MattermostChannelModel
 from ..schemas.mattermost_channels import MattermostChannelCreate
 from ..models.mattermost_users import MattermostUserModel

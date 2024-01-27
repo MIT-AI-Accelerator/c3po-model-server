@@ -1,8 +1,7 @@
 import uuid
 import pandas as pd
-from unittest.mock import patch, Mock, create_autospec
+import ppg.mattermost_utils as mattermost_utils
 from app.core.config import settings, environment_settings
-from app.mattermost.services import mattermost_utils
 
 def test_mattermost_bot():
 # test mattermost api calls for user, team, and channel info
@@ -41,7 +40,7 @@ def test_get_user_info(mocker):
     user = str(uuid.uuid4())
     mock_data = (dict({'id': user, 'username': user}), pd.DataFrame())
 
-    mocker.patch('app.mattermost.services.mattermost_utils.get_user_info', return_value=mock_data)
+    mocker.patch('ppg.mattermost_utils.get_user_info', return_value=mock_data)
 
     user_info = mattermost_utils.get_user_info("127.0.0.1", "a_token", user)
 
@@ -55,8 +54,8 @@ def test_get_all_user_channels(mocker):
     team = str(uuid.uuid4())
     mock_data = pd.DataFrame()
 
-    mocker.patch('app.mattermost.services.mattermost_utils.get_team_channels', return_value=mock_data)
-    mocker.patch('app.mattermost.services.mattermost_utils.get_all_user_channels', return_value=mock_data)
+    mocker.patch('ppg.mattermost_utils.get_team_channels', return_value=mock_data)
+    mocker.patch('ppg.mattermost_utils.get_all_user_channels', return_value=mock_data)
 
     channel_info = mattermost_utils.get_all_user_channels("127.0.0.1", "a_token", user, [team])
 
