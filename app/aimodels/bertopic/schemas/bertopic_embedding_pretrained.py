@@ -1,7 +1,7 @@
 import re
 from typing import Optional
 from pydantic import BaseModel, UUID4, validator
-from app.core.config import OriginationEnum
+from ppg.core.config import OriginationEnum
 from ..models.bertopic_embedding_pretrained import EmbeddingModelTypeEnum
 
 # Shared properties

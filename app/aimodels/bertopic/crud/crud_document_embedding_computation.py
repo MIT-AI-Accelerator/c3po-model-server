@@ -1,4 +1,3 @@
-
 from app.crud.base import CRUDBase
 from ..models.document_embedding_computation import DocumentEmbeddingComputationModel
 from ..schemas.document_embedding_computation import DocumentEmbeddingComputationCreate, DocumentEmbeddingComputationUpdate

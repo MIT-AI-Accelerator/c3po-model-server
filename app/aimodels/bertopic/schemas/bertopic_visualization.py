@@ -1,5 +1,5 @@
 from pydantic import BaseModel, UUID4
-from app.core.config import OriginationEnum
+from ppg.core.config import OriginationEnum
 from ..models.bertopic_visualization import BertopicVisualizationTypeEnum
 
 # Shared properties

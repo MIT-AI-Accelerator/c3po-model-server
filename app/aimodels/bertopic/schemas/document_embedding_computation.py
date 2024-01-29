@@ -1,5 +1,5 @@
 from typing import Optional
-from app.core.config import OriginationEnum
+from ppg.core.config import OriginationEnum
 
 from pydantic import BaseModel, UUID4
 

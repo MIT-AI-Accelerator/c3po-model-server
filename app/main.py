@@ -4,7 +4,8 @@ import json
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_versioning import VersionedFastAPI
-from .core.config import settings, OriginationEnum, set_acronym_dictionary
+from ppg.core.config import OriginationEnum
+from .core.config import settings, set_acronym_dictionary
 from .core.logging import logger, LogConfig
 from logging.config import dictConfig
 from .experimental_features_router import router as experimental_router

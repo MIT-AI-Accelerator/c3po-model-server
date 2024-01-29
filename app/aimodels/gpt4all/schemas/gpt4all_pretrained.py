@@ -1,8 +1,7 @@
 import re
 from typing import Optional
-from app.core.config import OriginationEnum
-
 from pydantic import BaseModel, UUID4, validator
+from ppg.core.config import OriginationEnum
 from ..models.gpt4all_pretrained import Gpt4AllModelFilenameEnum
 
 # Shared properties

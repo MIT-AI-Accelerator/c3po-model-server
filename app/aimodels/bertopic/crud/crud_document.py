@@ -1,10 +1,10 @@
+import datetime
+from typing import List
 from sqlalchemy import desc
+from sqlalchemy.orm import Session
 from app.crud.base import CRUDBase
 from ..models.document import DocumentModel
 from ..schemas.document import DocumentCreate
-from sqlalchemy.orm import Session
-from typing import List
-import datetime
 
 
 class CRUDDocument(CRUDBase[DocumentModel, DocumentCreate, DocumentCreate]):
