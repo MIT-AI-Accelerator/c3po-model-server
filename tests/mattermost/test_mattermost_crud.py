@@ -2,8 +2,6 @@ import uuid
 import pandas as pd
 from sqlalchemy.orm import Session
 from app.core.config import environment_settings
-from app.mattermost.models.mattermost_channels import MattermostChannelModel
-from app.mattermost.models.mattermost_users import MattermostUserModel
 from app.mattermost.models.mattermost_documents import MattermostDocumentModel
 import app.mattermost.crud.crud_mattermost as crud
 from app.aimodels.bertopic.models.document import DocumentModel
@@ -89,11 +87,11 @@ def test_populate_mm_user_team_info(db: Session, mocker):
     user = str(uuid.uuid4())
     mock_user_data = (dict({'id': user, 'username': user}), pd.DataFrame())
     mocker.patch(
-        'app.mattermost.services.mattermost_utils.get_user_info', return_value=mock_user_data)
+        'ppg.mattermost_utils.get_user_info', return_value=mock_user_data)
 
     mock_team_data = pd.DataFrame()
-    mocker.patch('app.mattermost.services.mattermost_utils.get_team_channels', return_value=mock_team_data)
-    mocker.patch('app.mattermost.services.mattermost_utils.get_all_user_channels', return_value=mock_team_data)
+    mocker.patch('ppg.mattermost_utils.get_team_channels', return_value=mock_team_data)
+    mocker.patch('ppg.mattermost_utils.get_all_user_channels', return_value=mock_team_data)
 
     user_obj = crud.populate_mm_user_team_info(db, user_name=user)
 
