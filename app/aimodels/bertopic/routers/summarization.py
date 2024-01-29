@@ -5,10 +5,10 @@ from fastapi import Depends, APIRouter, HTTPException
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
+from ppg.schemas.bertopic.topic import TopicSummary
 from app.dependencies import get_db
-from app.core.errors import ValidationError, HTTPValidationError
+from app.core.errors import HTTPValidationError
 from ..models.bertopic_visualization import BertopicVisualizationTypeEnum
-from ..schemas.topic import TopicSummary
 from .. import crud
 
 router = APIRouter(

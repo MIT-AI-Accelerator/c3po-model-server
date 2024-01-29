@@ -1,9 +1,9 @@
-import enum
 import uuid
 from typing import TYPE_CHECKING
 from sqlalchemy import Column, Enum, Integer, UUID, String, Boolean, Sequence
 from sqlalchemy.orm import relationship
 from ppg.core.config import OriginationEnum
+from ppg.schemas.bertopic.bertopic_embedding_pretrained import EmbeddingModelTypeEnum
 from app.db.base_class import Base
 from app.core.config import get_originated_from
 
@@ -11,11 +11,6 @@ if TYPE_CHECKING:
     from .document_embedding_computation import DocumentEmbeddingComputationModel  # noqa: F401
     from .bertopic_trained import BertopicTrainedModel  # noqa: F401
 
-class EmbeddingModelTypeEnum(str, enum.Enum):
-    SENTENCE_TRANSFORMERS = "sentence_transformers"
-    WEAK_LEARNERS = "weak_learners"
-    DIFF_CSE = "diff_cse"
-    CROSS_ENCODERS = "cross_encoders"
 
 class BertopicEmbeddingPretrainedModel(Base):
     id = Column(UUID, primary_key=True, unique=True, default=uuid.uuid4)

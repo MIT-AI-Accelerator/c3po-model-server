@@ -2,9 +2,9 @@ import datetime
 from typing import List
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
+from ppg.schemas.bertopic.document import DocumentCreate
 from app.crud.base import CRUDBase
 from ..models.document import DocumentModel
-from ..schemas.document import DocumentCreate
 
 
 class CRUDDocument(CRUDBase[DocumentModel, DocumentCreate, DocumentCreate]):

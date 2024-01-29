@@ -1,8 +1,8 @@
+from sqlalchemy.orm import Session
+from ppg.schemas.bertopic.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedCreate
 from app.aimodels.bertopic.crud.crud_bertopic_embedding_pretrained import bertopic_embedding_pretrained
 from app.aimodels.bertopic.models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedModel
-from sqlalchemy.orm import Session
 
-from app.aimodels.bertopic.schemas.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedCreate
 
 # assert bertopic_embedding_pretrained was built with correct model
 def test_bertopic_embedding_pretrained():

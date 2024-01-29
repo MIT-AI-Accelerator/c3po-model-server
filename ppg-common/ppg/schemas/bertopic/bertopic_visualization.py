@@ -1,6 +1,13 @@
+import enum
 from pydantic import BaseModel, UUID4
 from ppg.core.config import OriginationEnum
-from ..models.bertopic_visualization import BertopicVisualizationTypeEnum
+
+
+class BertopicVisualizationTypeEnum(str, enum.Enum):
+    MODEL_CLUSTERS = "model_topic_clusters"
+    MODEL_WORDS = "model_topic_words"
+    MODEL_TIMELINE = "model_topic_timeline"
+    TOPIC_TIMELINE = "topic_timeline"
 
 # Shared properties
 class BertopicVisualizationBase(BaseModel):

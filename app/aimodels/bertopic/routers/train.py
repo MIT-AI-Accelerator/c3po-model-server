@@ -2,19 +2,19 @@ from typing import Union
 from pydantic import BaseModel, UUID4
 from fastapi import Depends, APIRouter, HTTPException
 from fastapi.responses import HTMLResponse
+from sqlalchemy.orm import Session
 import pandas as pd
-from app.aimodels.bertopic.schemas.document_embedding_computation import DocumentEmbeddingComputationCreate
 from minio import Minio
+from ppg.schemas.bertopic.document_embedding_computation import DocumentEmbeddingComputationCreate
+from ppg.schemas.bertopic.bertopic_trained import BertopicTrained, BertopicTrainedCreate, BertopicTrainedUpdate
+from ppg.schemas.bertopic.bertopic_visualization import BertopicVisualizationCreate
+from ppg.schemas.bertopic.topic import TopicSummaryUpdate
 from app.core.minio import pickle_and_upload_object_to_minio
 from ..ai_services.basic_inference import BasicInference
 from app.dependencies import get_db, get_minio
-from sqlalchemy.orm import Session
 from .. import crud
 from ..models.bertopic_trained import BertopicTrainedModel
 from ..models.bertopic_visualization import BertopicVisualizationTypeEnum
-from ..schemas.bertopic_trained import BertopicTrained, BertopicTrainedCreate, BertopicTrainedUpdate
-from ..schemas.bertopic_visualization import BertopicVisualization, BertopicVisualizationCreate
-from ..schemas.topic import TopicSummaryUpdate
 from ..ai_services.topic_summarization import MAP_PROMPT_TEMPLATE, COMBINE_PROMPT_TEMPLATE
 from app.core.errors import ValidationError, HTTPValidationError
 from app.core.config import settings

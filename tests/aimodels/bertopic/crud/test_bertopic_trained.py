@@ -1,10 +1,11 @@
+from sqlalchemy.orm import Session
+from ppg.schemas.bertopic.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedCreate
+from ppg.schemas.bertopic.bertopic_trained import BertopicTrainedCreate
 from app.aimodels.bertopic.crud.crud_bertopic_trained import bertopic_trained
 from app.aimodels.bertopic.models.bertopic_trained import BertopicTrainedModel
-from sqlalchemy.orm import Session
 from app.aimodels.bertopic.crud.crud_bertopic_embedding_pretrained import bertopic_embedding_pretrained
-from app.aimodels.bertopic.schemas.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedCreate
-from app.aimodels.bertopic.schemas.bertopic_trained import BertopicTrainedCreate
 from app.aimodels.bertopic.models.bertopic_embedding_pretrained import EmbeddingModelTypeEnum
+
 
 # assert bertopic_trained was built with correct model
 def test_bertopic_trained():

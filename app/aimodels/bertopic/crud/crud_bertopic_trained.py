@@ -8,9 +8,10 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
 from ppg.core.config import OriginationEnum
+from ppg.schemas.bertopic.bertopic_trained import BertopicTrainedCreate, BertopicTrainedUpdate
+
 from app.crud.base import CRUDBase
 from app.aimodels.bertopic.models.bertopic_trained import BertopicTrainedModel
-from app.aimodels.bertopic.schemas.bertopic_trained import BertopicTrainedCreate, BertopicTrainedUpdate
 
 class BertopicTrainedModelSummary(BaseModel):
     time: datetime
