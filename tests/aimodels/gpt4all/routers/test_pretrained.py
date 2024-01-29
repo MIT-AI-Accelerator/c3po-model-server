@@ -7,7 +7,7 @@ from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
 from fastapi.encoders import jsonable_encoder
 from ppg.core.config import OriginationEnum
-from app.aimodels.gpt4all.schemas.gpt4all_pretrained import Gpt4AllPretrainedCreate
+from ppg.schemas.gpt4all.gpt4all_pretrained import Gpt4AllPretrainedCreate
 from app.aimodels.gpt4all.models.gpt4all_pretrained import Gpt4AllModelFilenameEnum
 import app.aimodels.gpt4all.crud.crud_gpt4all_pretrained as crud
 

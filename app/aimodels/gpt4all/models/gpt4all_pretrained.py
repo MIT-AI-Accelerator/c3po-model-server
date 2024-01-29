@@ -1,16 +1,13 @@
-import enum
 import uuid
 from typing import TYPE_CHECKING
 from sqlalchemy import Column, Enum, Integer, UUID, String, Boolean, Sequence
 from sqlalchemy.orm import relationship
 from ppg.core.config import OriginationEnum
+from ppg.schemas.gpt4all.gpt4all_pretrained import Gpt4AllModelFilenameEnum
 from app.db.base_class import Base
 from app.core.config import get_originated_from
 
 # add in the TYPE_CHECKING check here if relationships are created
-
-class Gpt4AllModelFilenameEnum(str, enum.Enum):
-    L13B_SNOOZY = "ggml-gpt4all-l13b-snoozy.bin"
 
 class Gpt4AllPretrainedModel(Base):
     id = Column(UUID, primary_key=True, unique=True, default=uuid.uuid4)

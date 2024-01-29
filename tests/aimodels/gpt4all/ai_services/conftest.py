@@ -1,9 +1,9 @@
 from unittest.mock import create_autospec
 from sqlalchemy.orm import Session
-from app.aimodels.gpt4all import crud
 
+from ppg.schemas.gpt4all.gpt4all_pretrained import Gpt4AllPretrainedCreate
+from app.aimodels.gpt4all import crud
 from app.aimodels.gpt4all.models.gpt4all_pretrained import Gpt4AllPretrainedModel
-from app.aimodels.gpt4all.schemas.gpt4all_pretrained import Gpt4AllPretrainedCreate
 
 import pytest
 
