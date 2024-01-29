@@ -27,7 +27,7 @@ from app.aimodels.bertopic import crud as bertopic_crud
 from app.aimodels.gpt4all import crud as gpt4all_crud
 
 from app.mattermost.crud import crud_mattermost
-from app.mattermost.services.mattermost_utils import MM_BOT_USERNAME
+from ppg.mattermost_utils import MM_BOT_USERNAME
 
 from sentence_transformers import SentenceTransformer, CrossEncoder
 
