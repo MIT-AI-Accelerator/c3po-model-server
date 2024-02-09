@@ -11,10 +11,12 @@ from typing import Union
 from fastapi import UploadFile
 from fastapi.encoders import jsonable_encoder
 from minio.error import InvalidResponseError
+from ppg.schemas.bertopic.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedCreate, BertopicEmbeddingPretrainedUpdate
+from ppg.schemas.bertopic.document import DocumentCreate
+from ppg.services.mattermost_utils import MM_BOT_USERNAME
+
 from app.aimodels.bertopic.models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedModel, EmbeddingModelTypeEnum
 from app.aimodels.bertopic.models.document import DocumentModel
-from app.aimodels.bertopic.schemas.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedCreate, BertopicEmbeddingPretrainedUpdate
-from app.aimodels.bertopic.schemas.document import DocumentCreate
 from app.aimodels.gpt4all.models.gpt4all_pretrained import Gpt4AllPretrainedModel
 from app.aimodels.gpt4all.schemas.gpt4all_pretrained import Gpt4AllPretrainedCreate, Gpt4AllPretrainedUpdate
 
@@ -27,7 +29,6 @@ from app.aimodels.bertopic import crud as bertopic_crud
 from app.aimodels.gpt4all import crud as gpt4all_crud
 
 from app.mattermost.crud import crud_mattermost
-from ppg.mattermost_utils import MM_BOT_USERNAME
 
 from sentence_transformers import SentenceTransformer, CrossEncoder
 
