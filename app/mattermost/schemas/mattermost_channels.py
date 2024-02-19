@@ -10,6 +10,10 @@ class MattermostChannelBase(BaseModel):
     channel_name: str
     team_id: str
     team_name: str
+    display_name: str
+    type: str
+    header: str
+    purpose: str
 
 
 class MattermostChannelCreate(MattermostChannelBase):

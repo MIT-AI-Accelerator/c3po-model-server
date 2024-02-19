@@ -14,6 +14,11 @@ class MattermostUserModel(Base):
     id = Column(UUID, primary_key=True, unique=True, default=uuid.uuid4)
     user_id = Column(String(), unique=True)
     user_name = Column(String(), unique=True)
+    nickname = Column(String())
+    first_name = Column(String())
+    last_name = Column(String())
+    position = Column(String())
+    email = Column(String())
     teams = Column(MutableDict.as_mutable(JSON))
     originated_from = Column(Enum(OriginationEnum),
                              default=get_originated_from)

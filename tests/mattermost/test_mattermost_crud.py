@@ -12,8 +12,14 @@ def test_crud_mattermost(db: Session):
     # test crud mattermost
 
     # test mattermost channel
-    channel_info = dict({'id': str(uuid.uuid4()), 'name': 'my channel', 'team_id': str(
-        uuid.uuid4()), 'team_name': 'my team'})
+    channel_info = dict({'id': str(uuid.uuid4()),
+                         'name': 'my channel',
+                         'team_id': str(uuid.uuid4()),
+                         'team_name': 'my team',
+                         'display_name': 'my channel',
+                         'type': 'P',
+                         'header': 'my header',
+                         'purpose': 'my purpose'})
     channel_db_obj = crud.populate_mm_channel_info(
         db, channel_info=channel_info)
 
@@ -21,6 +27,10 @@ def test_crud_mattermost(db: Session):
     assert channel_db_obj.channel_name == channel_info['name']
     assert channel_db_obj.team_id == channel_info['team_id']
     assert channel_db_obj.team_name == channel_info['team_name']
+    assert channel_db_obj.display_name == channel_info['display_name']
+    assert channel_db_obj.type == channel_info['type']
+    assert channel_db_obj.header == channel_info['header']
+    assert channel_db_obj.purpose == channel_info['purpose']
     assert crud.mattermost_channels.get_by_channel_id(
         db, channel_id=channel_info['id']) is not None
     assert crud.mattermost_channels.get_by_channel_name(
@@ -30,12 +40,23 @@ def test_crud_mattermost(db: Session):
 
     # test mattermost user
     user = str(uuid.uuid4())
-    mm_user = dict({'id': user, 'username': user})
+    mm_user = dict({'id': user,
+                    'username': user,
+                    'nickname': user,
+                    'first_name': 'afirstname',
+                    'last_name': 'alastname',
+                    'position': 'something important',
+                    'email': '%s@nitmre.mil' % user})
     teams = dict({'0': 'a team', '1': 'another team'})
     user_db_obj = crud.populate_mm_user_info(db, mm_user=mm_user, teams=teams)
 
     assert user_db_obj.user_id == mm_user['id']
     assert user_db_obj.user_name == mm_user['username']
+    assert user_db_obj.nickname == mm_user['nickname']
+    assert user_db_obj.first_name == mm_user['first_name']
+    assert user_db_obj.last_name == mm_user['last_name']
+    assert user_db_obj.position == mm_user['position']
+    assert user_db_obj.email == mm_user['email']
     assert user_db_obj.teams == teams
     assert crud.mattermost_users.get_by_user_id(
         db, user_id=mm_user['id']) is not None
@@ -85,7 +106,14 @@ def test_populate_mm_user_team_info(db: Session, mocker):
 
     # mock mattermost_utils for staging pipeline
     user = str(uuid.uuid4())
-    mock_user_data = (dict({'id': user, 'username': user}), pd.DataFrame())
+    mock_user_data = (dict({'id': user,
+                            'username': user,
+                            'nickname': user,
+                            'first_name': 'afirstname',
+                            'last_name': 'alastname',
+                            'position': 'something important',
+                            'email': '%s@nitmre.mil' % user}),
+                      pd.DataFrame())
     mocker.patch(
         'ppg.mattermost_utils.get_user_info', return_value=mock_user_data)
 

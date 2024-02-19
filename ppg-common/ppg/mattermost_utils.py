@@ -103,6 +103,29 @@ def get_user_name(mm_base_url, mm_token, mm_user):
 
     return user_name
 
+def get_user_details(mm_base_url, mm_token, mm_user):
+    """get user details by id"""
+
+    udf = pd.DataFrame()
+
+    # user info
+    resp = requests.get(f'{mm_base_url}/api/v4/users/%s' % mm_user,
+                        headers={'Authorization': f'Bearer {mm_token}'},
+                        timeout=HTTP_REQUEST_TIMEOUT_S)
+    if resp.status_code < 400:
+        user = resp.json()
+        del user['timezone'] # this dictionary complicates the dataframe init
+        udf = pd.DataFrame([{'id': user['id'],
+                            'user_name': user['username'],
+                            'nickname': user['nickname'],
+                            'first_name': user['first_name'],
+                            'last_name': user['last_name'],
+                            'position  ': user['position'],
+                            'email': user['email']}])
+    else:
+        logger.debug(f"{resp.url} request failed: {resp.status_code}")
+
+    return udf
 
 def get_team_channels(mm_base_url, mm_token, user_id, team_id):
     """get a list of channels by team"""

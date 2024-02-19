@@ -1,7 +1,7 @@
 import uuid
 from typing import TYPE_CHECKING
-from sqlalchemy import Column, UUID, String, ForeignKey, Enum
-from sqlalchemy.orm import relationship
+from sqlalchemy import Column, UUID, String, ForeignKey, Enum, JSON, Boolean
+from sqlalchemy.ext.mutable import MutableDict
 from app.db.base_class import Base
 from app.core.config import OriginationEnum, get_originated_from
 
@@ -18,5 +18,10 @@ class MattermostDocumentModel(Base):
     channel = Column(UUID, ForeignKey("mattermostchannelmodel.id"))
     user = Column(UUID, ForeignKey("mattermostusermodel.id"))
     document = Column(UUID, ForeignKey("documentmodel.id"))
+    type = Column(String())
+    hashtags = Column(String())
+    has_reactions = Column(Boolean(), default=False)
+    props = Column(MutableDict.as_mutable(JSON))
+    doc_metadata = Column(MutableDict.as_mutable(JSON))
     originated_from = Column(Enum(OriginationEnum),
                              default=get_originated_from)

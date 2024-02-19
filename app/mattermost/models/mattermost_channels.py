@@ -15,6 +15,10 @@ class MattermostChannelModel(Base):
     channel_name = Column(String())
     team_id = Column(String())
     team_name = Column(String())
+    display_name = Column(String())
+    type = Column(String())
+    header = Column(String())
+    purpose = Column(String())
     originated_from = Column(Enum(OriginationEnum),
                              default=get_originated_from)
     document_channel = relationship(

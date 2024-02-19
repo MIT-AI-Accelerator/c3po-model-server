@@ -157,6 +157,11 @@ async def upload_mm_channel_docs(request: UploadDocumentRequest, db: Session = D
         mattermost_documents = mattermost_documents + [MattermostDocumentCreate(
             message_id=row['id'],
             root_message_id=row['root_id'],
+            type=row['type'],
+            hashtags=row['hashtags'],
+            has_reactions=str(row['has_reactions']).lower() == 'true',
+            props=row['props'],
+            doc_metadata=row['metadata'],
             channel=row['channel'],
             user=row['user'],
             document=document_obj.id)]
