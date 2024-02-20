@@ -7,6 +7,11 @@ class MattermostUserBase(BaseModel):
 
     user_id: str
     user_name: str
+    nickname: str
+    first_name: str
+    last_name: str
+    position: str
+    email: str
     teams: dict
 
 
