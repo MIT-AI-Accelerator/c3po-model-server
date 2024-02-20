@@ -86,6 +86,7 @@ class CRUDMattermostDocument(CRUDBase[MattermostDocumentModel, MattermostDocumen
                 ddf = pd.concat([ddf, pd.DataFrame([{'id': document[0][0].message_id,
                                                      'message': document[0][1].text,
                                                      'root_id': document[0][0].root_message_id,
+                                                     'type': document[0][0].type,
                                                      'user_id': document[0][2].user_id,
                                                      'channel_id': document[0][3].channel_id,
                                                      'create_at': document[0][1].original_created_time}])])
@@ -98,11 +99,25 @@ def populate_mm_user_info(db: Session, *, mm_user: dict, teams: dict) -> Matterm
     user_obj = mattermost_users.get_by_user_name(db, user_name=mm_user['username'])
     if user_obj is None:
         create_user = MattermostUserCreate(
-            user_id=mm_user['id'], user_name=mm_user['username'], teams=teams)
+            user_id=mm_user['id'],
+            user_name=mm_user['username'],
+            nickname=mm_user['nickname'],
+            first_name=mm_user['first_name'],
+            last_name=mm_user['last_name'],
+            position=mm_user['position'],
+            email=mm_user['email'],
+            teams=teams)
         user_obj = mattermost_users.create(db, obj_in=create_user)
     else:
         update_user = MattermostUserUpdate(
-            user_id=mm_user['id'], user_name=mm_user['username'], teams=teams)
+            user_id=mm_user['id'],
+            user_name=mm_user['username'],
+            nickname=mm_user['nickname'],
+            first_name=mm_user['first_name'],
+            last_name=mm_user['last_name'],
+            position=mm_user['position'],
+            email=mm_user['email'],
+            teams=teams)
         user_obj = mattermost_users.update(
             db, db_obj=user_obj, obj_in=update_user)
 
@@ -152,7 +167,11 @@ def populate_mm_user_team_info(db: Session, *, user_name: str, get_teams = False
             channel_id=row['id'],
             channel_name=row['name'],
             team_id=row['team_id'],
-            team_name=row['team_name']
+            team_name=row['team_name'],
+            display_name=row['display_name'],
+            type=row['type'],
+            header=row['header'],
+            purpose=row['purpose']
         ) for key, row in cdf.iterrows()]
         new_channels = mattermost_channels.create_all_using_id(
             db, obj_in_list=channels)
@@ -171,7 +190,11 @@ def populate_mm_channel_info(db: Session, *, channel_info: dict) -> MattermostCh
             channel_id=channel_info['id'],
             channel_name=channel_info['name'],
             team_id=channel_info['team_id'],
-            team_name=channel_info['team_name'])
+            team_name=channel_info['team_name'],
+            display_name=channel_info['display_name'],
+            type=channel_info['type'],
+            header=channel_info['header'],
+            purpose=channel_info['purpose'])
         channel_obj = mattermost_channels.create(db, obj_in=channel)
     else:
         logger.warn(f"Duplicate Mattermost channel found: {channel_info['id']}")

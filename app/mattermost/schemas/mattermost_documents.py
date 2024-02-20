@@ -9,6 +9,11 @@ class MattermostDocumentBase(BaseModel):
     channel: UUID4
     user: UUID4
     document: UUID4
+    type: str
+    hashtags: str
+    has_reactions: bool
+    props: dict
+    doc_metadata: dict
 
 
 class MattermostDocumentCreate(MattermostDocumentBase):
