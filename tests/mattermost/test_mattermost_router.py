@@ -1,5 +1,6 @@
 import uuid
 from fastapi.testclient import TestClient
+from ppg.core.config import OriginationEnum
 from app.core.config import environment_settings
 
 # returns 422
@@ -65,6 +66,12 @@ def test_get_mattermost_user_info(client: TestClient):
 
     if environment_settings.environment == 'test':
         return
+
+    # this test creates db entries for mm user and channel, these are
+    # operational entries and should not labeled as originated from test
+    response = client.get("/originated_from_app/")
+    originated_from = response.json()
+    assert originated_from == OriginationEnum.ORIGINATED_FROM_APP
 
     response = client.get(
         "/mattermost/user/get",
