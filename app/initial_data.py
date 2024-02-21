@@ -318,7 +318,7 @@ def init_documents_from_chats(db: Session) -> str:
 
 
 def init_mattermost_bot_user(db: Session, user_name: str) -> None:
-    return crud_mattermost.populate_mm_user_team_info(db, user_name=user_name)
+    return crud_mattermost.populate_mm_user_team_info(db, user_name=user_name, get_teams=True)
 
 
 def init_large_objects(environment: str, migration_toggle: bool, s3: Minio, db: Session) -> None:
