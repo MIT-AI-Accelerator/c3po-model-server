@@ -12,13 +12,13 @@ from fastapi import UploadFile
 from fastapi.encoders import jsonable_encoder
 from minio.error import InvalidResponseError
 from ppg.schemas.bertopic.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedCreate, BertopicEmbeddingPretrainedUpdate
+from ppg.schemas.gpt4all.gpt4all_pretrained import Gpt4AllPretrainedCreate, Gpt4AllPretrainedUpdate
 from ppg.schemas.bertopic.document import DocumentCreate
 from ppg.services.mattermost_utils import MM_BOT_USERNAME
 
 from app.aimodels.bertopic.models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedModel, EmbeddingModelTypeEnum
 from app.aimodels.bertopic.models.document import DocumentModel
 from app.aimodels.gpt4all.models.gpt4all_pretrained import Gpt4AllPretrainedModel
-from app.aimodels.gpt4all.schemas.gpt4all_pretrained import Gpt4AllPretrainedCreate, Gpt4AllPretrainedUpdate
 
 from app.db.init_db import init_db, wipe_db
 from app.db.session import SessionLocal
