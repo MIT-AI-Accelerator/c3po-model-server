@@ -37,8 +37,6 @@ MM_TOKEN="<your_preprod_mattermost_token>"
 
 12.  You can shut down and your db / minio data will persist via docker volumes.
 
-13. Set up the precommit hook with `pre-commit install`.
-
 
 # Adding a package
 Note: instructions included in [tutorial linked here](https://realpython.com/dependency-management-python-poetry/)
@@ -84,6 +82,15 @@ to the requirements.txt in place of the previous `transformers` installation.
 - [Basics of `pipenv` for application dependency management](https://python.plainenglish.io/getting-started-with-pipenv-d224328799de)
 - [Conda and pipenv cheat sheet](https://gist.github.com/ziritrion/8024025672ea92b8bdeb320d6015aa0d)
 - [How to use pre-commit framework for git hooks](https://pre-commit.com/index.html)
+
+
+## Environment updates
+- P1 uses pip for environment setup; locally, both poetry and pip are acceptable
+- However, ppg-common broke the pre-commit hook that keeps the poetry and pip requirements in sync
+- Process for environment updates:
+1. Update poetry: $ poetry add package==version
+2. Sync with pip: $ ./hooks/output-requirements-txt.sh
+3. Manually edit ppg-common entry in requirements.txt
 
 ## Testing
 In general, tensorflow and pytorch use the underlying `unittest` framework that comes stock with Python.  However, FastAPI has a ton of great features through `pytest` that make testing HTTP much, much easier.  Good news is that, for the most part, pytest as the runner will also handle unittest, so we can use the TF or pytorch frameworks with unittest and FastAPI with pytest.  Some articles on this:

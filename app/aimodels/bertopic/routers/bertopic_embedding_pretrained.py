@@ -10,10 +10,10 @@ from pydantic import UUID4
 
 from sqlalchemy.orm import Session
 from minio import Minio
+from ppg.schemas.bertopic.bertopic_embedding_pretrained import BertopicEmbeddingPretrained, BertopicEmbeddingPretrainedCreate, BertopicEmbeddingPretrainedUpdate
 from app.core.minio import upload_file_to_minio
 from app.core.errors import HTTPValidationError, ValidationError
 from app.dependencies import get_db, get_minio
-from ..schemas.bertopic_embedding_pretrained import BertopicEmbeddingPretrained, BertopicEmbeddingPretrainedCreate, BertopicEmbeddingPretrainedUpdate
 from .. import crud
 from ..models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedModel
 

@@ -11,12 +11,14 @@ from typing import Union
 from fastapi import UploadFile
 from fastapi.encoders import jsonable_encoder
 from minio.error import InvalidResponseError
+from ppg.schemas.bertopic.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedCreate, BertopicEmbeddingPretrainedUpdate
+from ppg.schemas.gpt4all.gpt4all_pretrained import Gpt4AllPretrainedCreate, Gpt4AllPretrainedUpdate
+from ppg.schemas.bertopic.document import DocumentCreate
+from ppg.services.mattermost_utils import MM_BOT_USERNAME
+
 from app.aimodels.bertopic.models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedModel, EmbeddingModelTypeEnum
 from app.aimodels.bertopic.models.document import DocumentModel
-from app.aimodels.bertopic.schemas.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedCreate, BertopicEmbeddingPretrainedUpdate
-from app.aimodels.bertopic.schemas.document import DocumentCreate
 from app.aimodels.gpt4all.models.gpt4all_pretrained import Gpt4AllPretrainedModel
-from app.aimodels.gpt4all.schemas.gpt4all_pretrained import Gpt4AllPretrainedCreate, Gpt4AllPretrainedUpdate
 
 from app.db.init_db import init_db, wipe_db
 from app.db.session import SessionLocal
@@ -27,7 +29,6 @@ from app.aimodels.bertopic import crud as bertopic_crud
 from app.aimodels.gpt4all import crud as gpt4all_crud
 
 from app.mattermost.crud import crud_mattermost
-from ppg.mattermost_utils import MM_BOT_USERNAME
 
 from sentence_transformers import SentenceTransformer, CrossEncoder
 
@@ -53,7 +54,7 @@ def get_db(environment: str, migration_toggle: bool) -> Union[Session, None]:
 
     # clear DB if local or staging as long as not actively testing migrating
     # note: reenabled wipe_db for staging (['local', 'staging']) due to db schema changes, remove staging when schema stable
-    if (environment in ['local', 'staging'] and migration_toggle is False):
+    if (environment in ['local'] and migration_toggle is False):
         logger.info("Clearing database")
         wipe_db()
         logger.info("Database cleared")
@@ -317,7 +318,7 @@ def init_documents_from_chats(db: Session) -> str:
 
 
 def init_mattermost_bot_user(db: Session, user_name: str) -> None:
-    return crud_mattermost.populate_mm_user_team_info(db, user_name=user_name)
+    return crud_mattermost.populate_mm_user_team_info(db, user_name=user_name, get_teams=True)
 
 
 def init_large_objects(environment: str, migration_toggle: bool, s3: Minio, db: Session) -> None:

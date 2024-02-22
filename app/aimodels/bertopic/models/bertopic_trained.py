@@ -4,8 +4,9 @@ from sqlalchemy import Boolean, Column, ForeignKey, UUID, Enum, String, DateTime
 from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+from ppg.core.config import OriginationEnum
 from app.db.base_class import Base
-from app.core.config import OriginationEnum, get_originated_from
+from app.core.config import get_originated_from
 
 if TYPE_CHECKING:
     from .document import DocumentModel  # noqa: F401

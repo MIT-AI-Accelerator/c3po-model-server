@@ -1,9 +1,11 @@
 import re
+import enum
 from typing import Optional
-from app.core.config import OriginationEnum
-
 from pydantic import BaseModel, UUID4, validator
-from ..models.gpt4all_pretrained import Gpt4AllModelFilenameEnum
+from ppg.core.config import OriginationEnum
+
+class Gpt4AllModelFilenameEnum(str, enum.Enum):
+    L13B_SNOOZY = "ggml-gpt4all-l13b-snoozy.bin"
 
 # Shared properties
 class Gpt4AllPretrainedBase(BaseModel):

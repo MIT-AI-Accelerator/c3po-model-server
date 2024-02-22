@@ -1,9 +1,9 @@
-
 from fastapi.testclient import TestClient
-from app.aimodels.bertopic.schemas.document import DocumentCreate
-
-from app.core.config import OriginationEnum
 from fastapi.encoders import jsonable_encoder
+
+from ppg.core.config import OriginationEnum
+from ppg.schemas.bertopic.document import DocumentCreate
+
 
 def test_create_document_object_post_valid_request(client: TestClient):
     body = [DocumentCreate(

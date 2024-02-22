@@ -1,12 +1,13 @@
 
 from typing import Union
 from sqlalchemy.orm import Session
-from app.core.config import OriginationEnum, get_originated_from
+from sqlalchemy import func
+from ppg.core.config import OriginationEnum
+from ppg.schemas.gpt4all.gpt4all_pretrained import Gpt4AllPretrainedCreate, Gpt4AllPretrainedUpdate
+from app.core.config import get_originated_from
 from app.crud.base import CRUDBase
 from ..models import Gpt4AllPretrainedModel
 from ..models.gpt4all_pretrained import Gpt4AllModelFilenameEnum
-from ..schemas import Gpt4AllPretrainedCreate, Gpt4AllPretrainedUpdate
-from sqlalchemy import func
 
 # CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType])
 class CRUDGpt4AllPretrained(CRUDBase[Gpt4AllPretrainedModel, Gpt4AllPretrainedCreate, Gpt4AllPretrainedUpdate]):

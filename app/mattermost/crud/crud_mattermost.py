@@ -4,16 +4,16 @@ import pandas as pd
 import numpy as np
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
-import ppg.mattermost_utils as mattermost_utils
+from ppg.schemas.mattermost.mattermost_channels import MattermostChannelCreate
+from ppg.schemas.mattermost.mattermost_documents import MattermostDocumentCreate
+from ppg.schemas.mattermost.mattermost_users import MattermostUserCreate, MattermostUserUpdate
+import ppg.services.mattermost_utils as mattermost_utils
 from app.core.config import settings
 from app.core.logging import logger
 from app.crud.base import CRUDBase
 from ..models.mattermost_channels import MattermostChannelModel
-from ..schemas.mattermost_channels import MattermostChannelCreate
 from ..models.mattermost_users import MattermostUserModel
-from ..schemas.mattermost_users import MattermostUserCreate, MattermostUserUpdate
 from ..models.mattermost_documents import MattermostDocumentModel
-from ..schemas.mattermost_documents import MattermostDocumentCreate
 from app.aimodels.bertopic.models import DocumentModel
 
 

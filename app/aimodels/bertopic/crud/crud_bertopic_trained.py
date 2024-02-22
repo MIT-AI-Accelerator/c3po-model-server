@@ -1,4 +1,3 @@
-import uuid
 from typing import Union
 from pydantic import UUID4, BaseModel
 from datetime import datetime
@@ -8,10 +7,11 @@ from sqlalchemy import desc
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
-from app.core.config import OriginationEnum
+from ppg.core.config import OriginationEnum
+from ppg.schemas.bertopic.bertopic_trained import BertopicTrainedCreate, BertopicTrainedUpdate
+
 from app.crud.base import CRUDBase
 from app.aimodels.bertopic.models.bertopic_trained import BertopicTrainedModel
-from app.aimodels.bertopic.schemas.bertopic_trained import BertopicTrainedCreate, BertopicTrainedUpdate
 
 class BertopicTrainedModelSummary(BaseModel):
     time: datetime

@@ -2,12 +2,11 @@ import os
 from typing import Union
 from fastapi import Depends, APIRouter
 from pydantic import UUID4
-from ..schemas.document import Document, DocumentCreate
-from app.dependencies import get_db
 from sqlalchemy.orm import Session
+from ppg.schemas.bertopic.document import Document, DocumentCreate
+from app.dependencies import get_db
 from .. import crud
-from ..models.document import DocumentModel
-from app.core.errors import HTTPValidationError, ValidationError
+from app.core.errors import HTTPValidationError
 
 router = APIRouter(
     prefix="/documents"
