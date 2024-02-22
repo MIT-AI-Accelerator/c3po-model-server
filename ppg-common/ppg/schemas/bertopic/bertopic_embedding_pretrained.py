@@ -1,8 +1,14 @@
 import re
+import enum
 from typing import Optional
 from pydantic import BaseModel, UUID4, validator
-from app.core.config import OriginationEnum
-from ..models.bertopic_embedding_pretrained import EmbeddingModelTypeEnum
+from ppg.core.config import OriginationEnum
+
+class EmbeddingModelTypeEnum(str, enum.Enum):
+    SENTENCE_TRANSFORMERS = "sentence_transformers"
+    WEAK_LEARNERS = "weak_learners"
+    DIFF_CSE = "diff_cse"
+    CROSS_ENCODERS = "cross_encoders"
 
 # Shared properties
 class BertopicEmbeddingPretrainedBase(BaseModel):

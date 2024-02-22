@@ -4,16 +4,16 @@ from pydantic import BaseModel, UUID4
 from fastapi import Depends, APIRouter, HTTPException
 import pandas as pd
 from sqlalchemy.orm import Session
-import ppg.mattermost_utils as mattermost_utils
+from ppg.schemas.bertopic.document import Document, DocumentCreate
+from ppg.schemas.mattermost.mattermost_documents import MattermostDocument, MattermostDocumentCreate
+from ppg.schemas.mattermost.mattermost_users import MattermostUser
+import ppg.services.mattermost_utils as mattermost_utils
 from app.core.config import settings
 from app.core.errors import HTTPValidationError
 from app.core.logging import logger
 from app.dependencies import get_db
-from app.aimodels.bertopic.schemas.document import Document, DocumentCreate
 from app.aimodels.bertopic import crud as crud_document
 from app.mattermost.crud import crud_mattermost
-from .schemas.mattermost_documents import MattermostDocument, MattermostDocumentCreate
-from .schemas.mattermost_users import MattermostUser
 
 """mattermost section"""
 router = APIRouter(

@@ -1,8 +1,8 @@
 from typing import Union
 from sqlalchemy.orm import Session
+from ppg.schemas.bertopic.bertopic_visualization import BertopicVisualizationCreate, BertopicVisualizationTypeEnum
 from app.crud.base import CRUDBase
-from ..models.bertopic_visualization import BertopicVisualizationModel, BertopicVisualizationTypeEnum
-from ..schemas.bertopic_visualization import BertopicVisualizationCreate
+from ..models.bertopic_visualization import BertopicVisualizationModel
 
 
 class CRUDBertopicVisualization(CRUDBase[BertopicVisualizationModel, BertopicVisualizationCreate, BertopicVisualizationCreate]):

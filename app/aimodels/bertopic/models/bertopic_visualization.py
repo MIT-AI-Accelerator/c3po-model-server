@@ -1,14 +1,10 @@
 import uuid
-import enum
 from sqlalchemy import Column, UUID, Enum, String
+from ppg.core.config import OriginationEnum
+from ppg.schemas.bertopic.bertopic_visualization import BertopicVisualizationTypeEnum
 from app.db.base_class import Base
-from app.core.config import OriginationEnum, get_originated_from
+from app.core.config import get_originated_from
 
-class BertopicVisualizationTypeEnum(str, enum.Enum):
-    MODEL_CLUSTERS = "model_topic_clusters"
-    MODEL_WORDS = "model_topic_words"
-    MODEL_TIMELINE = "model_topic_timeline"
-    TOPIC_TIMELINE = "topic_timeline"
 
 class BertopicVisualizationModel(Base):
     id = Column(UUID, primary_key=True, unique=True, default=uuid.uuid4)

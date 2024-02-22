@@ -1,8 +1,8 @@
 from typing import Union
 from sqlalchemy.orm import Session
+from ppg.schemas.bertopic.topic import TopicSummaryCreate
 from app.crud.base import CRUDBase
 from ..models.topic import TopicSummaryModel
-from ..schemas.topic import TopicSummaryCreate
 
 
 class CRUDTopicSummary(CRUDBase[TopicSummaryModel, TopicSummaryCreate, TopicSummaryCreate]):

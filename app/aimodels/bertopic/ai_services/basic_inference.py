@@ -10,11 +10,11 @@ import hdbscan
 from pydantic import BaseModel, StrictFloat, StrictInt, StrictBool, validator
 from minio import Minio
 from plotly.graph_objs import Figure
+from ppg.schemas.bertopic.topic import TopicSummaryCreate
 from app.core.minio import download_pickled_object_from_minio
 from ..models.document import DocumentModel
 from ..models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedModel
 from ..models.topic import TopicSummaryModel
-from ..schemas.topic import TopicSummaryCreate
 from ..crud import crud_topic
 from .weak_learning import WeakLearner
 from .topic_summarization import TopicSummarizer, topic_summarizer, DEFAULT_N_REPR_DOCS

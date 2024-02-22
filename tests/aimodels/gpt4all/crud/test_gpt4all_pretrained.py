@@ -1,8 +1,7 @@
+from sqlalchemy.orm import Session
+from ppg.schemas.gpt4all.gpt4all_pretrained import Gpt4AllPretrainedCreate
 from app.aimodels.gpt4all.crud.crud_gpt4all_pretrained import gpt4all_pretrained
 from app.aimodels.gpt4all.models.gpt4all_pretrained import Gpt4AllPretrainedModel
-from sqlalchemy.orm import Session
-
-from app.aimodels.gpt4all.schemas.gpt4all_pretrained import Gpt4AllPretrainedCreate
 
 # assert gpt4all_pretrained was built with correct model
 def test_gpt4all_pretrained():
