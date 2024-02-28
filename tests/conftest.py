@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 from .test_files.db.db_test_session import SessionLocal
 import pytest
 from fastapi.testclient import TestClient
-import ppg
+from ppg.core.config import OriginationEnum
 from app.main import app
 from app.core.minio import build_client
 
@@ -31,7 +31,7 @@ def client() -> Generator:
         # initialize originated_from to test to allow for db cleanup
         response = c.get("/originated_from_test/")
         data = response.json()
-        assert data == ppg.core.config.OriginationEnum.ORIGINATED_FROM_TEST
+        assert data == OriginationEnum.ORIGINATED_FROM_TEST
         assert response.status_code == 200
         yield c
 

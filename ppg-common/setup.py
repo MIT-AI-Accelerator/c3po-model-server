@@ -1,12 +1,13 @@
 from setuptools import find_packages, setup
 
 setup(name='ppg-common',
-      version='0.3.0',
+      version='0.4.0',
       description='A library for PPG common code',
       url='--',
       author='MIT Lincoln Laboratory',
       license='MIT',
       packages=['ppg.core',
+		'ppg.schemas',
 		'ppg.schemas.bertopic',
 		'ppg.schemas.gpt4all',
 		'ppg.schemas.mattermost',
