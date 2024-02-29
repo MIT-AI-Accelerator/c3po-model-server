@@ -3,7 +3,7 @@
 
 2. Create and activate a new conda environment, e.g., `transformers-api` with python 3.11.
 ```bash
-conda create --name transformers-api python==3.11.7
+conda create --name transformers-api python==3.11.8
 conda activate transformers-api
 ```
 
