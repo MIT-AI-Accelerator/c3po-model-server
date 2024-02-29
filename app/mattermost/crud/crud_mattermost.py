@@ -76,10 +76,10 @@ class CRUDMattermostDocument(CRUDBase[MattermostDocumentModel, MattermostDocumen
 
         return documents
 
-    def get_document_dataframe(self, db: Session, *, document_uuids: list[str]) -> Union[pd.DataFrame, None]:
+    def get_document_dataframe(self, db: Session, *, mm_document_uuids: list[str]) -> Union[pd.DataFrame, None]:
 
         ddf = pd.DataFrame()
-        for duuid in document_uuids:
+        for duuid in mm_document_uuids:
             document = db.query(self.model, DocumentModel, MattermostUserModel, MattermostChannelModel).join(DocumentModel, DocumentModel.id == self.model.document).join(
                 MattermostUserModel, MattermostUserModel.id == self.model.user).join(MattermostChannelModel, MattermostChannelModel.id == self.model.channel).filter(self.model.id == duuid).all()
             if document:
@@ -91,6 +91,34 @@ class CRUDMattermostDocument(CRUDBase[MattermostDocumentModel, MattermostDocumen
                                                      'channel_id': document[0][3].channel_id,
                                                      'create_at': document[0][1].original_created_time}])])
 
+        return ddf
+    
+    def get_document_dataframe_by_documents(self, db: Session, *, document_uuids: list[str]) -> Union[pd.DataFrame, None]:
+
+        ddf = pd.DataFrame()
+        for duuid in document_uuids:
+            mm_document = db.query(self.model, DocumentModel, MattermostUserModel, MattermostChannelModel).join(DocumentModel, DocumentModel.id == self.model.document).join(
+                MattermostUserModel, MattermostUserModel.id == self.model.user).join(MattermostChannelModel, MattermostChannelModel.id == self.model.channel).filter(DocumentModel.id == duuid).all()
+            if mm_document:
+                ddf = pd.concat([ddf, pd.DataFrame([{'uuid': duuid,
+                                                    'id': mm_document[0][0].message_id,
+                                                    'message': mm_document[0][1].text,
+                                                    'root_id': mm_document[0][0].root_message_id,
+                                                    'type': mm_document[0][0].type,
+                                                    'user_id': mm_document[0][2].user_id,
+                                                    'channel_id': mm_document[0][3].channel_id,
+                                                    'create_at': mm_document[0][1].original_created_time}])])
+            else:
+                document = db.query(DocumentModel).filter(DocumentModel.id == duuid).first()
+                ddf = pd.concat([ddf, pd.DataFrame([{'uuid': duuid,
+                                                    'id': None,
+                                                    'message': document.text,
+                                                    'root_id': None,
+                                                    'type': None,
+                                                    'user_id': None,
+                                                    'channel_id': None,
+                                                    'create_at': document.original_created_time}])])
+                
         return ddf
 
 

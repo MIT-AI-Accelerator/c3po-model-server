@@ -21,6 +21,7 @@ from app.core.config import settings
 from ..models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedModel
 from app.aimodels.gpt4all.models import Gpt4AllPretrainedModel
 from app.aimodels.gpt4all.crud import crud_gpt4all_pretrained
+from app.mattermost.crud import crud_mattermost
 
 router = APIRouter(
     prefix=""
@@ -86,6 +87,8 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
             return HTTPValidationError(detail=[ValidationError(loc=['path', 'document_id'], msg=f'Invalid document id {document_id}', type='value_error')])
 
         documents.append(document_obj)
+
+    ddf = crud_mattermost.mattermost_documents.get_document_dataframe_by_documents(db, document_uuids=request.document_ids)
 
     # extract any formerly computed embeddings, needs to be list[Union[list[float], None]]
     # use None if no embedding was computed previously
