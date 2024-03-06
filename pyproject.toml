@@ -9,14 +9,12 @@ packages = [{include = "app"}]
 [tool.poetry.dependencies]
 python = "~3.11"
 urllib3 = "2.0.7"
-fastapi = "^0.95.2"
 uvicorn = "^0.22.0"
 pydantic = "^1.10.8"
 matplotlib = "^3.7.1"
 pandas = "^2.0.1"
 httpx = "^0.24.1"
 aiofiles = "^23.1.0"
-clamd = "^1.0.2"
 python-dotenv = "^1.0.0"
 fastapi-versioning = "^0.10.0"
 sqlalchemy = "^2.0.15"
@@ -26,35 +24,41 @@ python-multipart = "^0.0.6"
 minio = "^7.1.15"
 bertopic = "^0.14.1"
 transformers = "4.38.1"
-tensorflow = {version = "2.13.0", markers = "platform.machine == 'x86_64'"}
-tensorflow-macos = {version = "2.13.0", platform = "darwin", markers = "platform.machine == 'arm64'"}
-tensorflow-metal = {version = "1.0.1", platform = "darwin", markers = "platform.machine == 'arm64'"}
+tensorflow-metal = {version = "1.1.0", platform = "darwin"}
 snorkel = "^0.9.9"
 gpt4all = "^1.0.7"
 langchain = "0.0.329"
 torch = "2.0.0"
 numpy = "1.24.3"
 scikit-learn = "~1.2"
-faiss-cpu = "^1.7.4"
-rank-bm25 = "^0.2.2"
 jinja2 = "3.1.3"
 cython = "^0.29"
-typing-extensions = "4.2.0"
 werkzeug = "3.0.1"
 glibc = "0.6.1"
 pillow = "10.1.0"
 aiohttp = "3.9.0"
 ppg-common = {path = "ppg-common"}
 fonttools = "4.49.0"
+annotated-types = "0.6.0"
+grpcio = "1.62.0"
+ml-dtypes = "0.2.0"
+tomlkit = "^0.12.4"
+tensorflow = "2.15.0"
+tensorflow-macos = {version = "2.15.0", platform = "darwin"}
+typing-extensions = "4.10.0"
+fastapi = "0.110.0"
+setuptools = "68.1.2"
+astunparse = {version = "1.6.3", platform = "darwin"}
+flatbuffers = {version = "23.5.26", platform = "darwin"}
+gast = {version = "0.5.4", platform = "darwin"}
+google-pasta = {version = "0.2.0", platform = "darwin"}
+h5py = {version = "3.10.0", platform = "darwin"}
 
 [tool.poetry.group.test.dependencies]
-pylint = "^2.17.4"
 pytest = "^7.3.1"
 pytest-cov = "^4.1.0"
 pytest-asyncio = "^0.21.0"
 pytest-mock = "^3.10.0"
-black = "^23.3.0"
-isort = "^5.12.0"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.3.2"
