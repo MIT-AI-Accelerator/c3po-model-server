@@ -145,7 +145,7 @@ def populate_mm_user_team_info(db: Session, *, user_name: str, get_teams = False
     user_obj = populate_mm_user_info(db, mm_user=mm_user, teams=teams)
 
     # retrieve existing channels from db
-    cdf = mattermost_utils.get_all_user_channels(
+    cdf = mattermost_utils.get_all_user_team_channels(
         settings.mm_base_url, settings.mm_token, mm_user['id'], teams)
     if not cdf.empty:
         existing_ids = mattermost_channels.get_all_channel_ids(db)

@@ -20,8 +20,8 @@ def test_mattermost_bot():
         settings.mm_base_url, settings.mm_token, user['id']) == mm_name
 
     # test get channels
-    channels = mattermost_utils.get_all_user_channels(
-        settings.mm_base_url, settings.mm_token, user['id'], teams['name'].to_dict())
+    channels = mattermost_utils.get_user_team_channels(
+        settings.mm_base_url, settings.mm_token, user['id'], teams.index[0])
 
     assert not channels.empty
     assert mattermost_utils.get_channel_info(
@@ -48,15 +48,15 @@ def test_get_user_info(mocker):
 
 
 def test_get_all_user_channels(mocker):
-# pipeline safe test for get_all_user_channels
+# pipeline safe test for get_all_user_team_channels
 
     user = str(uuid.uuid4())
     team = str(uuid.uuid4())
     mock_data = pd.DataFrame()
 
-    mocker.patch('ppg.services.mattermost_utils.get_team_channels', return_value=mock_data)
-    mocker.patch('ppg.services.mattermost_utils.get_all_user_channels', return_value=mock_data)
+    mocker.patch('ppg.services.mattermost_utils.get_user_team_channels', return_value=mock_data)
+    mocker.patch('ppg.services.mattermost_utils.get_all_user_team_channels', return_value=mock_data)
 
-    channel_info = mattermost_utils.get_all_user_channels("127.0.0.1", "a_token", user, [team])
+    channel_info = mattermost_utils.get_all_user_team_channels("127.0.0.1", "a_token", user, [team])
 
     assert channel_info.equals(mock_data)
