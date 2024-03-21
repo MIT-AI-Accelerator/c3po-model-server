@@ -118,8 +118,8 @@ def test_populate_mm_user_team_info(db: Session, mocker):
         'ppg.services.mattermost_utils.get_user_info', return_value=mock_user_data)
 
     mock_team_data = pd.DataFrame()
-    mocker.patch('ppg.services.mattermost_utils.get_team_channels', return_value=mock_team_data)
-    mocker.patch('ppg.services.mattermost_utils.get_all_user_channels', return_value=mock_team_data)
+    mocker.patch('ppg.services.mattermost_utils.get_user_team_channels', return_value=mock_team_data)
+    mocker.patch('ppg.services.mattermost_utils.get_all_user_team_channels', return_value=mock_team_data)
 
     user_obj = crud.populate_mm_user_team_info(db, user_name=user)
 

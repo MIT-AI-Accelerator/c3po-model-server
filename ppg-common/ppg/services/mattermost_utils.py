@@ -126,22 +126,42 @@ def get_user_details(mm_base_url, mm_token, mm_user):
 
     return udf
 
-def get_team_channels(mm_base_url, mm_token, user_id, team_id):
+
+def get_user_team_channels(mm_base_url, mm_token, user_id, team_id):
     """get a list of channels by team"""
 
     url = f'{mm_base_url}/api/v4/users/%s/teams/%s/channels' % (
         user_id, team_id)
     df = get_all_pages(url, mm_token, do_pagination=False)
-    return df[df.total_msg_count > 1]
+    return df[df.total_msg_count > 0]
 
 
-def get_all_user_channels(mm_base_url, mm_token, user_id, teams):
+def get_team_channels(mm_base_url, mm_token, team_id):
+    """get a list of channels by team"""
+
+    url = f'{mm_base_url}/api/v4/teams/%s/channels' % team_id
+    df = get_all_pages(url, mm_token, do_pagination=True)
+    return df[df.total_msg_count > 0]
+
+
+def get_all_user_team_channels(mm_base_url, mm_token, user_id, teams):
+    """get a list of channels by user"""
+
+    cdf = pd.DataFrame()
+    for tid in teams:
+        df = get_user_team_channels(mm_base_url, mm_token, user_id,
+                                    tid).assign(team_name=teams[tid])
+        cdf = pd.concat([cdf, df])
+    return cdf
+
+
+def get_all_team_channels(mm_base_url, mm_token, teams):
     """get a list of channels by user"""
 
     cdf = pd.DataFrame()
     for tid in teams:
         df = get_team_channels(mm_base_url, mm_token,
-                               user_id, tid).assign(team_name=teams[tid])
+                               tid).assign(team_name=teams[tid])
         cdf = pd.concat([cdf, df])
     return cdf
 
