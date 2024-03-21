@@ -46,6 +46,7 @@ pillow = "10.1.0"
 aiohttp = "3.9.0"
 ppg-common = {path = "ppg-common"}
 fonttools = "4.49.0"
+sentence-transformers = "2.2.2"
 
 [tool.poetry.group.test.dependencies]
 pylint = "^2.17.4"
