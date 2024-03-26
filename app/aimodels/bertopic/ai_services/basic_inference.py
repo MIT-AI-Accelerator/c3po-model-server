@@ -155,6 +155,16 @@ class BuildTopicModelInputs(BaseModel):
         arbitrary_types_allowed = True
 
 
+class TopicDocumentData(BaseModel):
+    document_text_list: list[str]
+    document_timestamps: list[datetime]
+    document_users: list[str]
+    document_message_ids: list[str]
+    embeddings: np.ndarray
+
+    class Config:
+        arbitrary_types_allowed = True
+
 class BasicInference:
 
     def __init__(self, sentence_transformer_obj, s3, map_prompt_template, combine_prompt_template, weak_learner_obj=None, topic_summarizer_obj=None):
@@ -209,26 +219,45 @@ class BasicInference:
         document_info['Timestamp'] = timestamps
         return document_info
 
-    def train_bertopic_on_documents(self, db, documents, precalculated_embeddings, num_topics, seed_topic_list=None, num_related_docs=DEFAULT_N_REPR_DOCS) -> BasicInferenceOutputs:
+    def train_bertopic_on_documents(self, db, documents, precalculated_embeddings, num_topics, document_df, seed_topic_list=None, num_related_docs=DEFAULT_N_REPR_DOCS) -> BasicInferenceOutputs:
         # validate input
         TrainBertopicOnDocumentsInput(
             documents=documents, precalculated_embeddings=precalculated_embeddings, num_topics=num_topics)
 
-        documents_text_list = [document.text for document in documents]
-        document_timestamps = [
-            document.original_created_time for document in documents]
+        # documents_text_list = [document.text for document in documents]
+        documents_text_list = list(document_df['message'].values)
+        document_timestamps = [document.original_created_time for document in documents]
+        # document_timestamps = list(pd.to_datetime(document_df['create_at'].values)) # this is not correct
+
+        document_df.nickname.fillna(value='', inplace=True)
+        document_user = list(document_df['nickname'].values)
+
+        document_df.message_id.fillna(value='', inplace=True)
+        document_mm_id = list(document_df['message_id'].values)
 
         (embeddings, updated_document_indicies) = self.calculate_document_embeddings(
             documents_text_list, precalculated_embeddings)
 
-        (topic_model, filtered_embeddings, filtered_documents_text_list, filtered_timestamps) = self.build_topic_model(
-            documents_text_list, document_timestamps, embeddings, num_topics, seed_topic_list)
+        topic_document_data = TopicDocumentData(document_text_list = documents_text_list,
+                                                document_timestamps = document_timestamps,
+                                                document_users = document_user,
+                                                document_message_ids = document_mm_id,
+                                                embeddings = embeddings)
+        (topic_model, filtered_topic_document_data) = self.build_topic_model(
+            topic_document_data, num_topics, seed_topic_list)
 
         # per topic documents and summary
         document_info = self.get_document_info(
-            topic_model, filtered_documents_text_list, filtered_timestamps, num_related_docs)
+            topic_model,
+            filtered_topic_document_data.document_text_list,
+            filtered_topic_document_data.document_timestamps,
+            num_related_docs)
+        document_info['nickname'] = filtered_topic_document_data.document_users
+        document_info['message_id'] = filtered_topic_document_data.document_message_ids
         topics_over_time = topic_model.topics_over_time(
-            filtered_documents_text_list, filtered_timestamps, nr_bins=DEFAULT_BERTOPIC_TIME_BINS)
+            filtered_topic_document_data.document_text_list,
+            filtered_topic_document_data.document_timestamps,
+            nr_bins=DEFAULT_BERTOPIC_TIME_BINS)
 
         topic_info = topic_model.get_topic_info()
         new_topic_obj_list = []
@@ -268,7 +297,9 @@ class BasicInference:
 
         # model-level topic cluster visualization
         model_cluster_visualization = topic_model.visualize_documents(
-            filtered_documents_text_list, embeddings=filtered_embeddings, title='Topic Analysis')
+            filtered_topic_document_data.document_text_list,
+            embeddings=filtered_topic_document_data.embeddings,
+            title='Topic Analysis')
 
         # visualize_barchart will error if only default cluster (topic id -1) is available
         model_word_visualization = Figure()
@@ -329,7 +360,13 @@ class BasicInference:
 
         return (np.array(embeddings), updated_indices)
 
-    def build_topic_model(self, documents_text_list, document_timestamps, embeddings, num_topics, seed_topic_list) -> BERTopic:
+    def build_topic_model(self, topic_document_data: TopicDocumentData, num_topics, seed_topic_list) -> BERTopic:
+
+        documents_text_list = topic_document_data.document_text_list
+        document_timestamps = topic_document_data.document_timestamps
+        document_users = topic_document_data.document_users
+        document_message_ids = topic_document_data.document_message_ids
+        embeddings = topic_document_data.embeddings
 
         # validate input
         BuildTopicModelInputs(
@@ -337,7 +374,10 @@ class BasicInference:
 
         if self.weak_learner_obj:
             data_test = pd.DataFrame(
-                {'message': documents_text_list, 'timestamp': document_timestamps})
+                {'message': documents_text_list,
+                 'timestamp': document_timestamps,
+                 'user': document_users,
+                 'message_id': document_message_ids})
             l_test = self.label_applier.apply(
                 pd.DataFrame(data_test['message']))
             data_test['y_pred'] = self.label_model.predict(l_test)
@@ -345,10 +385,8 @@ class BasicInference:
             data_test = data_test[data_test['y_pred'] < 2]
             documents_text_list = list(data_test['message'])
             document_timestamps = list(data_test['timestamp'])
-
-        # TODO convert message utterances to conversation threads
-        # https://github.com/orgs/MIT-AI-Accelerator/projects/2/views/1?pane=issue&itemId=36313268
-        # see convertThreads in aimodels_test_plus_summarization
+            document_users = list(data_test['user'])
+            document_message_ids = list(data_test['message_id'])
 
         hdbscan_model = hdbscan.HDBSCAN(min_cluster_size=DEFAULT_HDBSCAN_MIN_CLUSTER_SIZE,
                                         min_samples=DEFAULT_HDBSCAN_MIN_SAMPLES,
@@ -357,4 +395,9 @@ class BasicInference:
                                hdbscan_model=hdbscan_model, vectorizer_model=self.vectorizer)
         topic_model = topic_model.fit(documents_text_list, embeddings)
 
-        return (topic_model, embeddings, documents_text_list, document_timestamps)
+        return (topic_model,
+                TopicDocumentData(document_text_list = documents_text_list,
+                                  document_timestamps = document_timestamps,
+                                  document_users = document_users,
+                                  document_message_ids = document_message_ids,
+                                  embeddings = embeddings))

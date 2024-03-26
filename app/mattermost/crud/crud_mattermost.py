@@ -109,7 +109,8 @@ class CRUDMattermostDocument(CRUDBase[MattermostDocumentModel, MattermostDocumen
                                                      'props': document[0][0].props,
                                                      'metadata': document[0][0].doc_metadata,
                                                      'document_id': document[0][1].id,
-                                                     'is_thread': document[0][0].is_thread}])])
+                                                     'is_thread': document[0][0].is_thread}])],
+                                                     ignore_index=True)
 
         return ddf
 
@@ -130,15 +131,15 @@ class CRUDMattermostDocument(CRUDBase[MattermostDocumentModel, MattermostDocumen
 
             mm_document = db.query(self.model, DocumentModel, MattermostUserModel).join(DocumentModel, DocumentModel.id == self.model.document).join(MattermostUserModel, MattermostUserModel.id == self.model.user).filter(self.model.document == duuid).first()
             if mm_document:
-                mm_uuid = mm_document[0].id,
-                message_id = mm_document[0].message_id,
-                message = mm_document[1].text,
-                root_id = mm_document[0].root_message_id,
-                message_type = mm_document[0].type,
-                user_uuid = mm_document[2].id,
-                user_id = mm_document[2].user_id,
-                nickname = mm_document[2].nickname,
-                channel_uuid = mm_document[0].channel,
+                mm_uuid = mm_document[0].id
+                message_id = mm_document[0].message_id
+                message = mm_document[1].text
+                root_id = mm_document[0].root_message_id
+                message_type = mm_document[0].type
+                user_uuid = mm_document[2].id
+                user_id = mm_document[2].user_id
+                nickname = mm_document[2].nickname
+                channel_uuid = mm_document[0].channel
                 create_at = mm_document[1].original_created_time
 
             else:
@@ -160,7 +161,8 @@ class CRUDMattermostDocument(CRUDBase[MattermostDocumentModel, MattermostDocumen
                                                  'user_id': user_id,
                                                  'nickname': nickname,
                                                  'channel_uuid': channel_uuid,
-                                                 'create_at': create_at}])])
+                                                 'create_at': create_at}])],
+                                                 ignore_index=True)
 
         return ddf
 

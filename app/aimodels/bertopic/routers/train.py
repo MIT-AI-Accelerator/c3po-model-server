@@ -100,13 +100,14 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
 
         precalculated_embeddings.append(next_value)
 
-    ddf = crud_mattermost.mattermost_documents.get_document_dataframe(db, document_uuids=request.document_ids)
+    document_df = crud_mattermost.mattermost_documents.get_document_dataframe(db, document_uuids=request.document_ids)
 
     # train the model
     basic_inference = BasicInference(
         bertopic_sentence_transformer_obj, s3, request.map_prompt_template, request.combine_prompt_template, bertopic_weak_learner_obj, gpt4all_pretrained_obj)
     inference_output = basic_inference.train_bertopic_on_documents(db,
                                                                    documents, precalculated_embeddings=precalculated_embeddings, num_topics=request.num_topics,
+                                                                   document_df=document_df,
                                                                    seed_topic_list=request.seed_topics)
 
     # save calculated embeddings computations
