@@ -85,8 +85,8 @@ def test_crud_mattermost(db: Session):
         db, message_id=obj_in.message_id) is not None
     assert crud.mattermost_documents.get_all_channel_documents(
         db, channels=[obj_in.channel]) is not None
-    assert not crud.mattermost_documents.get_document_dataframe(
-        db, document_uuids=[db_obj.id]).empty
+    assert not crud.mattermost_documents.get_mm_document_dataframe(
+        db, mm_document_uuids=[db_obj.id]).empty
 
 
 def test_populate_mm_user_team_info_local(db: Session):
@@ -134,9 +134,9 @@ def test_convert_conversation_threads():
     # construct message data frame with reply and convert to conversation thread
     document_df = pd.DataFrame()
     document_df = pd.concat([document_df,  pd.DataFrame(
-        [{'id': '1', 'message': msg1, 'root_id': ''}])])
+        [{'message_id': '1', 'message': msg1, 'root_id': ''}])])
     document_df = pd.concat([document_df,  pd.DataFrame(
-        [{'id': '2', 'message': msg2, 'root_id': '1'}])])
+        [{'message_id': '2', 'message': msg2, 'root_id': '1'}])])
 
     conversation_df = crud.convert_conversation_threads(document_df)
 

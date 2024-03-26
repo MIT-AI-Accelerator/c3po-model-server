@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from ppg.schemas.mattermost.mattermost_channels import MattermostChannelCreate
 from ppg.schemas.mattermost.mattermost_documents import MattermostDocumentCreate
 from ppg.schemas.mattermost.mattermost_users import MattermostUserCreate, MattermostUserUpdate
+from ppg.schemas.bertopic.document import DocumentCreate
 import ppg.services.mattermost_utils as mattermost_utils
 from app.core.config import settings
 from app.core.logging import logger
@@ -15,6 +16,7 @@ from ..models.mattermost_channels import MattermostChannelModel
 from ..models.mattermost_users import MattermostUserModel
 from ..models.mattermost_documents import MattermostDocumentModel
 from app.aimodels.bertopic.models import DocumentModel
+from app.aimodels.bertopic import crud as crud_document
 
 
 class CRUDMattermostChannel(CRUDBase[MattermostChannelModel, MattermostChannelCreate, MattermostChannelCreate]):
@@ -51,11 +53,19 @@ class CRUDMattermostUser(CRUDBase[MattermostUserModel, MattermostUserCreate, Mat
 
 
 class CRUDMattermostDocument(CRUDBase[MattermostDocumentModel, MattermostDocumentCreate, MattermostDocumentCreate]):
-    def get_by_message_id(self, db: Session, *, message_id: str) -> Union[MattermostDocumentModel, None]:
+    def get_by_message_id(self, db: Session, *, message_id: str, is_thread = False) -> Union[MattermostDocumentModel, None]:
         if not message_id:
             return None
 
-        return db.query(self.model).filter(self.model.message_id == message_id).first()
+        # each mattermost document is allowed a single conversation thread
+        return db.query(self.model).filter(self.model.message_id == message_id, self.model.is_thread == is_thread).first()
+
+    def get_all_by_message_id(self, db: Session, *, message_id: str, is_thread = False) -> Union[MattermostDocumentModel, None]:
+        if not message_id:
+            return None
+
+        # each mattermost document is allowed a single conversation thread
+        return db.query(self.model).filter(self.model.message_id == message_id).all()
 
     def get_all_channel_documents(self, db: Session, channels: list[str], history_depth: int = 0) -> Union[list[MattermostDocumentModel], None]:
 
@@ -65,9 +75,9 @@ class CRUDMattermostDocument(CRUDBase[MattermostDocumentModel, MattermostDocumen
             stime = ctime - pd.DateOffset(days=history_depth)
             documents = sum([db.query(self.model).join(DocumentModel).filter(self.model.channel == cuuid,
                                                                              DocumentModel.original_created_time >= stime,
-                                                                             DocumentModel.original_created_time <= ctime)
-
-                             .all() for cuuid in channels], [])
+                                                                             DocumentModel.original_created_time <= ctime,
+                                                                             self.model.is_thread == False)
+                                                                             .all() for cuuid in channels], [])
 
         # get all documents
         else:
@@ -76,22 +86,106 @@ class CRUDMattermostDocument(CRUDBase[MattermostDocumentModel, MattermostDocumen
 
         return documents
 
+    def get_mm_document_dataframe(self, db: Session, *, mm_document_uuids: list[str]) -> Union[pd.DataFrame, None]:
+
+        ddf = pd.DataFrame()
+        for duuid in mm_document_uuids:
+            document = db.query(self.model, DocumentModel, MattermostUserModel, MattermostChannelModel).join(DocumentModel, DocumentModel.id == self.model.document).join(
+                MattermostUserModel, MattermostUserModel.id == self.model.user).join(MattermostChannelModel, MattermostChannelModel.id == self.model.channel).filter(self.model.id == duuid).all()
+            if document:
+                ddf = pd.concat([ddf, pd.DataFrame([{'uuid': document[0][0].id,
+                                                     'message_id': document[0][0].message_id,
+                                                     'message': document[0][1].text,
+                                                     'root_id': document[0][0].root_message_id,
+                                                     'type': document[0][0].type,
+                                                     'document': document[0][1].id,
+                                                     'user_id': document[0][2].user_id,
+                                                     'user_uuid': document[0][2].id,
+                                                     'channel_id': document[0][3].channel_id,
+                                                     'channel_uuid': document[0][3].id,
+                                                     'create_at': document[0][1].original_created_time,
+                                                     'hashtags': document[0][0].hashtags,
+                                                     'has_reactions': document[0][0].has_reactions,
+                                                     'props': document[0][0].props,
+                                                     'metadata': document[0][0].doc_metadata,
+                                                     'document_id': document[0][1].id,
+                                                     'is_thread': document[0][0].is_thread}])])
+
+        return ddf
+
     def get_document_dataframe(self, db: Session, *, document_uuids: list[str]) -> Union[pd.DataFrame, None]:
 
         ddf = pd.DataFrame()
         for duuid in document_uuids:
-            document = db.query(self.model, DocumentModel, MattermostUserModel, MattermostChannelModel).join(DocumentModel, DocumentModel.id == self.model.document).join(
-                MattermostUserModel, MattermostUserModel.id == self.model.user).join(MattermostChannelModel, MattermostChannelModel.id == self.model.channel).filter(self.model.id == duuid).all()
-            if document:
-                ddf = pd.concat([ddf, pd.DataFrame([{'id': document[0][0].message_id,
-                                                     'message': document[0][1].text,
-                                                     'root_id': document[0][0].root_message_id,
-                                                     'type': document[0][0].type,
-                                                     'user_id': document[0][2].user_id,
-                                                     'channel_id': document[0][3].channel_id,
-                                                     'create_at': document[0][1].original_created_time}])])
+            mm_uuid = None
+            message_id = None
+            message = None
+            root_id = None
+            message_type = None
+            user_uuid = None
+            user_id = None
+            nickname = None
+            channel_uuid = None
+            create_at = None
+
+            mm_document = db.query(self.model, DocumentModel, MattermostUserModel).join(DocumentModel, DocumentModel.id == self.model.document).join(MattermostUserModel, MattermostUserModel.id == self.model.user).filter(self.model.document == duuid).first()
+            if mm_document:
+                mm_uuid = mm_document[0].id,
+                message_id = mm_document[0].message_id,
+                message = mm_document[1].text,
+                root_id = mm_document[0].root_message_id,
+                message_type = mm_document[0].type,
+                user_uuid = mm_document[2].id,
+                user_id = mm_document[2].user_id,
+                nickname = mm_document[2].nickname,
+                channel_uuid = mm_document[0].channel,
+                create_at = mm_document[1].original_created_time
+
+            else:
+                document = db.query(DocumentModel).filter(DocumentModel.id == duuid).first()
+                if document:
+                    message = document.text
+                    create_at = document.original_created_time
+
+                else:
+                    logger.warning('Document %s not found' % duuid)
+
+            ddf = pd.concat([ddf, pd.DataFrame([{'document_uuid': duuid,
+                                                 'mm_doc_uuid': mm_uuid,
+                                                 'message_id': message_id,
+                                                 'message': message,
+                                                 'root_id': root_id,
+                                                 'type': message_type,
+                                                 'user_uuid': user_uuid,
+                                                 'user_id': user_id,
+                                                 'nickname': nickname,
+                                                 'channel_uuid': channel_uuid,
+                                                 'create_at': create_at}])])
 
         return ddf
+
+    def create_all_using_df(self, db: Session, *, ddf: pd.DataFrame, is_thread = False) -> Union[MattermostDocumentModel, None]:
+
+        mattermost_documents = []
+        for key, row in ddf.iterrows():
+            document = DocumentCreate(
+                text=row['message'],
+                original_created_time=row['create_at'])
+            document_obj = crud_document.document.create(db, obj_in=document)
+
+            mattermost_documents = mattermost_documents + [MattermostDocumentCreate(
+                message_id=row['message_id'],
+                root_message_id=row['root_id'],
+                type=row['type'],
+                hashtags=row['hashtags'],
+                has_reactions=str(row['has_reactions']).lower() == 'true',
+                props=row['props'],
+                doc_metadata=row['metadata'],
+                channel=row['channel'],
+                user=row['user'],
+                document=document_obj.id,
+                is_thread=is_thread)]
+        return self.create_all_using_id(db, obj_in_list=mattermost_documents)
 
 
 def populate_mm_user_info(db: Session, *, mm_user: dict, teams: dict) -> MattermostUserModel:
@@ -212,7 +306,7 @@ def convert_conversation_threads(df: pd.DataFrame):
     for index, row in df.iterrows():
         thread = row['root_id']
         utterance = row['message']
-        p_id = row['id']
+        p_id = row['message_id']
         if utterance.find("added to the channel") < 0 and utterance.find("joined the channel") < 0 and utterance.find("left the channel") < 0:
             if len(thread) > 0:
                 if thread not in threads:
