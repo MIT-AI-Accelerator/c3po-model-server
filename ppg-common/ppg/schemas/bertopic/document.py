@@ -12,6 +12,10 @@ class DocumentBase(BaseModel):
 class DocumentCreate(DocumentBase):
     pass
 
+# Properties to receive on Document update
+class DocumentUpdate(DocumentBase):
+    pass
+
 # Properties shared by models stored in DB
 class DocumentInDBBase(DocumentBase):
     id: UUID4
