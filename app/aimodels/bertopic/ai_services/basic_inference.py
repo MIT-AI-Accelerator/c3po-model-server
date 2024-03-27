@@ -159,7 +159,8 @@ class TopicDocumentData(BaseModel):
     document_text_list: list[str]
     document_timestamps: list[datetime]
     document_users: list[str]
-    document_message_ids: list[str]
+    document_nicknames: list[str]
+    document_links: list[str]
     embeddings: np.ndarray
 
     class Config:
@@ -204,10 +205,10 @@ class BasicInference:
                     s3, topic_summarizer_obj, map_prompt_template, combine_prompt_template)
             self.topic_summarizer = topic_summarizer
 
-    def get_document_info(self, topic_model, documents, timestamps, num_documents=DEFAULT_N_REPR_DOCS):
+    def get_document_info(self, topic_model, topic_document_data: TopicDocumentData, num_documents=DEFAULT_N_REPR_DOCS):
 
         # increase number of representative documents (BERTopic default is 3)
-        document_info = topic_model.get_document_info(documents)
+        document_info = topic_model.get_document_info(topic_document_data.document_text_list)
         repr_docs, _, _ = topic_model._extract_representative_docs(topic_model.c_tf_idf_,
                                                                    document_info,
                                                                    topic_model.topic_representations_,
@@ -215,8 +216,11 @@ class BasicInference:
                                                                    nr_repr_docs=num_documents)
         topic_model.representative_docs_ = repr_docs
 
-        document_info = topic_model.get_document_info(documents)
-        document_info['Timestamp'] = timestamps
+        document_info = topic_model.get_document_info(topic_document_data.document_text_list)
+        document_info['Timestamp'] = topic_document_data.document_timestamps
+        document_info['User'] = topic_document_data.document_users
+        document_info['Nickname'] = topic_document_data.document_nicknames
+        document_info['Link'] = topic_document_data.document_links
         return document_info
 
     def train_bertopic_on_documents(self, db, documents, precalculated_embeddings, num_topics, document_df, seed_topic_list=None, num_related_docs=DEFAULT_N_REPR_DOCS) -> BasicInferenceOutputs:
@@ -224,16 +228,17 @@ class BasicInference:
         TrainBertopicOnDocumentsInput(
             documents=documents, precalculated_embeddings=precalculated_embeddings, num_topics=num_topics)
 
-        # documents_text_list = [document.text for document in documents]
         documents_text_list = list(document_df['message'].values)
-        document_timestamps = [document.original_created_time for document in documents]
-        # document_timestamps = list(pd.to_datetime(document_df['create_at'].values)) # this is not correct
+        document_timestamps = list(document_df['create_at'].values)
+
+        document_df.user_name.fillna(value='', inplace=True)
+        document_user = list(document_df['user_name'].values)
 
         document_df.nickname.fillna(value='', inplace=True)
-        document_user = list(document_df['nickname'].values)
+        document_nickname = list(document_df['nickname'].values)
 
-        document_df.message_id.fillna(value='', inplace=True)
-        document_mm_id = list(document_df['message_id'].values)
+        document_df.mm_link.fillna(value='', inplace=True)
+        document_link = list(document_df['mm_link'].values)
 
         (embeddings, updated_document_indicies) = self.calculate_document_embeddings(
             documents_text_list, precalculated_embeddings)
@@ -241,7 +246,8 @@ class BasicInference:
         topic_document_data = TopicDocumentData(document_text_list = documents_text_list,
                                                 document_timestamps = document_timestamps,
                                                 document_users = document_user,
-                                                document_message_ids = document_mm_id,
+                                                document_nicknames = document_nickname,
+                                                document_links = document_link,
                                                 embeddings = embeddings)
         (topic_model, filtered_topic_document_data) = self.build_topic_model(
             topic_document_data, num_topics, seed_topic_list)
@@ -249,11 +255,8 @@ class BasicInference:
         # per topic documents and summary
         document_info = self.get_document_info(
             topic_model,
-            filtered_topic_document_data.document_text_list,
-            filtered_topic_document_data.document_timestamps,
+            filtered_topic_document_data,
             num_related_docs)
-        document_info['nickname'] = filtered_topic_document_data.document_users
-        document_info['message_id'] = filtered_topic_document_data.document_message_ids
         topics_over_time = topic_model.topics_over_time(
             filtered_topic_document_data.document_text_list,
             filtered_topic_document_data.document_timestamps,
@@ -289,7 +292,7 @@ class BasicInference:
                 name=row['Name'],
                 top_n_words=topic_docs['Top_n_words'].unique()[0],
                 top_n_documents=topic_docs[[
-                    'Document', 'Timestamp', 'Probability']].to_dict(),
+                    'Document', 'Timestamp', 'User', 'Nickname', 'Link', 'Probability']].to_dict(),
                 summary=summary_text)]
 
         topic_objs = crud_topic.topic_summary.create_all_using_id(
@@ -365,7 +368,8 @@ class BasicInference:
         documents_text_list = topic_document_data.document_text_list
         document_timestamps = topic_document_data.document_timestamps
         document_users = topic_document_data.document_users
-        document_message_ids = topic_document_data.document_message_ids
+        document_nicknames = topic_document_data.document_nicknames
+        document_links = topic_document_data.document_links
         embeddings = topic_document_data.embeddings
 
         # validate input
@@ -377,7 +381,8 @@ class BasicInference:
                 {'message': documents_text_list,
                  'timestamp': document_timestamps,
                  'user': document_users,
-                 'message_id': document_message_ids})
+                 'nickname': document_nicknames,
+                 'link': document_links})
             l_test = self.label_applier.apply(
                 pd.DataFrame(data_test['message']))
             data_test['y_pred'] = self.label_model.predict(l_test)
@@ -386,7 +391,8 @@ class BasicInference:
             documents_text_list = list(data_test['message'])
             document_timestamps = list(data_test['timestamp'])
             document_users = list(data_test['user'])
-            document_message_ids = list(data_test['message_id'])
+            document_nicknames = list(data_test['nickname'])
+            document_links = list(data_test['link'])
 
         hdbscan_model = hdbscan.HDBSCAN(min_cluster_size=DEFAULT_HDBSCAN_MIN_CLUSTER_SIZE,
                                         min_samples=DEFAULT_HDBSCAN_MIN_SAMPLES,
@@ -399,5 +405,6 @@ class BasicInference:
                 TopicDocumentData(document_text_list = documents_text_list,
                                   document_timestamps = document_timestamps,
                                   document_users = document_users,
-                                  document_message_ids = document_message_ids,
+                                  document_nicknames = document_nicknames,
+                                  document_links = document_links,
                                   embeddings = embeddings))

@@ -125,11 +125,19 @@ class CRUDMattermostDocument(CRUDBase[MattermostDocumentModel, MattermostDocumen
             message_type = None
             user_uuid = None
             user_id = None
+            user_name = None
             nickname = None
             channel_uuid = None
+            channel_name = None
+            team_name = None
+            mm_link = None
             create_at = None
 
-            mm_document = db.query(self.model, DocumentModel, MattermostUserModel).join(DocumentModel, DocumentModel.id == self.model.document).join(MattermostUserModel, MattermostUserModel.id == self.model.user).filter(self.model.document == duuid).first()
+            mm_document = db.query(self.model, DocumentModel, MattermostUserModel, MattermostChannelModel).join(
+                DocumentModel, DocumentModel.id == self.model.document).join(
+                    MattermostUserModel, MattermostUserModel.id == self.model.user).join(
+                        MattermostChannelModel, MattermostChannelModel.id == self.model.channel).filter(
+                            self.model.document == duuid).first()
             if mm_document:
                 mm_uuid = mm_document[0].id
                 message_id = mm_document[0].message_id
@@ -138,8 +146,12 @@ class CRUDMattermostDocument(CRUDBase[MattermostDocumentModel, MattermostDocumen
                 message_type = mm_document[0].type
                 user_uuid = mm_document[2].id
                 user_id = mm_document[2].user_id
+                user_name = mm_document[2].user_name
                 nickname = mm_document[2].nickname
                 channel_uuid = mm_document[0].channel
+                channel_name = mm_document[3].channel_name
+                team_name = mm_document[3].team_name
+                mm_link = '%s/%s/pl/%s' % (settings.mm_base_url, team_name, message_id)
                 create_at = mm_document[1].original_created_time
 
             else:
@@ -159,8 +171,12 @@ class CRUDMattermostDocument(CRUDBase[MattermostDocumentModel, MattermostDocumen
                                                  'type': message_type,
                                                  'user_uuid': user_uuid,
                                                  'user_id': user_id,
+                                                 'user_name': user_name,
                                                  'nickname': nickname,
                                                  'channel_uuid': channel_uuid,
+                                                 'channel_name': channel_name,
+                                                 'team_name': team_name,
+                                                 'mm_link' : mm_link,
                                                  'create_at': create_at}])],
                                                  ignore_index=True)
 
