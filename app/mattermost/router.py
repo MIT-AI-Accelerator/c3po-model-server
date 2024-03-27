@@ -4,8 +4,8 @@ from pydantic import BaseModel, UUID4
 from fastapi import Depends, APIRouter, HTTPException
 import pandas as pd
 from sqlalchemy.orm import Session
-from ppg.schemas.bertopic.document import Document, DocumentCreate
-from ppg.schemas.mattermost.mattermost_documents import MattermostDocument, MattermostDocumentCreate
+from ppg.schemas.bertopic.document import DocumentUpdate
+from ppg.schemas.mattermost.mattermost_documents import MattermostDocument, MattermostDocumentUpdate
 from ppg.schemas.mattermost.mattermost_users import MattermostUser
 import ppg.services.mattermost_utils as mattermost_utils
 from app.core.config import settings
@@ -144,28 +144,8 @@ async def upload_mm_channel_docs(request: UploadDocumentRequest, db: Session = D
         existing_ids = [obj.message_id for obj in channel_document_objs]
         adf = adf[~adf.id.isin(existing_ids)].drop_duplicates(subset='id')
 
-    # note: database objects are not returned in the same order as input!
-    # do not use the following and try to align doc IDs with mattermost docs
-    # document_objs = crud_document.document.create_all_using_id(db, obj_in_list=documents)
-    mattermost_documents = []
-    for key, row in adf.iterrows():
-        document = DocumentCreate(
-            text=row['message'],
-            original_created_time=row['create_at'])
-        document_obj = crud_document.document.create(db, obj_in=document)
-
-        mattermost_documents = mattermost_documents + [MattermostDocumentCreate(
-            message_id=row['id'],
-            root_message_id=row['root_id'],
-            type=row['type'],
-            hashtags=row['hashtags'],
-            has_reactions=str(row['has_reactions']).lower() == 'true',
-            props=row['props'],
-            doc_metadata=row['metadata'],
-            channel=row['channel'],
-            user=row['user'],
-            document=document_obj.id)]
-    crud_mattermost.mattermost_documents.create_all_using_id(db, obj_in_list=mattermost_documents)
+    adf.rename(columns={'id': 'message_id'}, inplace=True)
+    crud_mattermost.mattermost_documents.create_all_using_df(db, ddf=adf, is_thread=False)
 
     return crud_mattermost.mattermost_documents.get_all_channel_documents(
         db, channels=channel_uuids, history_depth=request.history_depth)
@@ -208,13 +188,13 @@ class ConversationThreadRequest(BaseModel):
 
 @router.post(
     "/mattermost/conversation_threads",
-    response_model=Union[list[Document], HTTPValidationError],
+    response_model=Union[list[MattermostDocument], HTTPValidationError],
     responses={'422': {'model': HTTPValidationError}},
     summary="Retrieve Mattermost conversation documents",
     response_description="Retrieved Mattermost conversation documents")
 async def convert_conversation_threads(request: ConversationThreadRequest,
                               db: Session = Depends(get_db)) -> (
-    Union[list[Document], HTTPValidationError]
+    Union[list[MattermostDocument], HTTPValidationError]
 ):
     """
     Retrieve Mattermost conversation documents
@@ -223,16 +203,49 @@ async def convert_conversation_threads(request: ConversationThreadRequest,
     """
 
     # get joined document and mattermost info
-    document_df = crud_mattermost.mattermost_documents.get_document_dataframe(db, document_uuids=request.mattermost_document_ids)
+    document_df = crud_mattermost.mattermost_documents.get_mm_document_dataframe(db, mm_document_uuids=request.mattermost_document_ids)
     if document_df.empty:
         raise HTTPException(status_code=422, detail="Mattermost documents not found")
 
     # convert message utterances to conversation threads
     conversation_df = crud_mattermost.convert_conversation_threads(df=document_df)
+    conversation_df.rename(columns={'user_uuid': 'user','channel_uuid': 'channel'}, inplace=True)
 
-    # create new document objects
-    document_objs = [crud_document.document.create(db, obj_in=DocumentCreate(text=row['message'], original_created_time=row['create_at'])) for key, row in conversation_df.iterrows()]
-    if not document_objs:
+    document_objs = []
+    new_threads_df = pd.DataFrame()
+    for _, row in conversation_df.iterrows():
+        mm_document_obj = crud_mattermost.mattermost_documents.get_by_message_id(db, message_id=row['message_id'], is_thread=True)
+
+        # update existing thread
+        if mm_document_obj:
+            document_obj = crud_document.document.get(db, id=row['document_id'])
+            crud_document.document.update(db,
+                                 db_obj=document_obj,
+                                 obj_in=DocumentUpdate(text=row['message'],
+                                                       original_created_time=document_obj.original_created_time))
+            updated_mm_doc_obj = crud_mattermost.mattermost_documents.update(db,
+                                                                             db_obj=mm_document_obj,
+                                                                             obj_in=MattermostDocumentUpdate(message_id=mm_document_obj.message_id,
+                                                                             root_message_id=mm_document_obj.root_message_id,
+                                                                             type=mm_document_obj.type,hashtags=row['hashtags'],
+                                                                             has_reactions=str(row['has_reactions']).lower() == 'true',
+                                                                             props=row['props'],
+                                                                             doc_metadata=row['metadata'],
+                                                                             channel=mm_document_obj.channel,
+                                                                             user=mm_document_obj.user,
+                                                                             document=mm_document_obj.document,
+                                                                             is_thread=True))
+            document_objs = document_objs + [updated_mm_doc_obj]
+
+        else:
+            new_threads_df = pd.concat([new_threads_df, pd.DataFrame([row])])
+
+    # create new thread objects
+    if not new_threads_df.empty:
+        new_mm_doc_objs = crud_mattermost.mattermost_documents.create_all_using_df(db, ddf=new_threads_df, is_thread=True)
+        document_objs = document_objs + new_mm_doc_objs
+
+    if len(document_objs) != len(conversation_df):
         raise HTTPException(status_code=422, detail="Unable to create conversation threads")
 
     return document_objs

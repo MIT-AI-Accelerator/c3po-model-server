@@ -14,6 +14,7 @@ class MattermostDocumentBase(BaseModel):
     has_reactions: bool
     props: dict
     doc_metadata: dict
+    is_thread: bool
 
 
 class MattermostDocumentCreate(MattermostDocumentBase):
@@ -21,6 +22,10 @@ class MattermostDocumentCreate(MattermostDocumentBase):
 
     pass
 
+class MattermostDocumentUpdate(MattermostDocumentBase):
+    # Properties to receive on MattermostDocument update
+
+    pass
 
 class MattermostDocumentInDBBase(MattermostDocumentBase):
     # Properties shared by models stored in DB
