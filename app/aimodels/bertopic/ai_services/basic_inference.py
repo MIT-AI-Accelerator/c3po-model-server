@@ -228,27 +228,20 @@ class BasicInference:
         TrainBertopicOnDocumentsInput(
             documents=documents, precalculated_embeddings=precalculated_embeddings, num_topics=num_topics)
 
-        documents_text_list = list(document_df['message'].values)
-        document_timestamps = list(document_df['create_at'].values)
+        document_text_list = list(document_df['message'].values)
+        (embeddings, updated_document_indicies) = self.calculate_document_embeddings(
+            document_text_list, precalculated_embeddings)
 
         document_df.user_name.fillna(value='', inplace=True)
-        document_user = list(document_df['user_name'].values)
-
         document_df.nickname.fillna(value='', inplace=True)
-        document_nickname = list(document_df['nickname'].values)
-
         document_df.mm_link.fillna(value='', inplace=True)
-        document_link = list(document_df['mm_link'].values)
-
-        (embeddings, updated_document_indicies) = self.calculate_document_embeddings(
-            documents_text_list, precalculated_embeddings)
-
-        topic_document_data = TopicDocumentData(document_text_list = documents_text_list,
-                                                document_timestamps = document_timestamps,
-                                                document_users = document_user,
-                                                document_nicknames = document_nickname,
-                                                document_links = document_link,
+        topic_document_data = TopicDocumentData(document_text_list = document_text_list,
+                                                document_timestamps = list(document_df['create_at'].values),
+                                                document_users = list(document_df['user_name'].values),
+                                                document_nicknames = list(document_df['nickname'].values),
+                                                document_links = list(document_df['mm_link'].values),
                                                 embeddings = embeddings)
+
         (topic_model, filtered_topic_document_data) = self.build_topic_model(
             topic_document_data, num_topics, seed_topic_list)
 
@@ -364,47 +357,39 @@ class BasicInference:
         return (np.array(embeddings), updated_indices)
 
     def build_topic_model(self, topic_document_data: TopicDocumentData, num_topics, seed_topic_list) -> BERTopic:
-
-        documents_text_list = topic_document_data.document_text_list
-        document_timestamps = topic_document_data.document_timestamps
-        document_users = topic_document_data.document_users
-        document_nicknames = topic_document_data.document_nicknames
-        document_links = topic_document_data.document_links
-        embeddings = topic_document_data.embeddings
-
         # validate input
         BuildTopicModelInputs(
-            documents_text_list=documents_text_list, document_timestamps=document_timestamps, embeddings=embeddings, num_topics=num_topics, seed_topic_list=seed_topic_list)
+            documents_text_list=topic_document_data.document_text_list,
+            document_timestamps=topic_document_data.document_timestamps,
+            embeddings=topic_document_data.embeddings,
+            num_topics=num_topics,
+            seed_topic_list=seed_topic_list)
 
         if self.weak_learner_obj:
             data_test = pd.DataFrame(
-                {'message': documents_text_list,
-                 'timestamp': document_timestamps,
-                 'user': document_users,
-                 'nickname': document_nicknames,
-                 'link': document_links})
+                {'message': topic_document_data.document_text_list,
+                 'timestamp': topic_document_data.document_timestamps,
+                 'user': topic_document_data.document_users,
+                 'nickname': topic_document_data.document_nicknames,
+                 'link': topic_document_data.document_links})
             l_test = self.label_applier.apply(
                 pd.DataFrame(data_test['message']))
             data_test['y_pred'] = self.label_model.predict(l_test)
-            embeddings = embeddings[data_test['y_pred'] < 2]
+            topic_document_data.embeddings = topic_document_data.embeddings[
+                data_test['y_pred'] < 2]
             data_test = data_test[data_test['y_pred'] < 2]
-            documents_text_list = list(data_test['message'])
-            document_timestamps = list(data_test['timestamp'])
-            document_users = list(data_test['user'])
-            document_nicknames = list(data_test['nickname'])
-            document_links = list(data_test['link'])
+            topic_document_data.document_text_list = list(data_test['message'])
+            topic_document_data.document_timestamps = list(data_test['timestamp'])
+            topic_document_data.document_users = list(data_test['user'])
+            topic_document_data.document_nicknames = list(data_test['nickname'])
+            topic_document_data.document_links = list(data_test['link'])
 
         hdbscan_model = hdbscan.HDBSCAN(min_cluster_size=DEFAULT_HDBSCAN_MIN_CLUSTER_SIZE,
                                         min_samples=DEFAULT_HDBSCAN_MIN_SAMPLES,
                                         metric='euclidean', prediction_data=True)
         topic_model = BERTopic(nr_topics=num_topics, seed_topic_list=seed_topic_list,
                                hdbscan_model=hdbscan_model, vectorizer_model=self.vectorizer)
-        topic_model = topic_model.fit(documents_text_list, embeddings)
+        topic_model = topic_model.fit(topic_document_data.document_text_list,
+                                      topic_document_data.embeddings)
 
-        return (topic_model,
-                TopicDocumentData(document_text_list = documents_text_list,
-                                  document_timestamps = document_timestamps,
-                                  document_users = document_users,
-                                  document_nicknames = document_nicknames,
-                                  document_links = document_links,
-                                  embeddings = embeddings))
+        return (topic_model, topic_document_data)
