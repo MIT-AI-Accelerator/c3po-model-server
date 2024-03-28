@@ -361,5 +361,4 @@ def test_get_bertopic_trained_models(client: TestClient, db: Session):
     assert response.status_code == 200
 
     rdata = response.json()
-    summary_obj = json.loads(rdata)
-    assert len(summary_obj) == limit
+    assert len(rdata) == limit

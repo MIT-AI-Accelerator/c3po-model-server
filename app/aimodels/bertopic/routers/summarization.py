@@ -1,5 +1,5 @@
 import json
-from typing import Union
+from typing import Union, Any
 from pydantic import BaseModel, UUID4
 from fastapi import Depends, APIRouter, HTTPException
 from fastapi.encoders import jsonable_encoder
@@ -17,20 +17,17 @@ router = APIRouter(
 
 @router.get(
     "/models",
-    response_model=Union[str, HTTPValidationError],
+    response_model=Union[list[Any], HTTPValidationError],
     summary="Retrieve all available trained BERTopic models",
     response_description="Retrieved trained BERTopic models")
 async def get_model_topics(limit: int = 1, db: Session = Depends(get_db)) -> (
-    Union[str, HTTPValidationError]
-):
+    Union[list[Any], HTTPValidationError]):
     """
     Retrieve all available trained BERTopic models
 
     - **limit**: Optional.  Maximum number of trained model IDs to return.
     """
-    summary_objs = crud.bertopic_trained.get_trained_models(db, row_limit=limit)
-    json_obj = jsonable_encoder(summary_objs)
-    return json.dumps(json_obj, indent=2)
+    return crud.bertopic_trained.get_trained_models(db, row_limit=limit)
 
 @router.get(
     "/model/{id}/visualize_topic_clusters",

@@ -20,10 +20,13 @@ class BertopicTrainedModelSummary(BaseModel):
     weak_learner_id: Union[UUID4, None]
     summarization_model_id: Union[UUID4, None]
 
+    class Config:
+        orm_mode = True
+
     def __init__(self, trained_model: BertopicTrainedModel):
-        super().__init__(time=trained_model.time,
-                         id=trained_model.id,
-                         sentence_transformer_id=trained_model.sentence_transformer_id,
+        super().__init__(time = trained_model.time,
+                         id = trained_model.id,
+                         sentence_transformer_id = trained_model.sentence_transformer_id,
                          weak_learner_id = trained_model.weak_learner_id,
                          summarization_model_id = trained_model.summarization_model_id)
 
@@ -58,7 +61,7 @@ class CRUDBertopicTrained(CRUDBase[BertopicTrainedModel, BertopicTrainedCreate, 
 
         db_objs = db.query(self.model).filter(self.model.originated_from == originated_from,
                                               self.model.uploaded == True).order_by(desc(self.model.time)).limit(row_limit)
-        return [BertopicTrainedModelSummary(trained_model=db_obj) for db_obj in db_objs]
+        return [BertopicTrainedModelSummary(trained_model = db_obj) for db_obj in db_objs]
 
 
 bertopic_trained = CRUDBertopicTrained(BertopicTrainedModel)
