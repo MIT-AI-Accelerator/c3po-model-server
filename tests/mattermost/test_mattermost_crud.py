@@ -83,6 +83,10 @@ def test_crud_mattermost(db: Session):
     assert db_obj.user == obj_in.user
     assert crud.mattermost_documents.get_by_message_id(
         db, message_id=obj_in.message_id) is not None
+    assert crud.mattermost_documents.get_by_message_id(
+        db, message_id='') is None
+    assert crud.mattermost_documents.get_all_by_message_id(
+        db, message_id='') is None
     assert crud.mattermost_documents.get_all_channel_documents(
         db, channels=[obj_in.channel]) is not None
     assert not crud.mattermost_documents.get_mm_document_dataframe(
