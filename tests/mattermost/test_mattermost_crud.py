@@ -33,8 +33,14 @@ def test_crud_mattermost(db: Session):
     assert channel_db_obj.purpose == channel_info['purpose']
     assert crud.mattermost_channels.get_by_channel_id(
         db, channel_id=channel_info['id']) is not None
+    assert crud.mattermost_channels.get_by_channel_id(
+        db, channel_id="") is None
     assert crud.mattermost_channels.get_by_channel_name(
         db, team_name=channel_info['team_name'], channel_name=channel_info['name']) is not None
+    assert crud.mattermost_channels.get_by_channel_name(
+        db, team_name="", channel_name=channel_info['name']) is None
+    assert crud.mattermost_channels.get_by_channel_name(
+        db, team_name=channel_info['team_name'], channel_name="") is None
     assert channel_info['id'] in crud.mattermost_channels.get_all_channel_ids(
         db)
 
