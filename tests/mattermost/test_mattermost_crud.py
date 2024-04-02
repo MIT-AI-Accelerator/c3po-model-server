@@ -1,4 +1,4 @@
-import uuid
+import uuid, datetime
 import pandas as pd
 from sqlalchemy.orm import Session
 from app.core.config import environment_settings, settings
@@ -96,6 +96,7 @@ def test_crud_mattermost(db: Session, caplog):
     assert not crud.mattermost_documents.get_mm_document_dataframe(
         db, mm_document_uuids=[db_obj.id]).empty
 
+    # get document as a dataframe
     ddf = crud.mattermost_documents.get_document_dataframe(db, document_uuids=[doc_db_obj.id])
     mmdf = ddf[ddf.document_uuid == doc_db_obj.id]
     assert mmdf.loc[0, 'document_uuid'] == doc_db_obj.id
@@ -115,7 +116,36 @@ def test_crud_mattermost(db: Session, caplog):
         settings.mm_base_url, channel_info['team_name'], obj_in.message_id)
     assert mmdf.loc[0, 'create_at'] == doc_db_obj.original_created_time
 
-
+    # create a new mattermost document with same channel and user
+    cdf = pd.DataFrame([{'message_id': str(uuid.uuid4()),
+                         'root_id': str(uuid.uuid4()),
+                         'channel': channel_db_obj.id,
+                         'user': user_db_obj.id,
+                         'message': 'create with df',
+                         'create_at': datetime.datetime.now(),
+                         'type': 'C',
+                         'hashtags': 'eggo',
+                         'has_reactions': False,
+                         'props': {'leggo': 'myeggo'},
+                         'metadata': {'cuckoo': 'forcocoapuffs'},
+                         }])
+    cdf_is_thread = cdf.loc[0, 'root_id'] == db_obj.root_message_id
+    mmdocs = crud.mattermost_documents.create_all_using_df(db, ddf=cdf, is_thread=cdf_is_thread)
+    assert len(mmdocs) == 1
+    mmdoc = mmdocs[0]
+    newdoc = crud_document.document.get(db, mmdoc.document)
+    assert mmdoc.message_id == cdf.loc[0, 'message_id']
+    assert mmdoc.root_message_id == cdf.loc[0, 'root_id']
+    assert mmdoc.channel == cdf.loc[0, 'channel']
+    assert mmdoc.user == cdf.loc[0, 'user']
+    assert newdoc.text == cdf.loc[0, 'message']
+    assert mmdoc.type == cdf.loc[0, 'type']
+    assert mmdoc.hashtags == cdf.loc[0, 'hashtags']
+    assert mmdoc.has_reactions == cdf.loc[0, 'has_reactions']
+    assert mmdoc.props == cdf.loc[0, 'props']
+    assert mmdoc.doc_metadata == cdf.loc[0, 'metadata']
+    assert mmdoc.is_thread == cdf_is_thread
+    assert mmdoc.originated_from == settings.originated_from
 
 
 def test_populate_mm_user_team_info_local(db: Session):
