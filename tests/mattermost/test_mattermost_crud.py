@@ -8,7 +8,7 @@ from app.aimodels.bertopic.models.document import DocumentModel
 from app.aimodels.bertopic.crud import crud_document
 
 
-def test_crud_mattermost(db: Session, caplog):
+def test_crud_mattermost(db: Session):
     # test crud mattermost
 
     # test mattermost channel
