@@ -1,14 +1,14 @@
 import uuid
 import pandas as pd
 from sqlalchemy.orm import Session
-from app.core.config import environment_settings
+from app.core.config import environment_settings, settings
 from app.mattermost.models.mattermost_documents import MattermostDocumentModel
 import app.mattermost.crud.crud_mattermost as crud
 from app.aimodels.bertopic.models.document import DocumentModel
 from app.aimodels.bertopic.crud import crud_document
 
 
-def test_crud_mattermost(db: Session):
+def test_crud_mattermost(db: Session, caplog):
     # test crud mattermost
 
     # test mattermost channel
@@ -91,8 +91,31 @@ def test_crud_mattermost(db: Session):
         db, message_id=obj_in.message_id) is not None
     assert crud.mattermost_documents.get_all_channel_documents(
         db, channels=[obj_in.channel]) is not None
+    assert crud.mattermost_documents.get_all_channel_documents(
+        db, channels=[obj_in.channel], history_depth=45) is not None
     assert not crud.mattermost_documents.get_mm_document_dataframe(
         db, mm_document_uuids=[db_obj.id]).empty
+
+    ddf = crud.mattermost_documents.get_document_dataframe(db, document_uuids=[doc_db_obj.id])
+    mmdf = ddf[ddf.document_uuid == doc_db_obj.id]
+    assert mmdf.loc[0, 'document_uuid'] == doc_db_obj.id
+    assert mmdf.loc[0, 'mm_doc_uuid'] == db_obj.id
+    assert mmdf.loc[0, 'message_id'] == obj_in.message_id
+    assert mmdf.loc[0, 'message'] == 'my document'
+    assert mmdf.loc[0, 'root_id'] == obj_in.root_message_id
+    assert mmdf.loc[0, 'type'] == obj_in.type
+    assert mmdf.loc[0, 'user_uuid'] == user_db_obj.id
+    assert mmdf.loc[0, 'user_id'] == mm_user['id']
+    assert mmdf.loc[0, 'user_name'] == mm_user['username']
+    assert mmdf.loc[0, 'nickname'] == mm_user['nickname']
+    assert mmdf.loc[0, 'channel_uuid'] == channel_db_obj.id
+    assert mmdf.loc[0, 'channel_name'] == channel_info['name']
+    assert mmdf.loc[0, 'team_name'] == channel_info['team_name']
+    assert mmdf.loc[0, 'mm_link'] == '%s/%s/pl/%s' % (
+        settings.mm_base_url, channel_info['team_name'], obj_in.message_id)
+    assert mmdf.loc[0, 'create_at'] == doc_db_obj.original_created_time
+
+
 
 
 def test_populate_mm_user_team_info_local(db: Session):
