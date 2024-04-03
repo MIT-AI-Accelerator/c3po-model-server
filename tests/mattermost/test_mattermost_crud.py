@@ -34,13 +34,13 @@ def test_crud_mattermost(db: Session):
     assert crud.mattermost_channels.get_by_channel_id(
         db, channel_id=channel_info['id']) is not None
     assert crud.mattermost_channels.get_by_channel_id(
-        db, channel_id="") is None
+        db, channel_id='') is None
     assert crud.mattermost_channels.get_by_channel_name(
         db, team_name=channel_info['team_name'], channel_name=channel_info['name']) is not None
     assert crud.mattermost_channels.get_by_channel_name(
-        db, team_name="", channel_name=channel_info['name']) is None
+        db, team_name='', channel_name=channel_info['name']) is None
     assert crud.mattermost_channels.get_by_channel_name(
-        db, team_name=channel_info['team_name'], channel_name="") is None
+        db, team_name=channel_info['team_name'], channel_name='') is None
     assert channel_info['id'] in crud.mattermost_channels.get_all_channel_ids(
         db)
 
@@ -66,8 +66,12 @@ def test_crud_mattermost(db: Session):
     assert user_db_obj.teams == teams
     assert crud.mattermost_users.get_by_user_id(
         db, user_id=mm_user['id']) is not None
+    assert crud.mattermost_users.get_by_user_id(
+        db, user_id='') is None
     assert crud.mattermost_users.get_by_user_name(
         db, user_name=mm_user['username']) is not None
+    assert crud.mattermost_users.get_by_user_name(
+        db, user_name='') is None
 
     # test mattermost document
     doc_db_obj = crud_document.document.create(db,
