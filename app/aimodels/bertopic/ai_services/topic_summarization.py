@@ -110,15 +110,15 @@ class TopicSummarizer:
         acronym_dictionary = get_acronym_dictionary()
         fixed_docs = []
         for text in docs:
-            if text.endswith('.') or (text != "" and not text.endswith('.')):
-                fixed_docs.append(self.replace_acronyms(
-                    acronym_dictionary, text.rstrip(punctuation)) + '.')
-            elif text.endswith('?'):
+            if text.endswith('?'):
                 fixed_docs.append(self.replace_acronyms(
                     acronym_dictionary, text.rstrip(punctuation)) + '?')
             elif text.endswith('!'):
                 fixed_docs.append(self.replace_acronyms(
                     acronym_dictionary, text.rstrip(punctuation)) + '!')
+            elif text.endswith('.') or (text != "" and not text.endswith('.')):
+                fixed_docs.append(self.replace_acronyms(
+                    acronym_dictionary, text.rstrip(punctuation)) + '.')
             else:
                 fixed_docs.append(text)
         return fixed_docs
