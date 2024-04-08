@@ -126,7 +126,7 @@ def test_get_mattermost_documents_invalid_input(client: TestClient):
     assert 'Mattermost' in response.json()['detail']
 
 # returns 422
-def test_mattermost_convseration_thread_invalid_format(client: TestClient):
+def test_mattermost_conversation_thread_invalid_format(client: TestClient):
     response = client.post(
         "/mattermost/conversation_threads",
         headers={},
@@ -137,7 +137,7 @@ def test_mattermost_convseration_thread_invalid_format(client: TestClient):
     assert 'value is not a valid list' in response.json()['detail'][0]['msg']
 
 # returns 422
-def test_mattermost_convseration_thread_invalid_input(client: TestClient):
+def test_mattermost_conversation_thread_invalid_input(client: TestClient):
     response = client.post(
         "/mattermost/conversation_threads",
         headers={},
