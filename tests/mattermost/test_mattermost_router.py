@@ -1,7 +1,12 @@
 import uuid
+from sqlalchemy.orm import Session
 from fastapi.testclient import TestClient
 from ppg.core.config import OriginationEnum
 from app.core.config import environment_settings
+from app.mattermost.crud import crud_mattermost
+from app.aimodels.bertopic.crud import crud_document
+from app.aimodels.bertopic.models.document import DocumentModel
+from app.mattermost.models.mattermost_documents import MattermostDocumentModel
 
 # returns 422
 def test_upload_mattermost_user_info_invalid_format(client: TestClient):
@@ -102,6 +107,25 @@ def test_upload_mattermost_documents_invalid_input(client: TestClient):
 
     assert response.status_code == 422
     assert 'Mattermost' in response.json()['detail']
+
+def test_upload_mattermost_documents_valid_input(db: Session, client: TestClient):
+    channel_info = dict(id=str(uuid.uuid4()),
+                        name='my channel',
+                        team_id=str(uuid.uuid4()),
+                        team_name='my team',
+                        display_name='my channel',
+                        type='P',
+                        header='my header',
+                        purpose='my purpose')
+    channel_db_obj = crud_mattermost.populate_mm_channel_info(db, channel_info=channel_info)
+
+    response = client.post(
+        '/mattermost/documents/upload',
+        headers={},
+        json={'channel_ids': [channel_info['id']]}
+    )
+
+    assert response.status_code == 200
 
 # returns 422
 def test_get_mattermost_documents_invalid_format(client: TestClient):
