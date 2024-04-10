@@ -104,7 +104,7 @@ In general, tensorflow and pytorch use the underlying `unittest` framework that 
 
 ## Tools for git
 - [Storing Credentials](https://git-scm.com/docs/git-credential-store)...or just type `git config --global credential.helper store`
-- [GPG Commit Signing](https://confluence.il2.dso.mil/display/afrsba/Setting+up+GPG+for+GitLab+Commit+Signing) or [GitHub Docs](https://docs.github.com/en/authentication/managing-commit-signature-verification/telling-git-about-your-signing-key)
+- [Create a GPG Key](https://confluence.il2.dso.mil/display/CWBI/Create+and+Use+a+GPG+Key) or [GPG Commit Signing](https://confluence.il2.dso.mil/display/afrsba/Setting+up+GPG+for+GitLab+Commit+Signing) or [GitHub Docs](https://docs.github.com/en/authentication/managing-commit-signature-verification/telling-git-about-your-signing-key)
 
 ## Tools for Docker
 - [Deleting Volumes](https://forums.docker.com/t/where-are-volumes-located-on-os-x/10488)
