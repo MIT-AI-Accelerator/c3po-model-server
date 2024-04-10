@@ -90,7 +90,7 @@ to the requirements.txt in place of the previous `transformers` installation.
 - Process for environment updates:
 1. Update poetry: $ poetry add package==version
 2. Sync with pip: $ ./hooks/output-requirements-txt.sh
-3. Manually edit ppg-common entry in requirements.txt
+3. Manually edit ppg-common entry in requirements.txt to `./ppg-common ; ...`
 
 ## Testing
 In general, tensorflow and pytorch use the underlying `unittest` framework that comes stock with Python.  However, FastAPI has a ton of great features through `pytest` that make testing HTTP much, much easier.  Good news is that, for the most part, pytest as the runner will also handle unittest, so we can use the TF or pytorch frameworks with unittest and FastAPI with pytest.  Some articles on this:
