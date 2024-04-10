@@ -13,6 +13,47 @@ from app.mattermost.models.mattermost_documents import MattermostDocumentModel
 from app.aimodels.bertopic.crud import crud_document
 from ppg.schemas.bertopic.document import DocumentCreate
 
+@pytest.fixture(scope='module')
+def channel_db_obj(db: Session):
+    channel_info = dict(id=str(uuid.uuid4()),
+                name=f'my channel doc {datetime.datetime.now()}',
+                team_id=str(uuid.uuid4()),
+                team_name=f'my team doc {datetime.datetime.now()}',
+                display_name='my channel',
+                type='P',
+                header='my header',
+                purpose='my purpose')
+    return crud_mattermost.populate_mm_channel_info(db, channel_info=channel_info)
+
+@pytest.fixture(scope='module')
+def user_db_obj(channel_db_obj: MattermostChannelModel, db: Session):
+    user = str(uuid.uuid4())
+    mm_user = dict(id=user,
+                   username=user,
+                   nickname=user,
+                   first_name='Gohan',
+                   last_name='Son',
+                   position='Saiyaman',
+                   email='%s@nitmre.mil' % user)
+    teams = {'0': 'a team', '1': 'b team'}
+    return crud_mattermost.populate_mm_user_info(db, mm_user=mm_user, teams=teams)
+
+@pytest.fixture(scope='module')
+def mm_db_obj(channel_db_obj: MattermostChannelModel,
+              user_db_obj: MattermostUserModel,
+              db: Session):
+    doc_obj_in = DocumentCreate(text='Spirit Bomb')
+    doc_db_obj = crud_document.document.create(db, obj_in=doc_obj_in)
+    mm_doc_obj_in = MattermostDocumentModel(message_id=str(uuid.uuid4()),
+                                            root_message_id=str(uuid.uuid4()),
+                                            channel=channel_db_obj.id,
+                                            user=user_db_obj.id,
+                                            document=doc_db_obj.id,
+                                            type='',
+                                            hashtags='',
+                                            props=dict(),
+                                            doc_metadata=dict())
+    return crud_mattermost.mattermost_documents.create(db, obj_in=mm_doc_obj_in)
 
 # returns 422
 def test_upload_mattermost_user_info_invalid_format(client: TestClient):
@@ -227,47 +268,19 @@ def test_get_mattermost_documents_no_document(db: Session, client: TestClient):
     assert response.status_code == 422
     assert 'documents not found' in response.json()['detail']
 
-def test_get_mattermost_documents_valid(db: Session, client: TestClient):
-    # create a channel and user with a document
-    channel_info = dict(id=str(uuid.uuid4()),
-                    name=f'my channel doc {datetime.datetime.now()}',
-                    team_id=str(uuid.uuid4()),
-                    team_name=f'my team doc {datetime.datetime.now()}',
-                    display_name='my channel',
-                    type='P',
-                    header='my header',
-                    purpose='my purpose')
-    channel_db_obj = crud_mattermost.populate_mm_channel_info(db, channel_info=channel_info)
-    user = str(uuid.uuid4())
-    mm_user = dict(id=user,
-                   username=user,
-                   nickname=user,
-                   first_name='Gohan',
-                   last_name='Son',
-                   position='Saiyaman',
-                   email='%s@nitmre.mil' % user)
-    teams = {'0': 'a team', '1': 'b team'}
-    user_db_obj = crud_mattermost.populate_mm_user_info(db, mm_user=mm_user, teams=teams)
-    doc_obj_in = DocumentCreate(text='Spirit Bomb')
-    doc_db_obj = crud_document.document.create(db, obj_in=doc_obj_in)
-    mm_doc_obj_in = MattermostDocumentModel(message_id=str(uuid.uuid4()),
-                                            root_message_id=str(uuid.uuid4()),
-                                            channel=channel_db_obj.id,
-                                            user=user_db_obj.id,
-                                            document=doc_db_obj.id,
-                                            type='',
-                                            hashtags='',
-                                            props=dict(),
-                                            doc_metadata=dict())
-    mm_db_obj = crud_mattermost.mattermost_documents.create(db, obj_in=mm_doc_obj_in)
-
+def test_get_mattermost_documents_valid(channel_db_obj: MattermostChannelModel,
+                                        mm_db_obj: MattermostDocumentModel,
+                                        db: Session,
+                                        client: TestClient):
     response = client.get('/mattermost/documents/get',
                           headers={},
                           params={'team_name': channel_db_obj.team_name,
                                   'channel_name': channel_db_obj.channel_name})
 
+    mm_docs = response.json()
+
     assert response.status_code == 200
-    assert len(response.json()) > 0
+    assert str(mm_db_obj.id) in [doc['id'] for doc in mm_docs]
 
 # returns 422
 def test_mattermost_conversation_thread_invalid_format(client: TestClient):
@@ -290,3 +303,12 @@ def test_mattermost_conversation_thread_invalid_input(client: TestClient):
 
     assert response.status_code == 422
     assert 'Mattermost' in response.json()['detail']
+
+def test_mattermost_conversation_thread_no_threads(mm_db_obj: MattermostDocumentModel, client: TestClient):
+    response = client.post('mattermost/conversation_threads',
+                           headers={},
+                           json={'mattermost_document_ids': [str(mm_db_obj.id)]})
+
+    doc_objs = response.json()
+
+    assert response.status_code == 200
