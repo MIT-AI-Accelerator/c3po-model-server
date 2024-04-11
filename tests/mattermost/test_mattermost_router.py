@@ -55,6 +55,25 @@ def mm_db_obj(channel_db_obj: MattermostChannelModel,
                                             doc_metadata=dict())
     return crud_mattermost.mattermost_documents.create(db, obj_in=mm_doc_obj_in)
 
+@pytest.fixture(scope='module')
+def mm_db_obj_thread(channel_db_obj: MattermostChannelModel,
+                     user_db_obj: MattermostUserModel,
+                     mm_db_obj: MattermostDocumentModel,
+                     db: Session):
+    doc_obj_in = DocumentCreate(text='Super Spirit Bomb')
+    doc_db_obj = crud_document.document.create(db, obj_in=doc_obj_in)
+    mm_doc_obj_in = MattermostDocumentModel(message_id=str(uuid.uuid4()),
+                                            root_message_id='',
+                                            channel=channel_db_obj.id,
+                                            user=user_db_obj.id,
+                                            document=doc_db_obj.id,
+                                            type='',
+                                            hashtags='',
+                                            props=dict(),
+                                            doc_metadata=dict(),
+                                            is_thread=True)
+    return crud_mattermost.mattermost_documents.create(db, obj_in=mm_doc_obj_in)
+
 # returns 422
 def test_upload_mattermost_user_info_invalid_format(client: TestClient):
     response = client.post(
@@ -304,7 +323,8 @@ def test_mattermost_conversation_thread_invalid_input(client: TestClient):
     assert response.status_code == 422
     assert 'Mattermost' in response.json()['detail']
 
-def test_mattermost_conversation_thread_no_threads(mm_db_obj: MattermostDocumentModel, client: TestClient):
+def test_mattermost_conversation_thread_no_thread(mm_db_obj: MattermostDocumentModel,
+                                                 client: TestClient):
     response = client.post('mattermost/conversation_threads',
                            headers={},
                            json={'mattermost_document_ids': [str(mm_db_obj.id)]})
@@ -313,3 +333,14 @@ def test_mattermost_conversation_thread_no_threads(mm_db_obj: MattermostDocument
 
     assert response.status_code == 200
     assert str(mm_db_obj.message_id) in [mm_doc['message_id'] for mm_doc in mm_docs]
+
+def test_mattermost_conversation_thread_thread(mm_db_obj_thread: MattermostDocumentModel,
+                                               client: TestClient):
+    response = client.post('mattermost/conversation_threads',
+                           headers={},
+                           json={'mattermost_document_ids': [str(mm_db_obj_thread.id)]})
+
+    mm_docs = response.json()
+
+    assert response.status_code == 200
+    assert str(mm_db_obj_thread.message_id) in [mm_doc['message_id'] for mm_doc in mm_docs]
