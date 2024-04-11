@@ -45,7 +45,7 @@ def mm_db_obj(channel_db_obj: MattermostChannelModel,
     doc_obj_in = DocumentCreate(text='Spirit Bomb')
     doc_db_obj = crud_document.document.create(db, obj_in=doc_obj_in)
     mm_doc_obj_in = MattermostDocumentModel(message_id=str(uuid.uuid4()),
-                                            root_message_id=str(uuid.uuid4()),
+                                            root_message_id='',
                                             channel=channel_db_obj.id,
                                             user=user_db_obj.id,
                                             document=doc_db_obj.id,
@@ -309,6 +309,5 @@ def test_mattermost_conversation_thread_no_threads(mm_db_obj: MattermostDocument
                            headers={},
                            json={'mattermost_document_ids': [str(mm_db_obj.id)]})
 
-    doc_objs = response.json()
-
     assert response.status_code == 200
+    assert len(response.json()) > 0
