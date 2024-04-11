@@ -309,5 +309,7 @@ def test_mattermost_conversation_thread_no_threads(mm_db_obj: MattermostDocument
                            headers={},
                            json={'mattermost_document_ids': [str(mm_db_obj.id)]})
 
+    mm_docs = response.json()
+
     assert response.status_code == 200
-    assert len(response.json()) > 0
+    assert str(mm_db_obj.message_id) in [mm_doc['message_id'] for mm_doc in mm_docs]
