@@ -34,3 +34,8 @@ def test_upload_acronym_dictionary():
     assert response.status_code == 200
     assert response.json() == acronym_dictionary
     assert get_acronym_dictionary() == acronym_dictionary
+
+def test_shutdown():
+    with client as c:
+        response = c.get('/v1/docs')
+        assert response.status_code == 200
