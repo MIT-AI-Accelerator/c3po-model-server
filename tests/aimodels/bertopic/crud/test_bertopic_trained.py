@@ -1,7 +1,9 @@
+import uuid
+import datetime
 from sqlalchemy.orm import Session
 from ppg.schemas.bertopic.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedCreate
 from ppg.schemas.bertopic.bertopic_trained import BertopicTrainedCreate
-from app.aimodels.bertopic.crud.crud_bertopic_trained import bertopic_trained
+from app.aimodels.bertopic.crud.crud_bertopic_trained import bertopic_trained, BertopicTrainedModelSummary
 from app.aimodels.bertopic.models.bertopic_trained import BertopicTrainedModel
 from app.aimodels.bertopic.crud.crud_bertopic_embedding_pretrained import bertopic_embedding_pretrained
 from app.aimodels.bertopic.models.bertopic_embedding_pretrained import EmbeddingModelTypeEnum
@@ -10,6 +12,14 @@ from app.aimodels.bertopic.models.bertopic_embedding_pretrained import Embedding
 # assert bertopic_trained was built with correct model
 def test_bertopic_trained():
     assert bertopic_trained.model == BertopicTrainedModel
+
+def test_bertopic_trained_summary():
+    test_model = BertopicTrainedModel(time=datetime.datetime.now(),
+                                      id=uuid.uuid4(),
+                                      sentence_transformer_id=uuid.uuid4(),
+                                      weak_learner_id=uuid.uuid4(),
+                                      summarization_model_id=uuid.uuid4())
+    assert isinstance(BertopicTrainedModelSummary(test_model), BertopicTrainedModelSummary)
 
 def test_create_with_bad_embedding_pretrained_id(db: Session):
     obj_in = BertopicTrainedCreate()
