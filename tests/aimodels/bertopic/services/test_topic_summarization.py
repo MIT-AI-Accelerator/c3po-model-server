@@ -2,14 +2,14 @@ import uuid
 import json
 from fastapi.testclient import TestClient
 from app.main import versioned_app
-from app.aimodels.bertopic.ai_services.topic_summarization import TopicSummarizer, MAP_PROMPT_TEMPLATE, COMBINE_PROMPT_TEMPLATE
+from app.aimodels.bertopic.ai_services.topic_summarization import TopicSummarizer, DEFAULT_PROMPT_TEMPLATE, DEFAULT_REFINE_TEMPLATE
 
 client = TestClient(versioned_app)
 
 # test llm requires initialization
 def test_initalize_llm_invalid():
     topic_summarizer = TopicSummarizer()
-    assert not topic_summarizer.check_parameters(uuid.uuid4(), MAP_PROMPT_TEMPLATE, COMBINE_PROMPT_TEMPLATE)
+    assert not topic_summarizer.check_parameters(uuid.uuid4(), DEFAULT_PROMPT_TEMPLATE, DEFAULT_REFINE_TEMPLATE)
     assert topic_summarizer.get_summary(['document']) is None
 
 # test acronym expansion

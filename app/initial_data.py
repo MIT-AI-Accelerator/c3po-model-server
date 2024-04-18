@@ -12,13 +12,13 @@ from fastapi import UploadFile
 from fastapi.encoders import jsonable_encoder
 from minio.error import InvalidResponseError
 from ppg.schemas.bertopic.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedCreate, BertopicEmbeddingPretrainedUpdate
-from ppg.schemas.gpt4all.gpt4all_pretrained import Gpt4AllPretrainedCreate, Gpt4AllPretrainedUpdate
+from ppg.schemas.gpt4all.llm_pretrained import LlmPretrainedCreate, LlmPretrainedUpdate
 from ppg.schemas.bertopic.document import DocumentCreate
 from ppg.services.mattermost_utils import MM_BOT_USERNAME
 
 from app.aimodels.bertopic.models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedModel, EmbeddingModelTypeEnum
 from app.aimodels.bertopic.models.document import DocumentModel
-from app.aimodels.gpt4all.models.gpt4all_pretrained import Gpt4AllPretrainedModel
+from app.aimodels.gpt4all.models.llm_pretrained import LlmPretrainedModel, LlmFilenameEnum
 
 from app.db.init_db import init_db, wipe_db
 from app.db.session import SessionLocal
@@ -54,7 +54,7 @@ def get_db(environment: str, migration_toggle: bool) -> Union[Session, None]:
 
     # clear DB if local or staging as long as not actively testing migrating
     # note: reenabled wipe_db for staging (['local', 'staging']) due to db schema changes, remove staging when schema stable
-    if (environment in ['local'] and migration_toggle is False):
+    if (environment in ['local', 'staging'] and migration_toggle is False):
         logger.info("Clearing database")
         wipe_db()
         logger.info("Database cleared")
@@ -162,55 +162,122 @@ def init_sentence_embedding_object(s3: Minio, db: Session, model_path: str) -> N
     return obj_by_sha
 
 
-def init_gpt4all_pretrained_model(s3: Minio, db: Session) -> None:
+def init_mistrallite_pretrained_model(s3: Minio, db: Session) -> None:
 
-    model_name = "ggml-gpt4all-l13b-snoozy.bin"
+    model_name = "mistrallite.Q4_K_M.gguf"
     local_path = os.path.join(
         MODEL_CACHE_BASEDIR, model_name)
-    Path(local_path).parent.mkdir(parents=True, exist_ok=True)
 
-    # Example model. Check https://github.com/nomic-ai/gpt4all for the latest models.
-    url = 'https://gpt4all.io/models/ggml-gpt4all-l13b-snoozy.bin'
+    if os.path.isfile(local_path):
+        with open(local_path,"rb") as f:
+            bin_data = f.read()
+            hash_object = hashlib.sha256(bin_data)
 
-    # send a GET request to the URL to download the file. Stream since it's large
-    response = requests.get(url, stream=True)
+    else:
+        logger.info(f"Downloading {model_name}")
 
-    # open the file in binary mode and write the contents of the response to it in chunks
-    # This is a large file, so be prepared to wait.
-    hash_object = hashlib.sha256()
-    with open(local_path, 'wb') as f:
-        for chunk in tqdm(response.iter_content(chunk_size=8192)):
-            if chunk:
-                f.write(chunk)
-                hash_object.update(chunk)
+        Path(local_path).parent.mkdir(parents=True, exist_ok=True)
+
+        # Example model. Check https://github.com/nomic-ai/gpt4all for the latest models.
+        url = 'https://huggingface.co/TheBloke/MistralLite-7B-GGUF/resolve/main/mistrallite.Q4_K_M.gguf?download=true'
+
+        # send a GET request to the URL to download the file. Stream since it's large
+        response = requests.get(url, stream=True)
+
+        # open the file in binary mode and write the contents of the response to it in chunks
+        # This is a large file, so be prepared to wait.
+        hash_object = hashlib.sha256()
+        with open(local_path, 'wb') as f:
+            for chunk in tqdm(response.iter_content(chunk_size=8192)):
+                if chunk:
+                    f.write(chunk)
+                    hash_object.update(chunk)
 
     hex_dig = hash_object.hexdigest()
 
     # check to make sure sha256 doesn't already exist
-    obj_by_sha: Gpt4AllPretrainedModel = gpt4all_crud.gpt4all_pretrained.get_by_sha256(
+    obj_by_sha: LlmPretrainedModel = gpt4all_crud.llm_pretrained.get_by_sha256(
         db, sha256=hex_dig)
 
     if not obj_by_sha:
 
-        gpt4all_pretrained_obj = Gpt4AllPretrainedCreate(
-            sha256=hex_dig)
+        llm_pretrained_obj = LlmPretrainedCreate(
+            sha256=hex_dig, model_type=LlmFilenameEnum.Q4_K_M)
 
-        new_gpt4all_pretrained_obj: Gpt4AllPretrainedModel = gpt4all_crud.gpt4all_pretrained.create(
-            db, obj_in=gpt4all_pretrained_obj)
+        new_llm_pretrained_obj: LlmPretrainedModel = gpt4all_crud.llm_pretrained.create(
+            db, obj_in=llm_pretrained_obj)
 
         # utilize id from above to upload file to minio
         with open(local_path, 'rb') as file_obj:
             upload_file_to_minio(UploadFile(file_obj),
-                                 new_gpt4all_pretrained_obj.id, s3)
+                                 new_llm_pretrained_obj.id, s3)
 
         # update the object to reflect uploaded status
-        updated_object = Gpt4AllPretrainedUpdate(uploaded=True)
-        new_gpt4all_pretrained_obj: Gpt4AllPretrainedModel = gpt4all_crud.gpt4all_pretrained.update(
-            db, db_obj=new_gpt4all_pretrained_obj, obj_in=updated_object)
+        updated_object = LlmPretrainedUpdate(uploaded=True)
+        new_llm_pretrained_obj: LlmPretrainedModel = gpt4all_crud.llm_pretrained.update(
+            db, db_obj=new_llm_pretrained_obj, obj_in=updated_object)
 
-        os.remove(local_path)
+        return new_llm_pretrained_obj
 
-        return new_gpt4all_pretrained_obj
+    return obj_by_sha
+
+
+def init_llm_pretrained_model(s3: Minio, db: Session) -> None:
+
+    model_name = "ggml-gpt4all-l13b-snoozy.bin"
+    local_path = os.path.join(
+        MODEL_CACHE_BASEDIR, model_name)
+
+    if os.path.isfile(local_path):
+        with open(local_path,"rb") as f:
+            bin_data = f.read()
+            hash_object = hashlib.sha256(bin_data)
+
+    else:
+        logger.info(f"Downloading {model_name}")
+
+        Path(local_path).parent.mkdir(parents=True, exist_ok=True)
+
+        # Example model. Check https://github.com/nomic-ai/gpt4all for the latest models.
+        url = 'https://gpt4all.io/models/ggml-gpt4all-l13b-snoozy.bin'
+
+        # send a GET request to the URL to download the file. Stream since it's large
+        response = requests.get(url, stream=True)
+
+        # open the file in binary mode and write the contents of the response to it in chunks
+        # This is a large file, so be prepared to wait.
+        hash_object = hashlib.sha256()
+        with open(local_path, 'wb') as f:
+            for chunk in tqdm(response.iter_content(chunk_size=8192)):
+                if chunk:
+                    f.write(chunk)
+                    hash_object.update(chunk)
+
+    hex_dig = hash_object.hexdigest()
+
+    # check to make sure sha256 doesn't already exist
+    obj_by_sha: LlmPretrainedModel = gpt4all_crud.llm_pretrained.get_by_sha256(
+        db, sha256=hex_dig)
+
+    if not obj_by_sha:
+
+        llm_pretrained_obj = LlmPretrainedCreate(
+            sha256=hex_dig)
+
+        new_llm_pretrained_obj: LlmPretrainedModel = gpt4all_crud.llm_pretrained.create(
+            db, obj_in=llm_pretrained_obj)
+
+        # utilize id from above to upload file to minio
+        with open(local_path, 'rb') as file_obj:
+            upload_file_to_minio(UploadFile(file_obj),
+                                 new_llm_pretrained_obj.id, s3)
+
+        # update the object to reflect uploaded status
+        updated_object = LlmPretrainedUpdate(uploaded=True)
+        new_llm_pretrained_obj: LlmPretrainedModel = gpt4all_crud.llm_pretrained.update(
+            db, db_obj=new_llm_pretrained_obj, obj_in=updated_object)
+
+        return new_llm_pretrained_obj
 
     return obj_by_sha
 
@@ -231,23 +298,23 @@ def init_gpt4all_db_obj_staging_prod(s3: Minio, db: Session) -> None:
         logger.info(f"Downloaded model from Minio to {local_path}")
 
     # check to make sure sha256 doesn't already exist
-    obj_by_sha: Gpt4AllPretrainedModel = gpt4all_crud.gpt4all_pretrained.get_by_sha256(
+    obj_by_sha: LlmPretrainedModel = gpt4all_crud.llm_pretrained.get_by_sha256(
         db, sha256=settings.default_sha256_l13b_snoozy)
 
     if not obj_by_sha:
 
-        gpt4all_pretrained_obj = Gpt4AllPretrainedCreate(
+        llm_pretrained_obj = LlmPretrainedCreate(
             sha256=settings.default_sha256_l13b_snoozy, use_base_model=True)
 
-        new_gpt4all_pretrained_obj: Gpt4AllPretrainedModel = gpt4all_crud.gpt4all_pretrained.create(
-            db, obj_in=gpt4all_pretrained_obj)
+        new_llm_pretrained_obj: LlmPretrainedModel = gpt4all_crud.llm_pretrained.create(
+            db, obj_in=llm_pretrained_obj)
 
         # update the object to reflect uploaded status
-        updated_object = Gpt4AllPretrainedUpdate(uploaded=True)
-        new_gpt4all_pretrained_obj: Gpt4AllPretrainedModel = gpt4all_crud.gpt4all_pretrained.update(
-            db, db_obj=new_gpt4all_pretrained_obj, obj_in=updated_object)
+        updated_object = LlmPretrainedUpdate(uploaded=True)
+        new_llm_pretrained_obj: LlmPretrainedModel = gpt4all_crud.llm_pretrained.update(
+            db, db_obj=new_llm_pretrained_obj, obj_in=updated_object)
 
-        return new_gpt4all_pretrained_obj
+        return new_llm_pretrained_obj
 
     return obj_by_sha
 
@@ -363,19 +430,26 @@ def init_large_objects(environment: str, migration_toggle: bool, s3: Minio, db: 
         else:
             logger.info("Unable to load Mattermost bot user")
 
+        # Mistral
+        logger.info("Uploading Mistral object to MinIO")
+        llm_pretrained_obj = init_mistrallite_pretrained_model(s3, db)
+        logger.info("Mistral object uploaded to MinIO.")
+        logger.info(
+            f"Mistral Object ID: {llm_pretrained_obj.id}, SHA256: {llm_pretrained_obj.sha256}")
+
         # Gpt4All
         logger.info("Uploading Gpt4All object to MinIO")
-        gpt4all_pretrained_obj = init_gpt4all_pretrained_model(s3, db)
+        llm_pretrained_obj = init_llm_pretrained_model(s3, db)
         logger.info("Gpt4All object uploaded to MinIO.")
         logger.info(
-            f"Gpt4All Object ID: {gpt4all_pretrained_obj.id}, SHA256: {gpt4all_pretrained_obj.sha256}")
+            f"Gpt4All Object ID: {llm_pretrained_obj.id}, SHA256: {llm_pretrained_obj.sha256}")
 
     if (environment == 'staging' or (environment == 'production' and migration_toggle is True)):
         logger.info("Verifying Gpt4All object in MinIO")
-        gpt4all_pretrained_obj = init_gpt4all_db_obj_staging_prod(s3, db)
+        llm_pretrained_obj = init_gpt4all_db_obj_staging_prod(s3, db)
         logger.info("Verified Gpt4All object in MinIO")
         logger.info(
-            f"Gpt4All Object ID: {gpt4all_pretrained_obj.id}, SHA256: {gpt4all_pretrained_obj.sha256}")
+            f"Gpt4All Object ID: {llm_pretrained_obj.id}, SHA256: {llm_pretrained_obj.sha256}")
     ########## large object uploads ################
 
 

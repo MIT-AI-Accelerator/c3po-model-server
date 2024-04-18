@@ -1,1 +1,1 @@
-from .crud_gpt4all_pretrained import gpt4all_pretrained
+from .crud_llm_pretrained import llm_pretrained

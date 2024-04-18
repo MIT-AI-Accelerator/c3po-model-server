@@ -168,7 +168,7 @@ class TopicDocumentData(BaseModel):
 
 class BasicInference:
 
-    def __init__(self, sentence_transformer_obj, s3, map_prompt_template, combine_prompt_template, weak_learner_obj=None, topic_summarizer_obj=None):
+    def __init__(self, sentence_transformer_obj, s3, prompt_template, refine_template, weak_learner_obj=None, topic_summarizer_obj=None):
 
         # validate input
         InitInputs(
@@ -200,9 +200,9 @@ class BasicInference:
 
         self.topic_summarizer = None
         if topic_summarizer_obj:
-            if not topic_summarizer.check_parameters(topic_summarizer_obj.id, map_prompt_template, combine_prompt_template):
+            if not topic_summarizer.check_parameters(topic_summarizer_obj.id, prompt_template, refine_template):
                 topic_summarizer.initialize_llm(
-                    s3, topic_summarizer_obj, map_prompt_template, combine_prompt_template)
+                    s3, topic_summarizer_obj, prompt_template, refine_template)
             self.topic_summarizer = topic_summarizer
 
     def get_document_info(self, topic_model, topic_document_data: TopicDocumentData, num_documents=DEFAULT_N_REPR_DOCS):
