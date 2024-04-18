@@ -98,6 +98,18 @@ def test_update_obj_refreshes_if_expired(db: Session) -> None:
     assert new_obj.title == new_title
     assert obj.title == "t2"
 
+def test_update_obj_dict(db: Session) -> None:
+    obj_in = EmptyTestCreate()
+    obj = crud.crud_test.create(db=db, obj_in=obj_in)
+
+    # update the obj
+    obj_dict = {'bool_field': True, 'title': 'test'}
+    crud.crud_test.update(db=db, db_obj=obj, obj_in=obj_dict)
+
+    obj_updated = crud.crud_test.get(db=db, id=obj.id)
+    assert obj_updated.id == obj.id
+    assert obj_updated.bool_field == obj_dict['bool_field']
+    assert obj_updated.title == obj_dict['title']
 
 def test_delete_obj(db: Session) -> None:
     obj_in = EmptyTestCreate()
