@@ -8,6 +8,9 @@ from app.aimodels.bertopic.models.bertopic_embedding_pretrained import BertopicE
 def test_bertopic_embedding_pretrained():
     assert bertopic_embedding_pretrained.model == BertopicEmbeddingPretrainedModel
 
+def test_bertopic_embedding_pretrained_no_model_name(db: Session):
+    assert bertopic_embedding_pretrained.get_by_model_name(db, model_name='') is None
+
 # get_by_sha256 with existing sha256
 def test_get_by_sha256_existing_sha256(db: Session, valid_sha256: str):
     # create a bertopic_embedding_pretrained
