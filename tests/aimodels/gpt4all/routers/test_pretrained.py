@@ -7,15 +7,15 @@ from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
 from fastapi.encoders import jsonable_encoder
 from ppg.core.config import OriginationEnum
-from ppg.schemas.gpt4all.gpt4all_pretrained import Gpt4AllPretrainedCreate
-from app.aimodels.gpt4all.models.gpt4all_pretrained import Gpt4AllModelFilenameEnum
-import app.aimodels.gpt4all.crud.crud_gpt4all_pretrained as crud
+from ppg.schemas.gpt4all.llm_pretrained import LlmPretrainedCreate
+from app.aimodels.gpt4all.models.llm_pretrained import LlmFilenameEnum
+import app.aimodels.gpt4all.crud.crud_llm_pretrained as crud
 
-def test_create_gpt4all_pretrained_object_post_valid_request(client: TestClient, valid_sha256: str):
-    body = Gpt4AllPretrainedCreate(sha256=valid_sha256)
+def test_create_llm_pretrained_object_post_valid_request(client: TestClient, valid_sha256: str):
+    body = LlmPretrainedCreate(sha256=valid_sha256)
 
     response = client.post(
-        "/aimodels/gpt4all/pretrained",
+        "/aimodels/llm/pretrained",
         headers={},
         json=jsonable_encoder(body),
     )
@@ -27,11 +27,11 @@ def test_create_gpt4all_pretrained_object_post_valid_request(client: TestClient,
     assert response.json()['sha256'] == valid_sha256
 
 
-def test_create_gpt4all_pretrained_object_post_invalid_request(client: TestClient):
+def test_create_llm_pretrained_object_post_invalid_request(client: TestClient):
     body = {}
 
     response = client.post(
-        "/aimodels/gpt4all/pretrained",
+        "/aimodels/llm/pretrained",
         headers={},
         json=jsonable_encoder(body),
     )
@@ -39,11 +39,11 @@ def test_create_gpt4all_pretrained_object_post_invalid_request(client: TestClien
     assert response.status_code == 422
 
 
-def test_create_gpt4all_pretrained_object_post_invalid_request_sha256(client: TestClient):
+def test_create_llm_pretrained_object_post_invalid_request_sha256(client: TestClient):
     body = {'sha256': '', 'model_name': 'test'}
 
     response = client.post(
-        "/aimodels/gpt4all/pretrained",
+        "/aimodels/llm/pretrained",
         headers={},
         json=jsonable_encoder(body),
     )
@@ -53,11 +53,11 @@ def test_create_gpt4all_pretrained_object_post_invalid_request_sha256(client: Te
         'body', 'sha256'], 'msg': 'sha256 must be hexademical and 64 characters long', 'type': 'value_error'}]}
 
 
-def test_create_gpt4all_pretrained_object_post_already_existing_sha256(client: TestClient, valid_sha256: str):
-    body = Gpt4AllPretrainedCreate(sha256=valid_sha256)
+def test_create_llm_pretrained_object_post_already_existing_sha256(client: TestClient, valid_sha256: str):
+    body = LlmPretrainedCreate(sha256=valid_sha256)
 
     response = client.post(
-        "/aimodels/gpt4all/pretrained",
+        "/aimodels/llm/pretrained",
         headers={},
         json=jsonable_encoder(body),
     )
@@ -65,7 +65,7 @@ def test_create_gpt4all_pretrained_object_post_already_existing_sha256(client: T
     assert response.status_code == 200
 
     response = client.post(
-        "/aimodels/gpt4all/pretrained",
+        "/aimodels/llm/pretrained",
         headers={},
         json=jsonable_encoder(body),
     )
@@ -74,11 +74,11 @@ def test_create_gpt4all_pretrained_object_post_already_existing_sha256(client: T
     assert response.json() == {'detail': 'sha256 already exists'}
 
 
-def test_create_gpt4all_pretrained_object_post_sha256_converted_to_lowercase(client: TestClient, valid_sha256: str):
-    body = Gpt4AllPretrainedCreate(sha256=valid_sha256.upper())
+def test_create_llm_pretrained_object_post_sha256_converted_to_lowercase(client: TestClient, valid_sha256: str):
+    body = LlmPretrainedCreate(sha256=valid_sha256.upper())
 
     response = client.post(
-        "/aimodels/gpt4all/pretrained",
+        "/aimodels/llm/pretrained",
         headers={},
         json=jsonable_encoder(body),
     )
@@ -89,7 +89,7 @@ def test_create_gpt4all_pretrained_object_post_sha256_converted_to_lowercase(cli
 # ************ upload ************
 
 
-def test_upload_gpt4all_pretrained_object_post_valid_request(client: TestClient, mocker):
+def test_upload_llm_pretrained_object_post_valid_request(client: TestClient, mocker):
 
     # Create a file to upload
     test_file = "test_file"
@@ -105,10 +105,10 @@ def test_upload_gpt4all_pretrained_object_post_valid_request(client: TestClient,
             sha256_hash.update(chunk)
 
     # create the gpt4all Embedding Pretrained Model object
-    body = Gpt4AllPretrainedCreate(sha256=sha256_hash.hexdigest())
+    body = LlmPretrainedCreate(sha256=sha256_hash.hexdigest())
 
     response = client.post(
-        "/aimodels/gpt4all/pretrained",
+        "/aimodels/llm/pretrained",
         headers={},
         json=jsonable_encoder(body),
     )
@@ -121,7 +121,7 @@ def test_upload_gpt4all_pretrained_object_post_valid_request(client: TestClient,
                      new=mock_upload_file_to_minio)
 
         response2 = client.post(
-            f"/aimodels/gpt4all/pretrained/{embedding_pretrained_id}/upload/", files={"new_file": f})
+            f"/aimodels/llm/pretrained/{embedding_pretrained_id}/upload/", files={"new_file": f})
 
         mock_upload_file_to_minio.assert_called_once()
 
@@ -131,7 +131,7 @@ def test_upload_gpt4all_pretrained_object_post_valid_request(client: TestClient,
     assert response2.json()["uploaded"] is True
 
 # test upload with sha256 not matching the one in the database
-def test_upload_gpt4all_pretrained_object_post_invalid_sha256(client: TestClient, valid_sha256: str, mocker):
+def test_upload_llm_pretrained_object_post_invalid_sha256(client: TestClient, valid_sha256: str, mocker):
     # Create a file to upload
     test_file = "test_file_invalid_sha256"
     with open(test_file, "wb") as f:
@@ -140,10 +140,10 @@ def test_upload_gpt4all_pretrained_object_post_invalid_sha256(client: TestClient
         f.write(contents.encode('utf-8'))
 
     # create the gpt4all Embedding Pretrained Model object
-    body = Gpt4AllPretrainedCreate(sha256=valid_sha256)
+    body = LlmPretrainedCreate(sha256=valid_sha256)
 
     response = client.post(
-        "/aimodels/gpt4all/pretrained",
+        "/aimodels/llm/pretrained",
         headers={},
         json=jsonable_encoder(body),
     )
@@ -156,7 +156,7 @@ def test_upload_gpt4all_pretrained_object_post_invalid_sha256(client: TestClient
                      new=mock_upload_file_to_minio)
 
         response2 = client.post(
-            f"/aimodels/gpt4all/pretrained/{embedding_pretrained_id}/upload/", files={"new_file": f})
+            f"/aimodels/llm/pretrained/{embedding_pretrained_id}/upload/", files={"new_file": f})
 
         mock_upload_file_to_minio.assert_not_called()
 
@@ -166,23 +166,23 @@ def test_upload_gpt4all_pretrained_object_post_invalid_sha256(client: TestClient
     assert response2.json() == {'detail': 'SHA256 hash mismatch'}
 
 
-def test_upload_gpt4all_pretrained_object_post_empty_file(client: TestClient, valid_sha256: str):
-    body = Gpt4AllPretrainedCreate(sha256=valid_sha256)
+def test_upload_llm_pretrained_object_post_empty_file(client: TestClient, valid_sha256: str):
+    body = LlmPretrainedCreate(sha256=valid_sha256)
 
     response = client.post(
-        "/aimodels/gpt4all/pretrained",
+        "/aimodels/llm/pretrained",
         headers={},
         json=jsonable_encoder(body),
     )
     embedding_pretrained_id = response.json()["id"]
 
     response2 = client.post(
-        f"/aimodels/gpt4all/pretrained/{embedding_pretrained_id}/upload/", files={"new_file": None})
+        f"/aimodels/llm/pretrained/{embedding_pretrained_id}/upload/", files={"new_file": None})
 
     assert response2.status_code == 400
 
 
-def test_upload_gpt4all_pretrained_object_post_invalid_id(client: TestClient, mocker):
+def test_upload_llm_pretrained_object_post_invalid_id(client: TestClient, mocker):
     test_file = "test_file_invalid_id"
     with open(test_file, "wb") as f:
         f.write(b"test data")
@@ -193,7 +193,7 @@ def test_upload_gpt4all_pretrained_object_post_invalid_id(client: TestClient, mo
                      new=mock_upload_file_to_minio)
 
         response = client.post(
-            f"/aimodels/gpt4all/pretrained/999/upload/", files={"new_file": f})
+            f"/aimodels/llm/pretrained/999/upload/", files={"new_file": f})
 
         mock_upload_file_to_minio.assert_not_called()
 
@@ -203,11 +203,11 @@ def test_upload_gpt4all_pretrained_object_post_invalid_id(client: TestClient, mo
     assert response.json() == {'detail': [{'loc': [
         'path', 'id'], 'msg': 'value is not a valid uuid', 'type': 'type_error.uuid'}]}
 
-def test_get_gpt4all_pretrained_object_invalid_name(client: TestClient):
+def test_get_llm_pretrained_object_invalid_name(client: TestClient):
     body = {'model_type': 'not_a_name.bin'}
 
     response = client.get(
-        "/aimodels/gpt4all/pretrained",
+        "/aimodels/llm/pretrained",
         headers={},
         params=jsonable_encoder(body)
     )
@@ -215,19 +215,19 @@ def test_get_gpt4all_pretrained_object_invalid_name(client: TestClient):
     assert response.status_code == 422
     assert 'value is not a valid enumeration' in response.json()['detail'][0]['msg']
 
-def test_get_gpt4all_pretrained_object_valid_name(client: TestClient, db: Session, mocker: MagicMock):
-    body = {'model_type': Gpt4AllModelFilenameEnum.L13B_SNOOZY}
+def test_get_llm_pretrained_object_valid_name(client: TestClient, db: Session, mocker: MagicMock):
+    body = {'model_type': LlmFilenameEnum.L13B_SNOOZY}
 
-    mocked_model = crud.gpt4all_pretrained.get_latest_uploaded_by_model_type(db,
-                                                                        model_type=Gpt4AllModelFilenameEnum.L13B_SNOOZY,
+    mocked_model = crud.llm_pretrained.get_latest_uploaded_by_model_type(db,
+                                                                        model_type=LlmFilenameEnum.L13B_SNOOZY,
                                                                         originated_from=OriginationEnum.ORIGINATED_FROM_TEST)
     mocker.patch(
-        "app.aimodels.gpt4all.crud.crud_gpt4all_pretrained.gpt4all_pretrained.get_latest_uploaded_by_model_type",
+        "app.aimodels.gpt4all.crud.crud_llm_pretrained.llm_pretrained.get_latest_uploaded_by_model_type",
         return_value=mocked_model
     )
 
     response = client.get(
-        "/aimodels/gpt4all/pretrained",
+        "/aimodels/llm/pretrained",
         headers={},
         params=jsonable_encoder(body)
     )

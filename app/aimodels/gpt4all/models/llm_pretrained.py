@@ -3,15 +3,15 @@ from typing import TYPE_CHECKING
 from sqlalchemy import Column, Enum, Integer, UUID, String, Boolean, Sequence
 from sqlalchemy.orm import relationship
 from ppg.core.config import OriginationEnum
-from ppg.schemas.gpt4all.gpt4all_pretrained import Gpt4AllModelFilenameEnum
+from ppg.schemas.gpt4all.llm_pretrained import LlmFilenameEnum
 from app.db.base_class import Base
 from app.core.config import get_originated_from
 
 # add in the TYPE_CHECKING check here if relationships are created
 
-class Gpt4AllPretrainedModel(Base):
+class LlmPretrainedModel(Base):
     id = Column(UUID, primary_key=True, unique=True, default=uuid.uuid4)
-    model_type = Column(Enum(Gpt4AllModelFilenameEnum), default=Gpt4AllModelFilenameEnum.L13B_SNOOZY)
+    model_type = Column(Enum(LlmFilenameEnum), default=LlmFilenameEnum.L13B_SNOOZY)
     version_sequence = Sequence(__qualname__.lower() + "_version_sequence") # see here for autoincrementing versioning: https://copyprogramming.com/howto/using-sqlalchemy-orm-for-a-non-primary-key-unique-auto-incrementing-id
     version = Column(Integer, version_sequence, server_default=version_sequence.next_value(), index=True, unique=True, nullable=False)
     sha256 = Column(String(64))

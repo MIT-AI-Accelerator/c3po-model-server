@@ -10,13 +10,13 @@ from langchain import PromptTemplate, LLMChain
 from langchain.llms import GPT4All
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from pathlib import Path
-from app.aimodels.gpt4all.models.gpt4all_pretrained import Gpt4AllModelFilenameEnum
+from app.aimodels.gpt4all.models.llm_pretrained import LlmFilenameEnum
 from app.core.minio import download_file_from_minio
 from minio import Minio
 from app.core.model_cache import MODEL_CACHE_BASEDIR
 from app.core.logging import logger, LogConfig
 from logging.config import dictConfig
-from ..models import Gpt4AllPretrainedModel
+from ..models import LlmPretrainedModel
 
 dictConfig(LogConfig().dict())
 
@@ -24,19 +24,19 @@ BASE_CKPT_DIR = os.path.join(os.path.abspath(
     os.path.dirname(__file__)), "./data")
 
 class InitInputs(BaseModel):
-    gpt4all_pretrained_model_obj: Gpt4AllPretrainedModel
+    llm_pretrained_model_obj: LlmPretrainedModel
     s3: Minio
 
     # ensure that model type is defined
-    @validator('gpt4all_pretrained_model_obj')
-    def gpt4all_pretrained_model_obj_must_have_model_type_and_be_uploaded(cls, v):
+    @validator('llm_pretrained_model_obj')
+    def llm_pretrained_model_obj_must_have_model_type_and_be_uploaded(cls, v):
         # pylint: disable=no-self-argument
         if not v.model_type:
             raise ValueError(
-                'gpt4all_pretrained_model_obj must have model_type')
+                'llm_pretrained_model_obj must have model_type')
         if not v.uploaded:
             raise ValueError(
-                'gpt4all_pretrained_model_obj must be uploaded')
+                'llm_pretrained_model_obj must be uploaded')
 
         return v
 
@@ -107,7 +107,7 @@ class CompletionInferenceOutputs(BaseModel):
     id: str = str(uuid4())
     object: str = "text_completion"
     created: int = int(time())
-    model: Optional[Gpt4AllModelFilenameEnum] = None
+    model: Optional[LlmFilenameEnum] = None
     choices: list[CompletionInferenceOutputChoices]
     usage: Optional[CompletionInferenceOutputUsage] = None
 
@@ -128,7 +128,7 @@ class CompletionInferenceInputs(BaseModel):
     - user
     """
 
-    model: Optional[Gpt4AllModelFilenameEnum] = None
+    model: Optional[LlmFilenameEnum] = None
     """Name of the GPT4All model file.
     NOTE 1: While this does map to model on Gpt4All, the meaning is slightly different.
     Here it is the name of the model; there it is the full model path.
@@ -180,22 +180,22 @@ class CompletionInferenceInputs(BaseModel):
 
 class CompletionInference:
 
-    def __init__(self, gpt4all_pretrained_model_obj, s3):
+    def __init__(self, llm_pretrained_model_obj, s3):
 
         # validate input
         InitInputs(
-            gpt4all_pretrained_model_obj=gpt4all_pretrained_model_obj, s3=s3
+            llm_pretrained_model_obj=llm_pretrained_model_obj, s3=s3
         )
 
-        self.gpt4all_pretrained_model_obj = gpt4all_pretrained_model_obj
-        self.llm_path = os.path.join(MODEL_CACHE_BASEDIR, gpt4all_pretrained_model_obj.model_type)
+        self.llm_pretrained_model_obj = llm_pretrained_model_obj
+        self.llm_path = os.path.join(MODEL_CACHE_BASEDIR, llm_pretrained_model_obj.model_type)
 
         if not os.path.isfile(self.llm_path):
             # Create the directory if it doesn't exist
             Path(self.llm_path).parent.mkdir(parents=True, exist_ok=True)
 
             # filename or id
-            minio_filename = gpt4all_pretrained_model_obj.model_type if gpt4all_pretrained_model_obj.use_base_model else gpt4all_pretrained_model_obj.id
+            minio_filename = llm_pretrained_model_obj.model_type if llm_pretrained_model_obj.use_base_model else llm_pretrained_model_obj.id
 
             # Download the file from Minio
             logger.info(f"Downloading model from Minio to {self.llm_path}")
@@ -258,7 +258,7 @@ class CompletionInference:
             ))
 
         return CompletionInferenceOutputs(
-            model=self.gpt4all_pretrained_model_obj.model_type,
+            model=self.llm_pretrained_model_obj.model_type,
             choices=choices
         )
 

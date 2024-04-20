@@ -15,12 +15,12 @@ from app.dependencies import get_db, get_minio
 from .. import crud
 from ..models.bertopic_trained import BertopicTrainedModel
 from ..models.bertopic_visualization import BertopicVisualizationTypeEnum
-from ..ai_services.topic_summarization import MAP_PROMPT_TEMPLATE, COMBINE_PROMPT_TEMPLATE
+from ..ai_services.topic_summarization import DEFAULT_PROMPT_TEMPLATE, DEFAULT_REFINE_TEMPLATE
 from app.core.errors import ValidationError, HTTPValidationError
 from app.core.config import settings
 from ..models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedModel
-from app.aimodels.gpt4all.models import Gpt4AllPretrainedModel
-from app.aimodels.gpt4all.crud import crud_gpt4all_pretrained
+from app.aimodels.gpt4all.models import LlmPretrainedModel
+from app.aimodels.gpt4all.crud import crud_llm_pretrained
 import app.mattermost.crud.crud_mattermost as crud_mattermost
 router = APIRouter(
     prefix=""
@@ -34,8 +34,8 @@ class TrainModelRequest(BaseModel):
     document_ids: list[UUID4] = []
     num_topics: int = 2
     seed_topics: list[list] = []
-    map_prompt_template: str = MAP_PROMPT_TEMPLATE
-    combine_prompt_template: str = COMBINE_PROMPT_TEMPLATE
+    prompt_template: str = DEFAULT_PROMPT_TEMPLATE
+    refine_template: str = DEFAULT_REFINE_TEMPLATE
 
 
 @router.post(
@@ -70,13 +70,13 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
 
         validate_obj(bertopic_weak_learner_obj)
 
-    gpt4all_pretrained_obj = None
+    llm_pretrained_obj = None
     if request.summarization_model_id:
         # check to make sure id exists
-        gpt4all_pretrained_obj: Gpt4AllPretrainedModel = crud_gpt4all_pretrained.gpt4all_pretrained.get(
+        llm_pretrained_obj: LlmPretrainedModel = crud_llm_pretrained.llm_pretrained.get(
             db, request.summarization_model_id)
 
-        validate_obj(gpt4all_pretrained_obj)
+        validate_obj(llm_pretrained_obj)
 
     # get the documents
     documents = []
@@ -104,7 +104,7 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
 
     # train the model
     basic_inference = BasicInference(
-        bertopic_sentence_transformer_obj, s3, request.map_prompt_template, request.combine_prompt_template, bertopic_weak_learner_obj, gpt4all_pretrained_obj)
+        bertopic_sentence_transformer_obj, s3, request.prompt_template, request.refine_template, bertopic_weak_learner_obj, llm_pretrained_obj)
     inference_output = basic_inference.train_bertopic_on_documents(db,
                                                                    documents, precalculated_embeddings=precalculated_embeddings, num_topics=request.num_topics,
                                                                    document_df=document_df,
@@ -132,8 +132,8 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
         summarization_model_id=request.summarization_model_id,
         seed_topics=pd.DataFrame({'seed_topics': request.seed_topics})[
             'seed_topics'].to_dict(),
-        map_prompt_template=request.map_prompt_template,
-        combine_prompt_template=request.combine_prompt_template,
+        prompt_template=request.prompt_template,
+        refine_template=request.refine_template,
         uploaded=False
     )
 
