@@ -4,13 +4,14 @@ from typing import Optional
 from pydantic import BaseModel, UUID4, validator
 from ppg.core.config import OriginationEnum
 
-class Gpt4AllModelFilenameEnum(str, enum.Enum):
+class LlmFilenameEnum(str, enum.Enum):
     L13B_SNOOZY = "ggml-gpt4all-l13b-snoozy.bin"
+    Q4_K_M = "mistrallite.Q4_K_M.gguf"
 
 # Shared properties
-class Gpt4AllPretrainedBase(BaseModel):
+class LlmPretrainedBase(BaseModel):
     sha256: Optional[str] = None
-    model_type: Optional[Gpt4AllModelFilenameEnum] = None
+    model_type: Optional[LlmFilenameEnum] = None
     use_base_model: Optional[bool] = None
 
     # ensure valid sha256 format
@@ -28,19 +29,19 @@ class Gpt4AllPretrainedBase(BaseModel):
 
         return lower_v
 
-# Properties to receive on Gpt4AllPretrained creation
-class Gpt4AllPretrainedCreate(Gpt4AllPretrainedBase):
+# Properties to receive on LlmPretrained creation
+class LlmPretrainedCreate(LlmPretrainedBase):
     sha256: str
     use_base_model: bool = False
 
-# Properties to receive on Gpt4AllPretrained update
-class Gpt4AllPretrainedUpdate(Gpt4AllPretrainedBase):
+# Properties to receive on LlmPretrained update
+class LlmPretrainedUpdate(LlmPretrainedBase):
     uploaded: bool
 
 # Properties shared by models stored in DB
-class Gpt4AllPretrainedInDBBase(Gpt4AllPretrainedBase):
+class LlmPretrainedInDBBase(LlmPretrainedBase):
     id: UUID4
-    model_type: Gpt4AllModelFilenameEnum
+    model_type: LlmFilenameEnum
     uploaded: bool
     version: int
     sha256: str
@@ -51,9 +52,9 @@ class Gpt4AllPretrainedInDBBase(Gpt4AllPretrainedBase):
         orm_mode = True
 
 # Properties to return to client
-class Gpt4AllPretrained(Gpt4AllPretrainedInDBBase):
+class LlmPretrained(LlmPretrainedInDBBase):
     pass
 
 # Properties properties stored in DB
-class Gpt4AllPretrainedInDB(Gpt4AllPretrainedInDBBase):
+class LlmPretrainedInDB(LlmPretrainedInDBBase):
     pass

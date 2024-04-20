@@ -1,11 +1,11 @@
 from fastapi import Depends, APIRouter, HTTPException
 from minio import Minio
-from app.aimodels.gpt4all.models.gpt4all_pretrained import Gpt4AllModelFilenameEnum
+from app.aimodels.gpt4all.models.llm_pretrained import LlmFilenameEnum
 from app.dependencies import get_db, get_minio
 from app.core.config import settings
 from sqlalchemy.orm import Session
 from .. import crud
-from ..models import Gpt4AllPretrainedModel
+from ..models import LlmPretrainedModel
 from ..ai_services.completion_inference import CompletionInference, CompletionInferenceInputs, CompletionInferenceOutputs
 
 router = APIRouter()
@@ -47,16 +47,16 @@ def validate_inputs_and_generate_service(request: CompletionInferenceInputs, db:
     sha256 = settings.default_sha256_l13b_snoozy
 
     # check for other model type options
-    if request.model == Gpt4AllModelFilenameEnum.L13B_SNOOZY:
+    if request.model == LlmFilenameEnum.L13B_SNOOZY:
         sha256 = settings.default_sha256_l13b_snoozy
 
-    # TODO: determine how to incorporate crud.gpt4all_pretrained.get_latest_uploaded_by_model_type
-    gpt4all_pretrained_model_obj: Gpt4AllPretrainedModel = crud.gpt4all_pretrained.get_by_sha256(
+    # TODO: determine how to incorporate crud.llm_pretrained.get_latest_uploaded_by_model_type
+    llm_pretrained_model_obj: LlmPretrainedModel = crud.llm_pretrained.get_by_sha256(
         db, sha256=sha256)
 
-    if not gpt4all_pretrained_model_obj or not gpt4all_pretrained_model_obj.uploaded:
+    if not llm_pretrained_model_obj or not llm_pretrained_model_obj.uploaded:
         raise HTTPException(
             status_code=422, detail="Invalid model type or no uploaded pretrained model for this type")
 
     return CompletionInference(
-        gpt4all_pretrained_model_obj=gpt4all_pretrained_model_obj, s3=s3)
+        llm_pretrained_model_obj=llm_pretrained_model_obj, s3=s3)

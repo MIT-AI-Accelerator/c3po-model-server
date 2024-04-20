@@ -13,7 +13,7 @@ def test_gpt_completion_post_valid_input(client: TestClient,
     # mock the return value
     mock_crud = create_autospec(crud_gpt4all)
     mocker.patch("app.aimodels.gpt4all.routers.completions.crud", new=mock_crud)
-    mock_crud.gpt4all_pretrained.get_by_sha256.side_effect = mock_gpt4all_crud_sha256_return_vals
+    mock_crud.llm_pretrained.get_by_sha256.side_effect = mock_gpt4all_crud_sha256_return_vals
 
     # mock the CompletionInference Object
     mock_completion_inference_object = create_autospec(CompletionInference)
@@ -42,7 +42,7 @@ def test_gpt_completion_post_valid_input(client: TestClient,
     assert response.json()["choices"][0]["text"] == "This is a test response"
 
 
-def test_gpt_completion_post_model_invalid_gpt4all_model_type(client: TestClient):
+def test_gpt_completion_post_model_invalid_llm_model_type(client: TestClient):
 
     # make the request with an invalid model_type
     body = {
@@ -69,7 +69,7 @@ def test_chat_completion_post_valid_input(client: TestClient,
     # mock the return value
     mock_crud = create_autospec(crud_gpt4all)
     mocker.patch("app.aimodels.gpt4all.routers.completions.crud", new=mock_crud)
-    mock_crud.gpt4all_pretrained.get_by_sha256.side_effect = mock_gpt4all_crud_sha256_return_vals
+    mock_crud.llm_pretrained.get_by_sha256.side_effect = mock_gpt4all_crud_sha256_return_vals
 
     # mock the CompletionInference Object
     mock_completion_inference_object = create_autospec(CompletionInference)

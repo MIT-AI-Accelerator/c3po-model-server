@@ -2,8 +2,8 @@ import os
 from pathlib import Path
 from string import punctuation
 from langchain import PromptTemplate
-from langchain.llms import GPT4All
-from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
+from langchain.llms import CTransformers
+# from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain.chains.summarize import load_summarize_chain
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.llms.llamacpp import LlamaCpp
@@ -11,43 +11,47 @@ from app.core.logging import logger
 from app.core.model_cache import MODEL_CACHE_BASEDIR
 from app.core.minio import download_file_from_minio
 from app.core.config import get_acronym_dictionary
-from app.aimodels.gpt4all.models.gpt4all_pretrained import Gpt4AllPretrainedModel, Gpt4AllModelFilenameEnum
-from app.aimodels.gpt4all.crud import crud_gpt4all_pretrained as crud
+# from app.aimodels.gpt4all.models.llm_pretrained import LlmPretrainedModel, LlmFilenameEnum
+# from app.aimodels.gpt4all.crud import crud_llm_pretrained as crud
 
 # default templates for topic summarization
-MAP_PROMPT_TEMPLATE = """
-Write a summary of the following text that includes the main points and important details.
-{text}
-"""
-COMBINE_PROMPT_TEMPLATE = """
-Write a concise summary in 1-3 sentences which covers the key points of the text.
-{text}
-TEXT SUMMARY:
-"""
-
+DEFAULT_PROMPT_TEMPLATE = """Summarize this content:
+    {text}
+    SUMMARY:
+    """
+DEFAULT_REFINE_TEMPLATE = (
+        "Your job is to produce a final summary\n"
+        "Here's the existing summary: {existing_answer}\n "
+        "Now add to it based on the following context (only if needed):\n"
+        "------------\n"
+        "{text}\n"
+        "------------\n"
+        "SUMMARY: "
+    )
 
 # default parameters for topic summarization
 DEFAULT_N_REPR_DOCS = 5
-DEFAULT_LLM_TEMP = 0.8
+DEFAULT_LLM_TEMP = 0.69
 DEFAULT_LLM_TOP_P = 0.95
 DEFAULT_LLM_REPEAT_PENALTY = 1.3
-
+DEFAULT_MAX_NEW_TOKENS = 2000
+DEFAULT_CONTEXT_LENGTH = 6000
 
 class TopicSummarizer:
 
     def __init__(self):
         self.model_type = None
         self.model_id = None
-        self.map_prompt_template = None
-        self.combine_prompt_template = None
+        self.prompt_template = None
+        self.refine_template = None
         self.temp = None
         self.top_p = None
         self.top_p = None
         self.llm = None
 
     def initialize_llm(self, s3, model_obj,
-                       map_prompt_template=MAP_PROMPT_TEMPLATE,
-                       combine_prompt_template=COMBINE_PROMPT_TEMPLATE,
+                       prompt_template=DEFAULT_PROMPT_TEMPLATE,
+                       refine_template=DEFAULT_REFINE_TEMPLATE,
                        temp=DEFAULT_LLM_TEMP,
                        top_p=DEFAULT_LLM_TOP_P,
                        repeat_penalty=DEFAULT_LLM_REPEAT_PENALTY):
@@ -70,21 +74,17 @@ class TopicSummarizer:
             else:
                 logger.info(f"Downloaded model from Minio to {llm_path}")
 
-        # initialize llm
-        self.llm = GPT4All(
-            model=llm_path,
-            callbacks=[StreamingStdOutCallbackHandler()],
-            verbose=False,
-            n_predict=256,
-            temp=temp,
-            top_p=top_p,
-            echo=False,
-            stop=[],
-            repeat_penalty=repeat_penalty,
-            use_mlock=False
+        config = {'max_new_tokens': DEFAULT_MAX_NEW_TOKENS,
+                  'temperature': DEFAULT_LLM_TEMP,
+                  'context_length': DEFAULT_CONTEXT_LENGTH}
+        self.llm = CTransformers(
+            model = llm_path,
+            model_type='mistral',
+            config=config,
+            threads=os.cpu_count(),
         )
-        self.map_prompt_template = map_prompt_template
-        self.combine_prompt_template = combine_prompt_template
+        self.prompt_template = prompt_template
+        self.refine_template = refine_template
 
         # TODO add configuration parameters for temp, top_p, and repeat_penalty
         # https://github.com/orgs/MIT-AI-Accelerator/projects/2/views/1?pane=issue&itemId=36312850
@@ -93,13 +93,13 @@ class TopicSummarizer:
         self.repeat_penalty = repeat_penalty
 
     # check existing llm
-    def check_parameters(self, model_id, map_prompt_template, combine_prompt_template):
-        return self.model_id == model_id and self.map_prompt_template == map_prompt_template and self.combine_prompt_template == combine_prompt_template
+    def check_parameters(self, model_id, prompt_template, refine_template):
+        return self.model_id == model_id and self.prompt_template == prompt_template and self.refine_template == refine_template
 
     # TODO add configuration parameters for temp, top_p, and repeat_penalty
     # https://github.com/orgs/MIT-AI-Accelerator/projects/2/views/1?pane=issue&itemId=36312850
-    # def check_parameters(self, map_prompt_template, combine_prompt_template, temp, top_p, repeat_penalty):
-    #     return self.map_prompt_template == map_prompt_template & self.combine_prompt_template == combine_prompt_template & self.temp == temp & self.top_p == top_p & self.repeat_penalty == repeat_penalty
+    # def check_parameters(self, prompt_template, refine_template, temp, top_p, repeat_penalty):
+    #     return self.prompt_template == prompt_template & self.refine_template == refine_template & self.temp == temp & self.top_p == top_p & self.repeat_penalty == repeat_penalty
 
     # Replaces acronyms in text with expanded meaning from dictionary
     def replace_acronyms(self, d, text):
@@ -129,34 +129,35 @@ class TopicSummarizer:
             logger.error("TopicSummarizer not initialized")
             return None
 
-        # replace acronyms and concatenate top n documents
-        list_of_texts = '\n'.join(self.fix_text(documents))
-        num_tokens = self.llm.get_num_tokens(list_of_texts)
-        if num_tokens > self.llm.max_tokens:
-            logger.error("Skipping summarization, exceeded max tokens: %d" % num_tokens)
+        if all(s == '' for s in documents):
+            logger.error("no document content to summarize")
             return None
 
-        text_splitter = CharacterTextSplitter()
-        # stuffs the lists of text into "Document" objects for LangChain
-        docs = text_splitter.create_documents([list_of_texts])
+        # replace acronyms and concatenate top n documents
+        list_of_texts = '\n'.join(self.fix_text(documents))
 
-        map_prompt = PromptTemplate(
-            template=self.map_prompt_template, input_variables=["text"])
+        text_splitter = CharacterTextSplitter(
+            separator="\n",
+            chunk_size=2000,
+            chunk_overlap=100)
 
-        combine_prompt = PromptTemplate(
-            template=self.combine_prompt_template, input_variables=["text"]
-        )
+        docs = text_splitter.create_documents([list_of_texts])  # stuffs the lists of text into "Document" objects for LangChain
+
+        prompt = PromptTemplate.from_template(self.prompt_template)
+
+        refine_prompt = PromptTemplate.from_template(self.refine_template)
 
         # Takes a list of documents, combines them into a single string, and passes this to an LLMChain
         chain = load_summarize_chain(self.llm,
-                                     chain_type="map_reduce",
-                                     verbose=False,
-                                     map_prompt=map_prompt,
-                                     combine_prompt=combine_prompt,
-                                     return_intermediate_steps=True,
-                                     input_key="input_documents",
-                                     output_key="output_text",
-                                     )
+                                        chain_type="refine",
+                                        verbose=False,
+                                        question_prompt=prompt,
+                                        refine_prompt=refine_prompt,
+                                        return_intermediate_steps=True,
+                                        input_key="input_documents",
+                                        output_key="output_text",
+                                    )
+
 
         return chain({"input_documents": docs})
 

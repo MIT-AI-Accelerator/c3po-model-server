@@ -4,9 +4,9 @@ from fastapi.responses import HTMLResponse
 from jinja2 import Environment, FileSystemLoader
 from minio import Minio
 from pydantic import BaseModel
-from app.aimodels.gpt4all.models.gpt4all_pretrained import (
-    Gpt4AllModelFilenameEnum,
-    Gpt4AllPretrainedModel,
+from app.aimodels.gpt4all.models.llm_pretrained import (
+    LlmFilenameEnum,
+    LlmPretrainedModel,
 )
 from app.aimodels.gpt4all.routers.completions import (
     validate_inputs_and_generate_service,
