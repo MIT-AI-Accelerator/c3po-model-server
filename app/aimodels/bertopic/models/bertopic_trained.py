@@ -21,6 +21,7 @@ class BertopicTrainedModel(Base):
     weak_learner_id = Column(UUID)
     summarization_model_id = Column(UUID)
     seed_topics = Column(MutableDict.as_mutable(JSON))
+    stop_words = Column(MutableDict.as_mutable(JSON))
     prompt_template = Column(String)
     refine_template = Column(String)
     originated_from = Column(Enum(OriginationEnum), default=get_originated_from)

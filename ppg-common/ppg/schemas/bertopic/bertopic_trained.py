@@ -12,6 +12,7 @@ class BertopicTrainedBase(BaseModel):
     weak_learner_id: Optional[UUID4] = None
     summarization_model_id: Optional[UUID4] = None
     seed_topics: Optional[dict] = None
+    stop_words: Optional[dict] = None
     prompt_template: Optional[str] = None
     refine_template: Optional[str] = None
 
