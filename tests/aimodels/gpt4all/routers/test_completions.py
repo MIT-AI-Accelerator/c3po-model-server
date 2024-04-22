@@ -1,8 +1,16 @@
+import pytest
+import hashlib
+from pytest_mock import MockerFixture
 from typing import Callable
+from sqlalchemy.orm import Session
 from unittest.mock import create_autospec
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
+from minio import Minio
 from app.aimodels.gpt4all.ai_services.completion_inference import CompletionInference, CompletionInferenceInputs, CompletionInferenceOutputs
 from app.aimodels.gpt4all import crud as crud_gpt4all
+from app.aimodels.gpt4all.routers.completions import validate_inputs_and_generate_service
+from app.core.config import settings
 
 def test_gpt_completion_post_valid_input(client: TestClient,
                                          mock_completion_inference_inputs: CompletionInferenceInputs,
@@ -96,3 +104,19 @@ def test_chat_completion_post_valid_input(client: TestClient,
     # check that the response is correct
     assert response.status_code == 200
     assert response.json()["choices"][0]["text"] == "This is a test response"
+
+def test_validate_inputs_and_generate_service(db: Session,
+                                              mock_s3: Minio,
+                                              mocker: MockerFixture):
+    with pytest.raises(HTTPException) as e_info:
+        test_request = CompletionInferenceInputs(prompt='test')
+        random_sha256 = hashlib.sha256(b'random string')
+
+        # replace the settings attribute with a sha256 value that doesn't exist in the db
+        mocker.patch.object(settings,
+                            'default_sha256_l13b_snoozy',
+                            random_sha256.hexdigest())
+
+        validate_inputs_and_generate_service(test_request, db, mock_s3)
+        assert e_info.value.status_code == 422
+        assert 'Invalid model type' in e_info.value['detail']
