@@ -7,7 +7,7 @@ from snorkel.labeling import LFAnalysis
 from snorkel.labeling.model import LabelModel
 from sklearn.svm import SVC
 from sklearn.neural_network import MLPClassifier
-from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import CountVectorizer, ENGLISH_STOP_WORDS
 from pydantic import BaseModel
 
 
@@ -26,6 +26,9 @@ class ValuesNotEmpty(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
+def get_vectorizer(stop_word_list):
+    all_stop_words = list(ENGLISH_STOP_WORDS.union(stop_word_list))
+    return CountVectorizer(stop_words=all_stop_words, ngram_range=(1, 3))
 
 class WeakLearner:
 
@@ -115,13 +118,13 @@ class WeakLearner:
         label_applier = PandasLFApplier(labeling_functions)
         return labeling_functions, label_applier
 
-    def train_weak_learners(self, filepath_train):
+    def train_weak_learners(self, filepath_train, stop_words_list = []):
 
         # train the classifiers
         data_train = pd.read_csv(filepath_train)
         data_train['message'] = data_train['message'].astype(str)
         data_train = data_train[data_train['createat'].notnull()]
-        self.vectorizer = CountVectorizer(stop_words="english", ngram_range=(1, 3))
+        self.vectorizer = get_vectorizer(stop_word_list=stop_words_list)
         x_train = self.vectorizer.fit_transform(data_train['message'])
         y_train = data_train['labels']
 

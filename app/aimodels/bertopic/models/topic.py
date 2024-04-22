@@ -1,5 +1,5 @@
 from typing import TYPE_CHECKING
-from sqlalchemy import Column, UUID, String, Enum, JSON, Integer
+from sqlalchemy import Column, UUID, String, Enum, JSON, Integer, Boolean
 from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -17,4 +17,5 @@ class TopicSummaryModel(Base):
     top_n_words = Column(String, default="")
     top_n_documents = Column(MutableDict.as_mutable(JSON))
     summary = Column(String)
+    is_trending = Column(Boolean(), default=False)
     trained_model = relationship("BertopicTrainedModel", back_populates="topic_summaries")

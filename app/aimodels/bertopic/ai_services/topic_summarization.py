@@ -1,18 +1,18 @@
 import os
+import datetime
+import numpy as np
+import pandas as pd
 from pathlib import Path
 from string import punctuation
 from langchain import PromptTemplate
 from langchain.llms import CTransformers
-# from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain.chains.summarize import load_summarize_chain
 from langchain.text_splitter import CharacterTextSplitter
-from langchain.llms.llamacpp import LlamaCpp
+from scipy.stats import shapiro
 from app.core.logging import logger
 from app.core.model_cache import MODEL_CACHE_BASEDIR
 from app.core.minio import download_file_from_minio
 from app.core.config import get_acronym_dictionary
-# from app.aimodels.gpt4all.models.llm_pretrained import LlmPretrainedModel, LlmFilenameEnum
-# from app.aimodels.gpt4all.crud import crud_llm_pretrained as crud
 
 # default templates for topic summarization
 DEFAULT_PROMPT_TEMPLATE = """Summarize this content:
@@ -36,6 +36,10 @@ DEFAULT_LLM_TOP_P = 0.95
 DEFAULT_LLM_REPEAT_PENALTY = 1.3
 DEFAULT_MAX_NEW_TOKENS = 2000
 DEFAULT_CONTEXT_LENGTH = 6000
+
+# default parameters for trend detection
+DEFAULT_SHAPIRO_P_VALUE = 0.001
+DEFAULT_SHAPIRO_THRESHOLD = 5
 
 class TopicSummarizer:
 
@@ -160,6 +164,46 @@ class TopicSummarizer:
 
 
         return chain({"input_documents": docs})
+
+
+def detect_trending_topics(document_info, topic_info):
+
+    trending_topic_ids = []
+
+    for key, row in topic_info.iterrows():
+        topic_id = row['Topic']
+
+        # count number of posts per day
+        topic_docs = document_info[document_info['Topic'] == topic_id]
+        topic_docs['Day'] = topic_docs['Timestamp'].dt.date
+        day_counts = topic_docs.groupby(['Day']).agg({'Day': ['count']})
+        day_counts.columns = ['num_posts']
+
+        # fill in days with 0 posts
+        dates = day_counts.index
+        min_date = dates.min()
+        max_date = dates.max()
+        delta = datetime.timedelta(days=1)
+        curr_date = min_date
+        while curr_date < max_date:
+            d = curr_date
+            if d not in dates:
+                day_counts = pd.concat([day_counts, pd.DataFrame([{'num_posts': 0}], index=[d])])
+            curr_date += delta
+
+        # sort by date
+        day_counts = day_counts.sort_index()
+        num_posts = day_counts['num_posts']
+
+        # test for trending if the topic has been seen at least twice and within 7 or more days
+        if(len(num_posts) > 3):
+            stat, p_value = shapiro(num_posts)
+
+            # only include topics that have one day with more than N=5 posts
+            if(p_value < DEFAULT_SHAPIRO_P_VALUE and np.max(num_posts) >= DEFAULT_SHAPIRO_THRESHOLD):
+                trending_topic_ids.append(topic_id)
+
+    return trending_topic_ids
 
 
 topic_summarizer = TopicSummarizer()
