@@ -1,15 +1,23 @@
+from pytest import mark
 from fastapi.testclient import TestClient
 
-# Given: A line of chat--"Hello there!" and the above mocked model that classifies it as "recycle"
-# When: This line is sent to the endpoint /predict
-# Then: we expect to receive a 200 and the appropriately formatted response in the body
-def test_get_single_line_chat_stress(client: TestClient):
+@mark.parametrize('label, answer', [
+    ('review', 'medium'),
+    ('action', 'high'),
+    ('recycle', 'low')
+])
+def test_get_single_line_chat_stress(client: TestClient,
+                                     label: str,
+                                     answer: str):
+    """Tests the mapping of labels to answers performed in the router.
+    Sends the label in place of the chat message text that would get sent
+    to the model for classification."""
 
     response = client.post(
         "/sentiments/insights/getchatstress",
         headers={},
-        json={"text": "Hello there!"},
+        json={'text': label},
     )
 
     assert response.status_code == 200
-    assert response.json() == {"answer": "low"}
+    assert response.json() == {"answer": answer}
