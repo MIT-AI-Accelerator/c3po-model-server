@@ -4,20 +4,20 @@ from typing import Union
 from datetime import datetime
 import numpy as np
 import pandas as pd
-from sklearn.feature_extraction.text import CountVectorizer
 from bertopic import BERTopic
 import hdbscan
 from pydantic import BaseModel, StrictFloat, StrictInt, StrictBool, validator
 from minio import Minio
 from plotly.graph_objs import Figure
 from ppg.schemas.bertopic.topic import TopicSummaryCreate
+from app.core.logging import logger
 from app.core.minio import download_pickled_object_from_minio
 from ..models.document import DocumentModel
 from ..models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedModel
 from ..models.topic import TopicSummaryModel
 from ..crud import crud_topic
-from .weak_learning import WeakLearner
-from .topic_summarization import TopicSummarizer, topic_summarizer, DEFAULT_N_REPR_DOCS
+from .weak_learning import WeakLearner, get_vectorizer
+from .topic_summarization import topic_summarizer, detect_trending_topics, DEFAULT_N_REPR_DOCS
 
 BASE_CKPT_DIR = os.path.join(os.path.abspath(
     os.path.dirname(__file__)), "./data")
@@ -168,7 +168,7 @@ class TopicDocumentData(BaseModel):
 
 class BasicInference:
 
-    def __init__(self, sentence_transformer_obj, s3, prompt_template, refine_template, weak_learner_obj=None, topic_summarizer_obj=None):
+    def __init__(self, sentence_transformer_obj, s3, prompt_template, refine_template, weak_learner_obj=None, topic_summarizer_obj=None, stop_word_list=[]):
 
         # validate input
         InitInputs(
@@ -182,8 +182,7 @@ class BasicInference:
 
         self.sentence_transformer_obj = sentence_transformer_obj
 
-        self.vectorizer = CountVectorizer(
-            stop_words="english", ngram_range=(1, 3))
+        self.vectorizer = get_vectorizer(stop_word_list=stop_word_list)
 
         self.weak_learner_obj = weak_learner_obj
         self.label_model = None
@@ -223,7 +222,7 @@ class BasicInference:
         document_info['Link'] = topic_document_data.document_links
         return document_info
 
-    def train_bertopic_on_documents(self, db, documents, precalculated_embeddings, num_topics, document_df, seed_topic_list=None, num_related_docs=DEFAULT_N_REPR_DOCS) -> BasicInferenceOutputs:
+    def train_bertopic_on_documents(self, db, documents, precalculated_embeddings, num_topics, document_df, seed_topic_list=None, num_related_docs=DEFAULT_N_REPR_DOCS, trends_only=False) -> BasicInferenceOutputs:
         # validate input
         TrainBertopicOnDocumentsInput(
             documents=documents, precalculated_embeddings=precalculated_embeddings, num_topics=num_topics)
@@ -250,43 +249,17 @@ class BasicInference:
             topic_model,
             filtered_topic_document_data,
             num_related_docs)
+
         topics_over_time = topic_model.topics_over_time(
             filtered_topic_document_data.document_text_list,
             filtered_topic_document_data.document_timestamps,
             nr_bins=DEFAULT_BERTOPIC_TIME_BINS)
 
-        topic_info = topic_model.get_topic_info()
-        new_topic_obj_list = []
-        topic_timeline_visualization_list = []
-        for key, row in tqdm(topic_info.iterrows()):
-            if row['Topic'] < 0:
-                continue
+        topic_info, new_topic_obj_list, topic_timeline_visualization_list = self.create_topic_visualizations(
+            document_info, topic_model, topics_over_time, num_related_docs, num_topics, trends_only)
 
-            topic_docs = document_info[document_info.Representative_document][document_info['Topic'] ==
-                row['Topic']].sort_values('Probability', ascending=False).head(num_related_docs).reset_index()
-
-            summary_text = 'topic summarization disabled'
-            if self.topic_summarizer:
-
-                # saves only the summary (but output includes intermediate steps of how we get to the summary
-                # if we want to save that in the future for XAI or other reason e.g., output_summary['intermediate_steps'])
-                output_summary = self.topic_summarizer.get_summary(
-                    topic_docs['Document'].to_list())
-                if output_summary:
-                    summary_text = output_summary['output_text']
-
-            # topic-level timeline visualization
-            topic_timeline_visualization_list = topic_timeline_visualization_list + [topic_model.visualize_topics_over_time(
-                topics_over_time, topics=[row['Topic']], title='Topic Over Time: ' + row['Name'],
-                top_n_topics=num_topics)]
-
-            new_topic_obj_list = new_topic_obj_list + [TopicSummaryCreate(
-                topic_id=row['Topic'],
-                name=row['Name'],
-                top_n_words=topic_docs['Top_n_words'].unique()[0],
-                top_n_documents=topic_docs[[
-                    'Document', 'Timestamp', 'User', 'Nickname', 'Link', 'Probability']].to_dict(),
-                summary=summary_text)]
+        if not new_topic_obj_list:
+            logger.warn('no topics found')
 
         topic_objs = crud_topic.topic_summary.create_all_using_id(
             db, obj_in_list=new_topic_obj_list)
@@ -393,3 +366,52 @@ class BasicInference:
                                       topic_document_data.embeddings)
 
         return (topic_model, topic_document_data)
+
+    def create_topic_visualizations(self, document_info, topic_model, topics_over_time, num_related_docs, num_topics, trends_only):
+
+        topic_info = topic_model.get_topic_info()
+        trending_topic_ids = detect_trending_topics(document_info, topic_info)
+
+        new_topic_obj_list = []
+        topic_timeline_visualization_list = []
+        for key, row in tqdm(topic_info.iterrows()):
+            if row['Topic'] < 0:
+                continue
+
+            is_trending = False
+            if any(tid == row['Topic'] for tid in trending_topic_ids):
+                is_trending = True
+
+            if not trends_only or is_trending:
+
+                topic_docs = document_info[document_info.Representative_document][document_info['Topic'] ==
+                    row['Topic']].sort_values('Probability', ascending=False).head(num_related_docs).reset_index()
+
+                summary_text = 'topic summarization disabled'
+                if self.topic_summarizer:
+
+                    # saves only the summary (but output includes intermediate steps of how we get to the summary
+                    # if we want to save that in the future for XAI or other reason e.g., output_summary['intermediate_steps'])
+                    output_summary = self.topic_summarizer.get_summary(
+                        topic_docs['Document'].to_list())
+                    if output_summary:
+                        summary_text = output_summary['output_text']
+
+                # topic-level timeline visualization
+                topic_timeline_visualization_list = topic_timeline_visualization_list + [topic_model.visualize_topics_over_time(
+                    topics_over_time, topics=[row['Topic']], title='Topic Over Time: ' + row['Name'],
+                    top_n_topics=num_topics)]
+
+                new_topic_obj_list = new_topic_obj_list + [TopicSummaryCreate(
+                    topic_id=row['Topic'],
+                    name=row['Name'],
+                    top_n_words=topic_docs['Top_n_words'].unique()[0],
+                    top_n_documents=topic_docs[[
+                        'Document', 'Timestamp', 'User', 'Nickname', 'Link', 'Probability']].to_dict(),
+                    summary=summary_text,
+                    is_trending=is_trending)]
+
+            else:
+                logger.info('skipping topic %d (not trending)' % row['Topic'])
+
+        return topic_info, new_topic_obj_list, topic_timeline_visualization_list

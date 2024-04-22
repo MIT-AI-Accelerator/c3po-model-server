@@ -169,6 +169,8 @@ def init_mistrallite_pretrained_model(s3: Minio, db: Session) -> None:
         MODEL_CACHE_BASEDIR, model_name)
 
     if os.path.isfile(local_path):
+        logger.info(f"Local {model_name} found")
+
         with open(local_path,"rb") as f:
             bin_data = f.read()
             hash_object = hashlib.sha256(bin_data)
@@ -229,9 +231,11 @@ def init_llm_pretrained_model(s3: Minio, db: Session) -> None:
         MODEL_CACHE_BASEDIR, model_name)
 
     if os.path.isfile(local_path):
+        logger.info(f"Local {model_name} found")
+
         with open(local_path,"rb") as f:
-            bin_data = f.read()
-            hash_object = hashlib.sha256(bin_data)
+                bin_data = f.read()
+                hash_object = hashlib.sha256(bin_data)
 
     else:
         logger.info(f"Downloading {model_name}")

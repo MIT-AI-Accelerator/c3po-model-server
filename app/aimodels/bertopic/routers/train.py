@@ -1,7 +1,6 @@
 from typing import Union
 from pydantic import BaseModel, UUID4
 from fastapi import Depends, APIRouter, HTTPException
-from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 import pandas as pd
 from minio import Minio
@@ -22,6 +21,7 @@ from ..models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedMo
 from app.aimodels.gpt4all.models import LlmPretrainedModel
 from app.aimodels.gpt4all.crud import crud_llm_pretrained
 import app.mattermost.crud.crud_mattermost as crud_mattermost
+
 router = APIRouter(
     prefix=""
 )
@@ -34,6 +34,8 @@ class TrainModelRequest(BaseModel):
     document_ids: list[UUID4] = []
     num_topics: int = 2
     seed_topics: list[list] = []
+    stop_words: list[str] = []
+    trends_only: bool = False
     prompt_template: str = DEFAULT_PROMPT_TEMPLATE
     refine_template: str = DEFAULT_REFINE_TEMPLATE
 
@@ -103,12 +105,18 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
     document_df = crud_mattermost.mattermost_documents.get_document_dataframe(db, document_uuids=request.document_ids)
 
     # train the model
-    basic_inference = BasicInference(
-        bertopic_sentence_transformer_obj, s3, request.prompt_template, request.refine_template, bertopic_weak_learner_obj, llm_pretrained_obj)
+    basic_inference = BasicInference(bertopic_sentence_transformer_obj,
+                                     s3,
+                                     request.prompt_template,
+                                     request.refine_template,
+                                     bertopic_weak_learner_obj,
+                                     llm_pretrained_obj,
+                                     stop_word_list=request.stop_words)
     inference_output = basic_inference.train_bertopic_on_documents(db,
                                                                    documents, precalculated_embeddings=precalculated_embeddings, num_topics=request.num_topics,
                                                                    document_df=document_df,
-                                                                   seed_topic_list=request.seed_topics)
+                                                                   seed_topic_list=request.seed_topics,
+                                                                   trends_only=request.trends_only)
 
     # save calculated embeddings computations
     new_embedding_computation_obj_list = [DocumentEmbeddingComputationCreate(
@@ -132,6 +140,8 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
         summarization_model_id=request.summarization_model_id,
         seed_topics=pd.DataFrame({'seed_topics': request.seed_topics})[
             'seed_topics'].to_dict(),
+        stop_words=pd.DataFrame({'stop_words': request.stop_words})[
+            'stop_words'].to_dict(),
         prompt_template=request.prompt_template,
         refine_template=request.refine_template,
         uploaded=False
