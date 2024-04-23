@@ -233,8 +233,11 @@ def test_upload_bertopic_embedding_pretrained_object_post_invalid_id(client: Tes
         f.write(b'test data')
 
     with open(test_file, 'rb') as f:
-        response = client.post(f'/aimodels/bertopic/bertopic-embedding-pretrained/%s/upload/' % str(uuid.uuid4()),
+        response = client.post('/aimodels/bertopic/bertopic-embedding-pretrained/%s/upload/' % str(uuid.uuid4()),
                                files={'new_file': f})
+
+    # the file persists if this test is run independently
+    os.remove(test_file)
 
     assert response.status_code == 422
     assert 'BERTopic Embedding Pretrained Model not found' in response.json()['detail']
