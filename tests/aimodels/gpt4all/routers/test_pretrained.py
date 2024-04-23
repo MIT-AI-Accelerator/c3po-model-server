@@ -3,7 +3,6 @@ import hashlib
 import os
 from sqlalchemy.orm import Session
 from unittest.mock import MagicMock
-from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
 from fastapi.encoders import jsonable_encoder
 from ppg.core.config import OriginationEnum
