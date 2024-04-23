@@ -6,7 +6,7 @@ from app.sentiments.insights.routers.get_chat_stress import get_lstm_stress_clas
 def setup():
     def mock_get_lstm_stress_classifier_model():
         def classify_single_label(chat):
-            return "recycle"
+            return chat
 
         return SimpleNamespace(classify_single_label=classify_single_label)
 
