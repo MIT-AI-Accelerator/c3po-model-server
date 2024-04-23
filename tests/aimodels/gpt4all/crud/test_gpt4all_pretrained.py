@@ -33,3 +33,8 @@ def test_get_by_sha256_empty_or_none_sha256(db: Session):
 
     llm_pretrained_object = llm_pretrained.get_by_sha256(db, sha256=None)
     assert llm_pretrained_object is None
+
+def test_get_latest_uploaded_by_model_type_not_LlmFilenameEnum(db: Session):
+    llm_pretrained_object = llm_pretrained.get_latest_uploaded_by_model_type(
+        db, model_type='mistrallite.Q4_K_M.gguf')
+    assert llm_pretrained_object is None

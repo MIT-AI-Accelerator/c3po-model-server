@@ -3,7 +3,6 @@ import hashlib
 import os
 from sqlalchemy.orm import Session
 from unittest.mock import MagicMock
-from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
 from fastapi.encoders import jsonable_encoder
 from ppg.core.config import OriginationEnum
@@ -202,6 +201,23 @@ def test_upload_llm_pretrained_object_post_invalid_id(client: TestClient, mocker
     assert response.status_code == 422
     assert response.json() == {'detail': [{'loc': [
         'path', 'id'], 'msg': 'value is not a valid uuid', 'type': 'type_error.uuid'}]}
+
+
+def test_upload_llm_pretrained_object_post_id_does_not_exist(client: TestClient):
+    test_file = 'test_file_id_does_not_exist'
+    with open(test_file, 'wb') as f:
+        f.write(b'test data')
+
+    with open(test_file, 'rb') as f:
+        response = client.post('/aimodels/llm/pretrained/%s/upload/' % str(uuid.uuid4()),
+                               files={'new_file': f})
+
+    # the file persists if this test is run independently
+    os.remove(test_file)
+
+    assert response.status_code == 422
+    assert 'gpt4all Pretrained Model not found' in response.json()['detail']
+
 
 def test_get_llm_pretrained_object_invalid_name(client: TestClient):
     body = {'model_type': 'not_a_name.bin'}
