@@ -11,7 +11,8 @@ from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
 from ppg.core.config import OriginationEnum
 from ppg.schemas.bertopic.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedCreate
-from app.aimodels.bertopic.crud.crud_bertopic_embedding_pretrained import bertopic_embedding_pretrained
+from app.aimodels.bertopic.models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedModel
+from app.aimodels.bertopic.crud.crud_bertopic_embedding_pretrained import CRUDBertopicEmbeddingPretrained, bertopic_embedding_pretrained
 from app.aimodels.bertopic.ai_services.weak_learning import WeakLearner
 from fastapi.encoders import jsonable_encoder
 
@@ -202,9 +203,9 @@ def test_upload_bertopic_embedding_pretrained_object_post_empty_file(client: Tes
 
 
 
-def test_upload_bertopic_embedding_pretrained_object_post_invalid_id(client: TestClient, mocker: MagicMock):
+def test_upload_bertopic_embedding_pretrained_object_post_invalid_request(client: TestClient, mocker: MagicMock):
 
-    test_file = "test_file_invalid_id"
+    test_file = "test_file_invalid_request"
     with open(test_file, "wb") as f:
         f.write(b"test data")
 
@@ -224,6 +225,19 @@ def test_upload_bertopic_embedding_pretrained_object_post_invalid_id(client: Tes
     assert response.json() == {'detail': [{'loc': [
         'path', 'id'], 'msg': 'value is not a valid uuid', 'type': 'type_error.uuid'}]}
 
+
+def test_upload_bertopic_embedding_pretrained_object_post_invalid_id(client: TestClient, mocker: MagicMock):
+
+    test_file = 'test_file_invalid_id'
+    with open(test_file, 'wb') as f:
+        f.write(b'test data')
+
+    with open(test_file, 'rb') as f:
+        response = client.post(f'/aimodels/bertopic/bertopic-embedding-pretrained/%s/upload/' % str(uuid.uuid4()),
+                               files={'new_file': f})
+
+    assert response.status_code == 422
+    assert 'BERTopic Embedding Pretrained Model not found' in response.json()['detail']
 
 
 def test_upload_bertopic_embedding_pretrained_weak_learner_object_post_valid_request(client: TestClient):
