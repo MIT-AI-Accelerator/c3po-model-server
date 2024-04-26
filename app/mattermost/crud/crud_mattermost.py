@@ -161,7 +161,7 @@ class CRUDMattermostDocument(CRUDBase[MattermostDocumentModel, MattermostDocumen
                     create_at = document.original_created_time
 
                 else:
-                    logger.warning('Document %s not found' % duuid)
+                    logger.warninging('Document %s not found' % duuid)
 
             ddf = pd.concat([ddf, pd.DataFrame([{'document_uuid': duuid,
                                                  'mm_doc_uuid': mm_uuid,
@@ -271,7 +271,7 @@ def populate_mm_user_team_info(db: Session, *, user_name: str, get_teams = False
         dcdf = dcdf[~dcdf['type'].str.contains("G")]
         dcdf = dcdf[~dcdf['type'].str.contains("D")]
         if not dcdf.empty:
-            logger.warn(f"Duplicate Mattermost channels found: {dcdf.id.unique()}")
+            logger.warning(f"Duplicate Mattermost channels found: {dcdf.id.unique()}")
         cdf.drop_duplicates(subset=['id'], keep='first', inplace=True)
 
         # add new channels to db
@@ -309,7 +309,7 @@ def populate_mm_channel_info(db: Session, *, channel_info: dict) -> MattermostCh
             purpose=channel_info['purpose'])
         channel_obj = mattermost_channels.create(db, obj_in=channel)
     else:
-        logger.warn(f"Duplicate Mattermost channel found: {channel_info['id']}")
+        logger.warning(f"Duplicate Mattermost channel found: {channel_info['id']}")
     return channel_obj
 
 
