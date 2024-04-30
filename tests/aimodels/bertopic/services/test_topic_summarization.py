@@ -10,7 +10,7 @@ client = TestClient(versioned_app)
 def test_initalize_llm_invalid():
     topic_summarizer = TopicSummarizer()
     assert not topic_summarizer.check_parameters(uuid.uuid4(), DEFAULT_PROMPT_TEMPLATE, DEFAULT_REFINE_TEMPLATE)
-    assert topic_summarizer.get_summary(['document']) is None
+    assert topic_summarizer.get_summary(['document']) == 'topic summarization disabled'
 
 # test acronym expansion
 def test_fix_text():

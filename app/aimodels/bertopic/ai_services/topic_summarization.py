@@ -32,12 +32,11 @@ DEFAULT_REFINE_TEMPLATE = (
 # default parameters for topic summarization
 DEFAULT_N_REPR_DOCS = 5
 DEFAULT_LLM_TEMP = 0.69
-DEFAULT_LLM_TOP_P = 0.95
-DEFAULT_LLM_REPEAT_PENALTY = 1.3
 DEFAULT_MAX_NEW_TOKENS = 2000
 DEFAULT_CONTEXT_LENGTH = 6000
 
 # default parameters for trend detection
+DEFAULT_TREND_DEPTH_DAYS = 7
 DEFAULT_SHAPIRO_P_VALUE = 0.001
 DEFAULT_SHAPIRO_THRESHOLD = 5
 
@@ -56,9 +55,7 @@ class TopicSummarizer:
     def initialize_llm(self, s3, model_obj,
                        prompt_template=DEFAULT_PROMPT_TEMPLATE,
                        refine_template=DEFAULT_REFINE_TEMPLATE,
-                       temp=DEFAULT_LLM_TEMP,
-                       top_p=DEFAULT_LLM_TOP_P,
-                       repeat_penalty=DEFAULT_LLM_REPEAT_PENALTY):
+                       temp=DEFAULT_LLM_TEMP):
 
         self.model_type = model_obj.model_type
         self.model_id = model_obj.id
@@ -90,20 +87,18 @@ class TopicSummarizer:
         self.prompt_template = prompt_template
         self.refine_template = refine_template
 
-        # TODO add configuration parameters for temp, top_p, and repeat_penalty
+        # TODO add configuration parameter for temp
         # https://github.com/orgs/MIT-AI-Accelerator/projects/2/views/1?pane=issue&itemId=36312850
         self.temp = temp
-        self.top_p = top_p
-        self.repeat_penalty = repeat_penalty
 
     # check existing llm
     def check_parameters(self, model_id, prompt_template, refine_template):
         return self.model_id == model_id and self.prompt_template == prompt_template and self.refine_template == refine_template
 
-    # TODO add configuration parameters for temp, top_p, and repeat_penalty
+    # TODO add configuration parameter for temp
     # https://github.com/orgs/MIT-AI-Accelerator/projects/2/views/1?pane=issue&itemId=36312850
-    # def check_parameters(self, prompt_template, refine_template, temp, top_p, repeat_penalty):
-    #     return self.prompt_template == prompt_template & self.refine_template == refine_template & self.temp == temp & self.top_p == top_p & self.repeat_penalty == repeat_penalty
+    # def check_parameters(self, prompt_template, refine_template, temp):
+    #     return self.prompt_template == prompt_template & self.refine_template == refine_template & self.temp == temp
 
     # Replaces acronyms in text with expanded meaning from dictionary
     def replace_acronyms(self, d, text):
@@ -129,52 +124,70 @@ class TopicSummarizer:
 
     # Function to summarize list of texts using LangChain map-reduce chain with custom prompts.
     def get_summary(self, documents):
+
+        summary_text = 'topic summarization disabled'
+
         if self.llm is None:
             logger.error("TopicSummarizer not initialized")
-            return None
 
-        if all(s == '' for s in documents):
+        elif all(s == '' for s in documents):
             logger.error("no document content to summarize")
-            return None
 
-        # replace acronyms and concatenate top n documents
-        list_of_texts = '\n'.join(self.fix_text(documents))
+        else:
+            # replace acronyms and concatenate top n documents
+            list_of_texts = '\n'.join(self.fix_text(documents))
 
-        text_splitter = CharacterTextSplitter(
-            separator="\n",
-            chunk_size=2000,
-            chunk_overlap=100)
+            text_splitter = CharacterTextSplitter(
+                separator="\n",
+                chunk_size=2000,
+                chunk_overlap=100)
 
-        docs = text_splitter.create_documents([list_of_texts])  # stuffs the lists of text into "Document" objects for LangChain
+            # stuffs the lists of text into "Document" objects for LangChain
+            docs = text_splitter.create_documents([list_of_texts])
 
-        prompt = PromptTemplate.from_template(self.prompt_template)
+            prompt = PromptTemplate.from_template(self.prompt_template)
 
-        refine_prompt = PromptTemplate.from_template(self.refine_template)
+            refine_prompt = PromptTemplate.from_template(self.refine_template)
 
-        # Takes a list of documents, combines them into a single string, and passes this to an LLMChain
-        chain = load_summarize_chain(self.llm,
-                                        chain_type="refine",
-                                        verbose=False,
-                                        question_prompt=prompt,
-                                        refine_prompt=refine_prompt,
-                                        return_intermediate_steps=True,
-                                        input_key="input_documents",
-                                        output_key="output_text",
-                                    )
+            # Takes a list of documents, combines them into a single string, and passes this to an LLMChain
+            chain = load_summarize_chain(self.llm,
+                                            chain_type="refine",
+                                            verbose=False,
+                                            question_prompt=prompt,
+                                            refine_prompt=refine_prompt,
+                                            return_intermediate_steps=True,
+                                            input_key="input_documents",
+                                            output_key="output_text",
+                                        )
+
+            # saves only the summary (but output includes intermediate steps of how we get to the summary
+            # if we want to save that in the future for XAI or other reason e.g., output_summary['intermediate_steps'])
+            output_summary = chain({"input_documents": docs})
+            summary_text = output_summary['output_text']
+            if summary_text == '':
+                logger.warning('null output_text in topic summarization')
+                summary_text = 'topic summary not available'
+
+        return summary_text
 
 
-        return chain({"input_documents": docs})
-
-
-def detect_trending_topics(document_info, topic_info):
+def detect_trending_topics(document_df, trend_depth = DEFAULT_TREND_DEPTH_DAYS):
 
     trending_topic_ids = []
 
-    for key, row in topic_info.iterrows():
-        topic_id = row['Topic']
+    if not trend_depth:
+        logger.info('trending topic detection disabled, depth=0')
+        return trending_topic_ids
+
+    # filter document_info to last trend_depth days
+    trend_docs = document_df[document_df['Timestamp'] >=
+                             document_df['Timestamp'].max() - pd.Timedelta(days = trend_depth)]
+
+    topics = set(document_df['Topic'])
+    for topic_id in topics:
 
         # count number of posts per day
-        topic_docs = document_info[document_info['Topic'] == topic_id]
+        topic_docs = trend_docs[trend_docs['Topic'] == topic_id]
         topic_docs['Day'] = topic_docs['Timestamp'].dt.date
         day_counts = topic_docs.groupby(['Day']).agg({'Day': ['count']})
         day_counts.columns = ['num_posts']

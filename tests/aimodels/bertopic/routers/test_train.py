@@ -1,4 +1,5 @@
 import uuid
+import datetime as dt
 from unittest.mock import create_autospec
 from sqlalchemy.orm import Session
 from fastapi.testclient import TestClient
@@ -52,7 +53,7 @@ def test_train_valid_input_request(
     """
 
     # create documents for training
-    new_docs = [DocumentModel(text = "new doc %d" % i) for i in range(20)]
+    new_docs = [DocumentModel(text = "new doc %d" % i, original_created_time = dt.datetime.now()) for i in range(30)]
     documents_db = document.create_all_using_id(db, obj_in_list = new_docs)
 
     # create a random sentence transformer obj that we know exists in db
