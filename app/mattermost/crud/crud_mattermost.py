@@ -161,7 +161,7 @@ class CRUDMattermostDocument(CRUDBase[MattermostDocumentModel, MattermostDocumen
                     create_at = document.original_created_time
 
                 else:
-                    logger.warninging('Document %s not found' % duuid)
+                    logger.warning('Document %s not found' % duuid)
 
             ddf = pd.concat([ddf, pd.DataFrame([{'document_uuid': duuid,
                                                  'mm_doc_uuid': mm_uuid,
