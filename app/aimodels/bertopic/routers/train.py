@@ -9,12 +9,12 @@ from ppg.schemas.bertopic.bertopic_trained import BertopicTrained, BertopicTrain
 from ppg.schemas.bertopic.bertopic_visualization import BertopicVisualizationCreate
 from ppg.schemas.bertopic.topic import TopicSummaryUpdate
 from app.core.minio import pickle_and_upload_object_to_minio
-from ..ai_services.basic_inference import BasicInference
+from ..ai_services.basic_inference import BasicInference, MIN_BERTOPIC_DOCUMENTS
 from app.dependencies import get_db, get_minio
 from .. import crud
 from ..models.bertopic_trained import BertopicTrainedModel
 from ..models.bertopic_visualization import BertopicVisualizationTypeEnum
-from ..ai_services.topic_summarization import DEFAULT_PROMPT_TEMPLATE, DEFAULT_REFINE_TEMPLATE
+from ..ai_services.topic_summarization import DEFAULT_TREND_DEPTH_DAYS, DEFAULT_PROMPT_TEMPLATE, DEFAULT_REFINE_TEMPLATE
 from app.core.errors import ValidationError, HTTPValidationError
 from app.core.config import settings
 from ..models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedModel
@@ -36,6 +36,7 @@ class TrainModelRequest(BaseModel):
     seed_topics: list[list] = []
     stop_words: list[str] = []
     trends_only: bool = False
+    trend_depth: int = DEFAULT_TREND_DEPTH_DAYS
     prompt_template: str = DEFAULT_PROMPT_TEMPLATE
     refine_template: str = DEFAULT_REFINE_TEMPLATE
 
@@ -60,7 +61,7 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
     validate_obj(bertopic_sentence_transformer_obj)
 
     # verify enough documents to actually handle clustering
-    if len(request.document_ids) < 7:
+    if len(request.document_ids) < MIN_BERTOPIC_DOCUMENTS:
         raise HTTPException(
             status_code=400, detail="must have at least 7 documents to find topics")
 
@@ -84,10 +85,12 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
     documents = []
     for document_id in request.document_ids:
         document_obj = crud.document.get(db, document_id)
-        if not document_obj:
-            return HTTPValidationError(detail=[ValidationError(loc=['path', 'document_id'], msg=f'Invalid document id {document_id}', type='value_error')])
-
+        if not document_obj or document_obj.original_created_time is None:
+            raise HTTPException(status_code=422, detail=f'Invalid document id {document_id}')
         documents.append(document_obj)
+
+    # sort by timestamp necessary for train/test data split
+    documents.sort(key=lambda x: x.original_created_time)
 
     # extract any formerly computed embeddings, needs to be list[Union[list[float], None]]
     # use None if no embedding was computed previously
@@ -116,7 +119,8 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
                                                                    documents, precalculated_embeddings=precalculated_embeddings, num_topics=request.num_topics,
                                                                    document_df=document_df,
                                                                    seed_topic_list=request.seed_topics,
-                                                                   trends_only=request.trends_only)
+                                                                   trends_only=request.trends_only,
+                                                                   trend_depth=request.trend_depth)
 
     # save calculated embeddings computations
     new_embedding_computation_obj_list = [DocumentEmbeddingComputationCreate(

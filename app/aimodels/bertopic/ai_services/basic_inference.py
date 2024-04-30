@@ -17,11 +17,13 @@ from ..models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedMo
 from ..models.topic import TopicSummaryModel
 from ..crud import crud_topic
 from .weak_learning import WeakLearner, get_vectorizer
-from .topic_summarization import topic_summarizer, detect_trending_topics, DEFAULT_N_REPR_DOCS
+from .topic_summarization import topic_summarizer, detect_trending_topics, DEFAULT_N_REPR_DOCS, DEFAULT_TREND_DEPTH_DAYS
 
 BASE_CKPT_DIR = os.path.join(os.path.abspath(
     os.path.dirname(__file__)), "./data")
 
+MIN_BERTOPIC_DOCUMENTS = 7
+DEFAULT_TRAIN_PERCENT = 0.7
 DEFAULT_HDBSCAN_MIN_CLUSTER_SIZE = 10
 DEFAULT_HDBSCAN_MIN_SAMPLES = 10
 DEFAULT_BERTOPIC_VISUALIZATION_WORDS = 5
@@ -222,7 +224,7 @@ class BasicInference:
         document_info['Link'] = topic_document_data.document_links
         return document_info
 
-    def train_bertopic_on_documents(self, db, documents, precalculated_embeddings, num_topics, document_df, seed_topic_list=None, num_related_docs=DEFAULT_N_REPR_DOCS, trends_only=False) -> BasicInferenceOutputs:
+    def train_bertopic_on_documents(self, db, documents, precalculated_embeddings, num_topics, document_df, seed_topic_list=None, num_related_docs=DEFAULT_N_REPR_DOCS, trends_only=False, trend_depth=DEFAULT_TREND_DEPTH_DAYS) -> BasicInferenceOutputs:
         # validate input
         TrainBertopicOnDocumentsInput(
             documents=documents, precalculated_embeddings=precalculated_embeddings, num_topics=num_topics)
@@ -241,33 +243,41 @@ class BasicInference:
                                                 document_links = list(document_df['mm_link'].values),
                                                 embeddings = embeddings)
 
-        (topic_model, filtered_topic_document_data) = self.build_topic_model(
+        topic_model, topic_document_data_train, topic_document_data_test = self.build_topic_model(
             topic_document_data, num_topics, seed_topic_list)
 
-        # per topic documents and summary
-        document_info = self.get_document_info(
+        # per topic documents and summary. note: this only works for the train documents
+        document_info_train = self.get_document_info(
             topic_model,
-            filtered_topic_document_data,
+            topic_document_data_train,
             num_related_docs)
 
-        topics_over_time = topic_model.topics_over_time(
-            filtered_topic_document_data.document_text_list,
-            filtered_topic_document_data.document_timestamps,
-            nr_bins=DEFAULT_BERTOPIC_TIME_BINS)
+        # update topics for test documents
+        topics, probs = topic_model.transform(documents=topic_document_data_test.document_text_list,
+                                              embeddings=topic_document_data_test.embeddings)
 
-        topic_info, new_topic_obj_list, topic_timeline_visualization_list = self.create_topic_visualizations(
-            document_info, topic_model, topics_over_time, num_related_docs, num_topics, trends_only)
+        # TODO - determine whether to update topics for data_test, impacts topics_timeline and topic_words
+        topic_model.update_topics(docs=topic_document_data_test.document_text_list, topics=topics)
+
+        # train documents needed for representative documents / summarization
+        # test documents needed for trend detection
+        document_df_test = pd.DataFrame({'Document': topic_document_data_test.document_text_list,
+                                         'Timestamp': topic_document_data_test.document_timestamps,
+                                         'Topic': topics})
+
+        topic_info, new_topic_obj_list, topics_over_time_test, topic_timeline_visualization_list = self.create_topic_visualizations(
+            document_info_train, topic_model, document_df_test, num_related_docs, num_topics, trends_only, trend_depth)
 
         if not new_topic_obj_list:
-            logger.warn('no topics found')
+            logger.warning('no topics found')
 
         topic_objs = crud_topic.topic_summary.create_all_using_id(
             db, obj_in_list=new_topic_obj_list)
 
         # model-level topic cluster visualization
         model_cluster_visualization = topic_model.visualize_documents(
-            filtered_topic_document_data.document_text_list,
-            embeddings=filtered_topic_document_data.embeddings,
+            topic_document_data_train.document_text_list,
+            embeddings=topic_document_data_train.embeddings,
             title='Topic Analysis')
 
         # visualize_barchart will error if only default cluster (topic id -1) is available
@@ -281,7 +291,7 @@ class BasicInference:
 
             # model-level topic timeline visualization
             model_timeline_visualization = topic_model.visualize_topics_over_time(
-                topics_over_time,
+                topics_over_time_test,
                 topics=topic_info['Topic'].values,
                 title='Topics Over Time',
                 top_n_topics=num_topics
@@ -338,64 +348,82 @@ class BasicInference:
             num_topics=num_topics,
             seed_topic_list=seed_topic_list)
 
+        data_train = pd.DataFrame(
+            {'message': topic_document_data.document_text_list,
+                'timestamp': topic_document_data.document_timestamps,
+                'user': topic_document_data.document_users,
+                'nickname': topic_document_data.document_nicknames,
+                'link': topic_document_data.document_links})
+
         if self.weak_learner_obj:
-            data_test = pd.DataFrame(
-                {'message': topic_document_data.document_text_list,
-                 'timestamp': topic_document_data.document_timestamps,
-                 'user': topic_document_data.document_users,
-                 'nickname': topic_document_data.document_nicknames,
-                 'link': topic_document_data.document_links})
             l_test = self.label_applier.apply(
-                pd.DataFrame(data_test['message']))
-            data_test['y_pred'] = self.label_model.predict(l_test)
+                pd.DataFrame(data_train['message']))
+            data_train['y_pred'] = self.label_model.predict(l_test)
             topic_document_data.embeddings = topic_document_data.embeddings[
-                data_test['y_pred'] < 2]
-            data_test = data_test[data_test['y_pred'] < 2]
-            topic_document_data.document_text_list = list(data_test['message'])
-            topic_document_data.document_timestamps = list(data_test['timestamp'])
-            topic_document_data.document_users = list(data_test['user'])
-            topic_document_data.document_nicknames = list(data_test['nickname'])
-            topic_document_data.document_links = list(data_test['link'])
+                data_train['y_pred'] < 2]
+            data_train = data_train[data_train['y_pred'] < 2]
+
+        # split data, train, then infer. assumes documents, embeddings
+        # sorted by timestamp previously (in train request)
+        train_len = round(len(data_train) * DEFAULT_TRAIN_PERCENT)
+        data_test = data_train[train_len:]
+        data_train = data_train[:train_len-1]
+
+        if len(data_train) < MIN_BERTOPIC_DOCUMENTS or len(data_test) < MIN_BERTOPIC_DOCUMENTS:
+            logger.error('document set reduced below minimum required for topic modeling')
+
+        topic_document_data_train = TopicDocumentData(document_text_list = list(data_train['message']),
+                                                      document_timestamps = list(data_train['timestamp']),
+                                                      document_users = list(data_train['user']),
+                                                      document_nicknames = list(data_train['nickname']),
+                                                      document_links = list(data_train['link']),
+                                                      embeddings = topic_document_data.embeddings[:train_len-1])
+        topic_document_data_test = TopicDocumentData(document_text_list = list(data_test['message']),
+                                                     document_timestamps = list(data_test['timestamp']),
+                                                     document_users = list(data_test['user']),
+                                                     document_nicknames = list(data_test['nickname']),
+                                                     document_links = list(data_test['link']),
+                                                     embeddings = topic_document_data.embeddings[train_len:])
 
         hdbscan_model = hdbscan.HDBSCAN(min_cluster_size=DEFAULT_HDBSCAN_MIN_CLUSTER_SIZE,
                                         min_samples=DEFAULT_HDBSCAN_MIN_SAMPLES,
                                         metric='euclidean', prediction_data=True)
         topic_model = BERTopic(nr_topics=num_topics, seed_topic_list=seed_topic_list,
                                hdbscan_model=hdbscan_model, vectorizer_model=self.vectorizer)
-        topic_model = topic_model.fit(topic_document_data.document_text_list,
-                                      topic_document_data.embeddings)
+        topic_model = topic_model.fit(documents=topic_document_data_train.document_text_list,
+                                      embeddings=topic_document_data_train.embeddings)
 
-        return (topic_model, topic_document_data)
+        return topic_model, topic_document_data_train, topic_document_data_test
 
-    def create_topic_visualizations(self, document_info, topic_model, topics_over_time, num_related_docs, num_topics, trends_only):
+    def create_topic_visualizations(self, document_info_train, topic_model, document_df_test, num_related_docs, num_topics, trends_only, trend_depth):
 
         topic_info = topic_model.get_topic_info()
-        trending_topic_ids = detect_trending_topics(document_info, topic_info)
+
+        trending_topic_ids = detect_trending_topics(document_df_test, trend_depth)
+
+        # if update_topics is run in train_bertopic_on_documents, use document_df_test
+        # otherwise, use document_info_train
+        topics_over_time = topic_model.topics_over_time(
+            docs=document_df_test['Document'],
+            timestamps=document_df_test['Timestamp'],
+            nr_bins=DEFAULT_BERTOPIC_TIME_BINS)
+
+        # set is_trending outside of loop, skip -1 cluster
+        topic_info = topic_info[topic_info['Topic'] >= 0]
+        topic_info['is_trending'] = topic_info['Topic'].isin(trending_topic_ids)
 
         new_topic_obj_list = []
         topic_timeline_visualization_list = []
         for key, row in tqdm(topic_info.iterrows()):
-            if row['Topic'] < 0:
-                continue
 
-            is_trending = False
-            if any(tid == row['Topic'] for tid in trending_topic_ids):
-                is_trending = True
+            if not trends_only or row['is_trending']:
 
-            if not trends_only or is_trending:
-
-                topic_docs = document_info[document_info.Representative_document][document_info['Topic'] ==
+                topic_docs = document_info_train[document_info_train.Representative_document][document_info_train['Topic'] ==
                     row['Topic']].sort_values('Probability', ascending=False).head(num_related_docs).reset_index()
 
                 summary_text = 'topic summarization disabled'
                 if self.topic_summarizer:
-
-                    # saves only the summary (but output includes intermediate steps of how we get to the summary
-                    # if we want to save that in the future for XAI or other reason e.g., output_summary['intermediate_steps'])
-                    output_summary = self.topic_summarizer.get_summary(
-                        topic_docs['Document'].to_list())
-                    if output_summary:
-                        summary_text = output_summary['output_text']
+                    summary_text = self.topic_summarizer.get_summary(topic_docs['Document'].to_list())
 
                 # topic-level timeline visualization
                 topic_timeline_visualization_list = topic_timeline_visualization_list + [topic_model.visualize_topics_over_time(
@@ -409,9 +437,9 @@ class BasicInference:
                     top_n_documents=topic_docs[[
                         'Document', 'Timestamp', 'User', 'Nickname', 'Link', 'Probability']].to_dict(),
                     summary=summary_text,
-                    is_trending=is_trending)]
+                    is_trending=row['is_trending'])]
 
             else:
                 logger.info('skipping topic %d (not trending)' % row['Topic'])
 
-        return topic_info, new_topic_obj_list, topic_timeline_visualization_list
+        return topic_info, new_topic_obj_list, topics_over_time, topic_timeline_visualization_list

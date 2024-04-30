@@ -114,8 +114,9 @@ def test_train_valid_request_weak_learning(client: TestClient, db: Session):
     weak_learner_id = response.json()['id']
 
     # get documents
-    n_docs = 20
-    documents_db = db.query(DocumentModel).where(DocumentModel.text != None).limit(n_docs).all()
+    n_docs = 30
+    documents_db = db.query(DocumentModel).where(DocumentModel.text != None,
+                                                 DocumentModel.original_created_time != None).limit(n_docs).all()
     assert len(documents_db) == n_docs
 
     # train on documents
