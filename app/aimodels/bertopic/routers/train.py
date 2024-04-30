@@ -81,30 +81,7 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
 
         validate_obj(llm_pretrained_obj)
 
-    # get the documents
-    documents = []
-    for document_id in request.document_ids:
-        document_obj = crud.document.get(db, document_id)
-        if not document_obj or document_obj.original_created_time is None:
-            raise HTTPException(status_code=422, detail=f'Invalid document id {document_id}')
-        documents.append(document_obj)
-
-    # sort by timestamp necessary for train/test data split
-    documents.sort(key=lambda x: x.original_created_time)
-
-    # extract any formerly computed embeddings, needs to be list[Union[list[float], None]]
-    # use None if no embedding was computed previously
-    precalculated_embeddings = []
-    for document in documents:
-
-        next_value = None
-        for embedding_computation in document.embedding_computations:
-            if embedding_computation.bertopic_embedding_pretrained_id == request.sentence_transformer_id:
-                next_value = embedding_computation.embedding_vector
-                break
-
-        precalculated_embeddings.append(next_value)
-
+    documents, precalculated_embeddings = get_documents_and_embeddings(db, request.document_ids, request.sentence_transformer_id)
     document_df = crud_mattermost.mattermost_documents.get_document_dataframe(db, document_uuids=request.document_ids)
 
     # train the model
@@ -175,23 +152,67 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
     # (see docs here for info: https://docs.sqlalchemy.org/en/20/orm/session_state_management.html#refreshing-expiring)
     db.refresh(new_bertopic_trained_obj)
 
+    upload_topics_and_visualizations(db, new_bertopic_trained_obj.id, inference_output)
+
+    return new_bertopic_trained_obj
+
+
+def validate_obj(obj: Union[BertopicEmbeddingPretrainedModel, None]):
+    if not obj:
+        raise HTTPException(
+            status_code=422, detail=f"Invalid {str(obj.model_type)} id")
+
+    if not obj.uploaded:
+        raise HTTPException(
+            status_code=422, detail=f"{str(obj.model_type)} pretrained model not uploaded")
+
+def get_documents_and_embeddings(db, document_ids, sentence_transformer_id):
+
+    # get the documents
+    documents = []
+    for document_id in document_ids:
+        document_obj = crud.document.get(db, document_id)
+        if not document_obj or document_obj.original_created_time is None:
+            raise HTTPException(status_code=422, detail=f'Invalid document id {document_id}')
+        documents.append(document_obj)
+
+    # sort by timestamp necessary for train/test data split
+    documents.sort(key=lambda x: x.original_created_time)
+
+    # extract any formerly computed embeddings, needs to be list[Union[list[float], None]]
+    # use None if no embedding was computed previously
+    precalculated_embeddings = []
+    for document in documents:
+
+        next_value = None
+        for embedding_computation in document.embedding_computations:
+            if embedding_computation.bertopic_embedding_pretrained_id == sentence_transformer_id:
+                next_value = embedding_computation.embedding_vector
+                break
+
+        precalculated_embeddings.append(next_value)
+
+    return documents, precalculated_embeddings
+
+def upload_topics_and_visualizations(db, model_id, inference_output):
+
     # upload model-level visualizations
     visualize_model_words = BertopicVisualizationCreate(
-        model_or_topic_id=new_bertopic_trained_obj.id,
+        model_or_topic_id=model_id,
         visualization_type=BertopicVisualizationTypeEnum.MODEL_WORDS,
         html_string=inference_output.model_word_visualization.to_html(),
         json_string=inference_output.model_word_visualization.to_json()
     )
     crud.bertopic_visualization.create(db, obj_in=visualize_model_words)
     visualize_model_clusters = BertopicVisualizationCreate(
-        model_or_topic_id=new_bertopic_trained_obj.id,
+        model_or_topic_id=model_id,
         visualization_type=BertopicVisualizationTypeEnum.MODEL_CLUSTERS,
         html_string=inference_output.model_cluster_visualization.to_html(),
         json_string=inference_output.model_cluster_visualization.to_json()
     )
     crud.bertopic_visualization.create(db, obj_in=visualize_model_clusters)
     visualize_model_timeline = BertopicVisualizationCreate(
-        model_or_topic_id=new_bertopic_trained_obj.id,
+        model_or_topic_id=model_id,
         visualization_type=BertopicVisualizationTypeEnum.MODEL_TIMELINE,
         html_string=inference_output.model_timeline_visualization.to_html(),
         json_string=inference_output.model_timeline_visualization.to_json()
@@ -206,7 +227,7 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
     for tid in range(len(inference_output.topics)):
         crud.topic_summary.update(db,
                                   db_obj=inference_output.topics[tid],
-                                  obj_in=TopicSummaryUpdate(model_id=new_bertopic_trained_obj.id))
+                                  obj_in=TopicSummaryUpdate(model_id=model_id))
 
         visualize_topic_timeline = BertopicVisualizationCreate(
             model_or_topic_id=inference_output.topics[tid].id,
@@ -215,15 +236,3 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
             json_string=inference_output.topic_timeline_visualization[tid].to_json()
         )
         crud.bertopic_visualization.create(db, obj_in=visualize_topic_timeline)
-
-    return new_bertopic_trained_obj
-
-
-def validate_obj(obj: Union[BertopicEmbeddingPretrainedModel, None]):
-    if not obj:
-        raise HTTPException(
-            status_code=422, detail=f"Invalid {str(obj.model_type)} id")
-
-    if not obj.uploaded:
-        raise HTTPException(
-            status_code=422, detail=f"{str(obj.model_type)} pretrained model not uploaded")
