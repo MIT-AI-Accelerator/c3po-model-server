@@ -9,7 +9,7 @@ from ppg.schemas.bertopic.bertopic_trained import BertopicTrained, BertopicTrain
 from ppg.schemas.bertopic.bertopic_visualization import BertopicVisualizationCreate
 from ppg.schemas.bertopic.topic import TopicSummaryUpdate
 from app.core.minio import pickle_and_upload_object_to_minio
-from ..ai_services.basic_inference import BasicInference, MIN_BERTOPIC_DOCUMENTS
+from ..ai_services.basic_inference import BasicInference, MIN_BERTOPIC_DOCUMENTS, DEFAULT_TRAIN_PERCENT
 from app.dependencies import get_db, get_minio
 from .. import crud
 from ..models.bertopic_trained import BertopicTrainedModel
@@ -37,6 +37,7 @@ class TrainModelRequest(BaseModel):
     stop_words: list[str] = []
     trends_only: bool = False
     trend_depth: int = DEFAULT_TREND_DEPTH_DAYS
+    train_percent: float = DEFAULT_TRAIN_PERCENT
     prompt_template: str = DEFAULT_PROMPT_TEMPLATE
     refine_template: str = DEFAULT_REFINE_TEMPLATE
 
@@ -64,6 +65,11 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
     if len(request.document_ids) < MIN_BERTOPIC_DOCUMENTS:
         raise HTTPException(
             status_code=400, detail="must have at least 7 documents to find topics")
+
+    # validate train percent
+    if request.train_percent < 0.0 or request.train_percent > 1.0:
+        raise HTTPException(
+            status_code=400, detail="train pecent must be between [0, 1]")
 
     bertopic_weak_learner_obj = None
     if request.weak_learner_id:
@@ -97,7 +103,8 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
                                                                    document_df=document_df,
                                                                    seed_topic_list=request.seed_topics,
                                                                    trends_only=request.trends_only,
-                                                                   trend_depth=request.trend_depth)
+                                                                   trend_depth=request.trend_depth,
+                                                                   train_percent=request.train_percent)
 
     # save calculated embeddings computations
     new_embedding_computation_obj_list = [DocumentEmbeddingComputationCreate(
