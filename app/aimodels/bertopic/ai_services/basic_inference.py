@@ -399,7 +399,7 @@ class BasicInference:
 
         topic_info = topic_model.get_topic_info()
 
-        trending_topic_ids = detect_trending_topics(document_df_test, trend_depth)
+        trending_topic_ids = detect_trending_topics(document_info_train, document_df_test, trend_depth)
 
         # if update_topics is run in train_bertopic_on_documents, use document_df_test
         # otherwise, use document_info_train
