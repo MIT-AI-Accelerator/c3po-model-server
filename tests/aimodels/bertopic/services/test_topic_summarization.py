@@ -56,5 +56,5 @@ def test_detect_trending_topics(num_docs, num_trending_day, num_other_days, tren
     document_df = pd.DataFrame({'Document': document_text_list,
                                'Timestamp': document_timestamps,
                                 'Topic': topics})
-    result = detect_trending_topics(document_df, trend_depth=trend_depth)
+    result = detect_trending_topics(document_df, document_df, trend_depth=trend_depth)
     assert (trending_topic_id in result) == expected

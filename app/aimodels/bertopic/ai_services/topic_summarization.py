@@ -38,7 +38,8 @@ DEFAULT_CONTEXT_LENGTH = 6000
 # default parameters for trend detection
 DEFAULT_TREND_DEPTH_DAYS = 7
 DEFAULT_SHAPIRO_P_VALUE = 0.001
-DEFAULT_SHAPIRO_THRESHOLD = 5
+DEFAULT_POST_THRESHOLD = 5
+DEFAULT_TRAIN_FACTOR = 3
 
 class TopicSummarizer:
 
@@ -171,7 +172,7 @@ class TopicSummarizer:
         return summary_text
 
 
-def detect_trending_topics(document_df, trend_depth = DEFAULT_TREND_DEPTH_DAYS):
+def detect_trending_topics(document_info_train, document_df_test, trend_depth = DEFAULT_TREND_DEPTH_DAYS):
 
     trending_topic_ids = []
 
@@ -179,11 +180,14 @@ def detect_trending_topics(document_df, trend_depth = DEFAULT_TREND_DEPTH_DAYS):
         logger.info('trending topic detection disabled, depth=0')
         return trending_topic_ids
 
-    # filter document_info to last trend_depth days
-    trend_docs = document_df[document_df['Timestamp'] >=
-                             document_df['Timestamp'].max() - pd.Timedelta(days = trend_depth)]
+    elif trend_depth == 1:
+        return detect_trending_topics_single_day(document_info_train, document_df_test)
 
-    topics = set(document_df['Topic'])
+    # filter document_info to last trend_depth days
+    trend_docs = document_df_test[document_df_test['Timestamp'] >=
+                             document_df_test['Timestamp'].max() - pd.Timedelta(days = trend_depth)]
+
+    topics = set(document_df_test['Topic'])
     for topic_id in topics:
 
         # count number of posts per day
@@ -213,10 +217,45 @@ def detect_trending_topics(document_df, trend_depth = DEFAULT_TREND_DEPTH_DAYS):
             stat, p_value = shapiro(num_posts)
 
             # only include topics that have one day with more than N=5 posts
-            if(p_value < DEFAULT_SHAPIRO_P_VALUE and np.max(num_posts) >= DEFAULT_SHAPIRO_THRESHOLD):
+            if(p_value < DEFAULT_SHAPIRO_P_VALUE and np.max(num_posts) >= DEFAULT_POST_THRESHOLD):
                 trending_topic_ids.append(topic_id)
 
     return trending_topic_ids
 
+def detect_trending_topics_single_day(document_info_train, document_df_test):
+
+    trending_topic_ids = []
+
+    # anomaly detection single day (day with the max posts for given topic)
+    topics = set(document_df_test['Topic'])
+    for topic_id in topics:
+
+        # count number of posts per day
+        test_docs = document_df_test[document_df_test['Topic'] == topic_id]
+        test_docs['Day'] = test_docs['Timestamp'].dt.date
+        test_day_counts = test_docs.groupby(['Day']).agg({'Day': ['count']})
+        test_day_counts.columns = ['num_posts']
+
+        train_docs = document_info_train.loc[document_info_train['Topic'] == topic_id]
+        train_docs['Day'] = train_docs['Timestamp'].dt.date
+        train_day_counts = train_docs.groupby(['Day']).agg({'Day': ['count']})
+        train_day_counts.columns = ['num_posts']
+
+        # get max number of posts for test set
+        num_posts = test_day_counts['num_posts']
+        test_max = np.max(num_posts)
+
+        # get mean and standard dev of training set
+        mean = np.mean(train_day_counts['num_posts'])
+        std = np.std(train_day_counts['num_posts'])
+
+        # test if stationary and gaussian
+        if(test_max > (mean + DEFAULT_TRAIN_FACTOR * std) and test_max >= DEFAULT_POST_THRESHOLD):
+            trending_topic_ids.append(topic_id)
+
+            max_day = test_docs['Day'].values[np.argmax(num_posts)]
+            logger.info('peak occurred for topic %d on %s' % (topic_id, max_day))
+
+    return trending_topic_ids
 
 topic_summarizer = TopicSummarizer()
