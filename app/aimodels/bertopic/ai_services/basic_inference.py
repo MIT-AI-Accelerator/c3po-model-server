@@ -224,7 +224,7 @@ class BasicInference:
         document_info['Link'] = topic_document_data.document_links
         return document_info
 
-    def train_bertopic_on_documents(self, db, documents, precalculated_embeddings, num_topics, document_df, seed_topic_list=None, num_related_docs=DEFAULT_N_REPR_DOCS, trends_only=False, trend_depth=DEFAULT_TREND_DEPTH_DAYS) -> BasicInferenceOutputs:
+    def train_bertopic_on_documents(self, db, documents, precalculated_embeddings, num_topics, document_df, seed_topic_list=None, num_related_docs=DEFAULT_N_REPR_DOCS, trends_only=False, trend_depth=DEFAULT_TREND_DEPTH_DAYS, train_percent=DEFAULT_TRAIN_PERCENT) -> BasicInferenceOutputs:
         # validate input
         TrainBertopicOnDocumentsInput(
             documents=documents, precalculated_embeddings=precalculated_embeddings, num_topics=num_topics)
@@ -244,7 +244,7 @@ class BasicInference:
                                                 embeddings = embeddings)
 
         topic_model, topic_document_data_train, topic_document_data_test = self.build_topic_model(
-            topic_document_data, num_topics, seed_topic_list)
+            topic_document_data, num_topics, seed_topic_list, train_percent)
 
         # per topic documents and summary. note: this only works for the train documents
         document_info_train = self.get_document_info(
@@ -339,7 +339,7 @@ class BasicInference:
 
         return (np.array(embeddings), updated_indices)
 
-    def build_topic_model(self, topic_document_data: TopicDocumentData, num_topics, seed_topic_list) -> BERTopic:
+    def build_topic_model(self, topic_document_data: TopicDocumentData, num_topics, seed_topic_list, train_percent) -> BERTopic:
         # validate input
         BuildTopicModelInputs(
             documents_text_list=topic_document_data.document_text_list,
@@ -365,7 +365,7 @@ class BasicInference:
 
         # split data, train, then infer. assumes documents, embeddings
         # sorted by timestamp previously (in train request)
-        train_len = round(len(data_train) * DEFAULT_TRAIN_PERCENT)
+        train_len = round(len(data_train) * train_percent)
         data_test = data_train[train_len:]
         data_train = data_train[:train_len-1]
 
