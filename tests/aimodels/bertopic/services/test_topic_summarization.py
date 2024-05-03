@@ -3,8 +3,7 @@ import json
 import pytest
 import pandas as pd
 from datetime import datetime, timedelta
-from pathlib import Path
-from unittest.mock import Mock, MagicMock, create_autospec
+from unittest.mock import MagicMock
 from pytest_mock import MockerFixture
 from fastapi.testclient import TestClient
 from app.main import versioned_app
