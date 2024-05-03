@@ -2,6 +2,7 @@ import uuid
 import json
 import pytest
 import pandas as pd
+from pytest_mock import MockerFixture
 from datetime import datetime, timedelta
 from fastapi.testclient import TestClient
 from app.main import versioned_app
@@ -58,3 +59,12 @@ def test_detect_trending_topics(num_docs, num_trending_day, num_other_days, tren
                                 'Topic': topics})
     result = detect_trending_topics(document_df, document_df, trend_depth=trend_depth)
     assert (trending_topic_id in result) == expected
+
+
+def test_detect_trending_topics_trend_depth_one(mocker: MockerFixture):
+    return_value = 'single day'
+    mocker.patch(
+        'app.aimodels.bertopic.ai_services.topic_summarization.detect_trending_topics_single_day',
+        return_value=return_value)
+
+    assert detect_trending_topics(pd.DataFrame(), pd.DataFrame(), trend_depth=1) == return_value
