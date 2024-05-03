@@ -205,6 +205,23 @@ class CRUDMattermostDocument(CRUDBase[MattermostDocumentModel, MattermostDocumen
                 is_thread=is_thread)]
         return self.create_all_using_id(db, obj_in_list=mattermost_documents)
 
+    def get_by_substring(self, db: Session, *, search_str: str) -> Union[MattermostDocumentModel, None]:
+
+        docs = db.query(self.model, DocumentModel, MattermostUserModel, MattermostChannelModel).join(
+            DocumentModel, DocumentModel.id == self.model.document).join(
+                MattermostUserModel, MattermostUserModel.id == self.model.user).join(
+                    MattermostChannelModel, MattermostChannelModel.id == self.model.channel).filter(
+                        DocumentModel.text.ilike('%%%s%%' % search_str)).all()
+
+        ddf = pd.DataFrame()
+        for doc in docs:
+            ddf = pd.concat([ddf, pd.DataFrame([{'timestamp': doc[1].original_created_time,
+                                                 'message': doc[1].text,
+                                                 'link': '%s/%s/pl/%s' % (settings.mm_base_url, doc[3].team_name, doc[0].message_id)}])],
+                                                 ignore_index=True)
+
+        return ddf
+
 
 def populate_mm_user_info(db: Session, *, mm_user: dict, teams: dict) -> MattermostUserModel:
 

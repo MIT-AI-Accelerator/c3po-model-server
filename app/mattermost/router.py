@@ -249,3 +249,17 @@ async def convert_conversation_threads(request: ConversationThreadRequest,
         raise HTTPException(status_code=422, detail="Unable to create conversation threads")
 
     return document_objs
+
+@router.get(
+    "/mattermost/search",
+    response_model=dict,
+    responses={'422': {'model': HTTPValidationError}},
+    summary="Retrieve Mattermost documents containing substring",
+    response_description="Retrieved Mattermost documents containing substring")
+async def get_mm_docs_by_substring(search_str: str, db: Session = Depends(get_db)) -> dict:
+    """
+    Retrieve mattermost posts by for a channel
+
+    - **search_str**: Required.  Substring for post query.
+    """
+    return crud_mattermost.mattermost_documents.get_by_substring(db, search_str=search_str).to_dict()
