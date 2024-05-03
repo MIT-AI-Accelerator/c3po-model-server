@@ -1,5 +1,6 @@
 import uuid
 import json
+import typing
 import pytest
 import pandas as pd
 from pytest_mock import MockerFixture
@@ -7,9 +8,27 @@ from datetime import datetime, timedelta
 from fastapi.testclient import TestClient
 from app.main import versioned_app
 from app.aimodels.bertopic.ai_services.topic_summarization import TopicSummarizer, detect_trending_topics, \
-    DEFAULT_PROMPT_TEMPLATE, DEFAULT_REFINE_TEMPLATE
+    detect_trending_topics_single_day, DEFAULT_PROMPT_TEMPLATE, DEFAULT_REFINE_TEMPLATE
 
 client = TestClient(versioned_app)
+
+
+@pytest.fixture(scope='module')
+def document_info_train() -> typing.Callable[[int, int, int], pd.DataFrame]:
+    def _document_info_train(num_docs: int, topic_id_one: int, topic_id_two: int) -> pd.DataFrame:
+        # posts per day for each topic id will always have mean 1 and std dev 0
+        documents = ['train_blah_' + str(i) for i in range(num_docs)]
+        today = datetime.today()
+        timestamps = [today - timedelta(days=i) for i in range(num_docs)]
+        topics_one = [topic_id_one] * (num_docs // 2)
+        topics_two = [topic_id_two for _ in range(num_docs - len(topics_one))]
+        topics = topics_one + topics_two
+
+        return pd.DataFrame({'Document': documents,
+                             'Timestamp': timestamps,
+                             'Topic': topics})
+
+    return _document_info_train
 
 
 # test llm requires initialization
@@ -46,7 +65,7 @@ def test_fix_text():
 def test_detect_trending_topics(num_docs, num_trending_day, num_other_days, trend_depth, expected):
     document_text_list = ['blah_' + str(i) for i in range(num_docs)]
 
-    trending_topic_id = str(uuid.uuid4())
+    trending_topic_id = 0
     today = datetime.today()
     trending_day_document_timestamps = [today for _ in range(num_trending_day)]
     other_days_document_timestamps = [today - timedelta(days=i+1) for i in range(num_other_days)]
@@ -68,3 +87,45 @@ def test_detect_trending_topics_trend_depth_one(mocker: MockerFixture):
         return_value=return_value)
 
     assert detect_trending_topics(pd.DataFrame(), pd.DataFrame(), trend_depth=1) == return_value
+
+
+@pytest.mark.parametrize('num_docs,num_docs_one,num_docs_two,expected_one,expected_two', [
+    (20, 10, 0, True, False),
+    (20, 5, 5, True, True),
+    (20, 4, 4, False, False),
+    (20, 0, 0, False, False),
+    (20, 0, 10, False, True)
+])
+def test_detect_trending_topics_single_day(document_info_train,
+                                           num_docs,
+                                           num_docs_one,
+                                           num_docs_two,
+                                           expected_one,
+                                           expected_two):
+    num_remaining = num_docs - num_docs_one - num_docs_two
+
+    # build documents
+    documents = ['test_blah_' + str(i) for i in range(num_docs)]
+
+    # build timestamps
+    today = datetime.today()
+    yday = today - timedelta(days=1)
+    ts_one = [today] * num_docs_one
+    ts_two = [yday] * num_docs_two
+    ts_lst = ts_one + ts_two + [yday - timedelta(days=i+1) for i in range(num_remaining)]
+
+    # build topics
+    trending_id_one, trending_id_two = 0, 1
+    topics_one = [trending_id_one] * num_docs_one
+    topics_two = [trending_id_two] * num_docs_two
+    topics = topics_one + topics_two + [i + 1 + trending_id_two for i in range(num_remaining)]
+
+    document_df_test = pd.DataFrame({'Document': documents,
+                                     'Timestamp': ts_lst,
+                                     'Topic': topics})
+    doc_info_train = document_info_train(num_docs, trending_id_one, trending_id_two)
+
+    trending_topic_ids = detect_trending_topics_single_day(doc_info_train, document_df_test)
+
+    assert (trending_id_one in trending_topic_ids) == expected_one
+    assert (trending_id_two in trending_topic_ids) == expected_two
