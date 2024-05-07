@@ -168,8 +168,10 @@ async def get_mm_channel_docs(team_name: str, channel_name: str,
 
     return documents_obj
 
+
 class ConversationThreadRequest(BaseModel):
     mattermost_document_ids: list[UUID4] = []
+
 
 @router.post(
     "/mattermost/conversation_threads",
@@ -235,22 +237,33 @@ async def convert_conversation_threads(request: ConversationThreadRequest,
 
     return document_objs
 
+
+class SubstringUploadRequest(BaseModel):
+    team_id: str
+    search_terms: list[str]
+
+
 @router.post(
     "/mattermost/search/upload",
     response_model=dict,
     responses={'422': {'model': HTTPValidationError}},
     summary="Upload Mattermost documents containing substring",
     response_description="Uploaded Mattermost documents containing substring")
-async def upload_mm_docs_by_substring(team_id: str, search_str: str, db: Session = Depends(get_db)) -> dict:
+async def upload_mm_docs_by_substring(request: SubstringUploadRequest, db: Session = Depends(get_db)) -> dict:
     """
     Retrieve mattermost posts by substring
 
     - **team_id**: Required.  Team ID for post query.
-    - **search_str**: Required.  Substring for post query.
+    - **search_terms**: Required.  List of substrings for post query.
     """
     existing_doc_uuids = []
     new_message_ids = []
-    ddf = mattermost_utils.get_all_team_posts_by_substring(settings.mm_base_url, settings.mm_token, team_id, search_str)
+    ddf = pd.DataFrame()
+    for search_str in request.search_terms:
+        ddf = pd.concat([ddf,
+                         mattermost_utils.get_all_team_posts_by_substring(settings.mm_base_url, settings.mm_token, request.team_id, search_str)],
+                         ignore_index=True)
+    ddf.drop_duplicates(subset=['id'], inplace=True)
     for key, row in ddf.iterrows():
         mm_doc = crud_mattermost.mattermost_documents.get_by_message_id(db, message_id=row.id)
         if mm_doc:
@@ -265,16 +278,26 @@ async def upload_mm_docs_by_substring(team_id: str, search_str: str, db: Session
 
     return crud_mattermost.mattermost_documents.get_document_dataframe(db, document_uuids=(existing_doc_uuids + new_doc_uuids)).transpose().to_dict()
 
+
 @router.get(
     "/mattermost/search/get",
     response_model=dict,
     responses={'422': {'model': HTTPValidationError}},
     summary="Retrieve Mattermost documents containing substring",
     response_description="Retrieved Mattermost documents containing substring")
-async def get_mm_docs_by_substring(search_str: str, db: Session = Depends(get_db)) -> dict:
+async def get_mm_docs_by_substring(search_terms: str, db: Session = Depends(get_db)) -> dict:
     """
     Retrieve mattermost posts by by substring
 
-    - **search_str**: Required.  Substring for post query.
+    - **search_terms**: Required.  Comma-separated list of case-insensitive substrings for post query.
     """
-    return crud_mattermost.mattermost_documents.get_by_substring(db, search_str=search_str).transpose().to_dict()
+    search_terms = search_terms.split(',')
+
+    ddf = pd.DataFrame()
+    for search_str in search_terms:
+        ddf = pd.concat([ddf,
+                         crud_mattermost.mattermost_documents.get_by_substring(db, search_str=search_str)],
+                         ignore_index=True)
+    ddf.drop_duplicates(subset=['link'], inplace=True)
+
+    return ddf.transpose().to_dict()

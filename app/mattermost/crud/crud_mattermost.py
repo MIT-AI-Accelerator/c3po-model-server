@@ -339,7 +339,7 @@ def get_or_create_mm_channel_object(db: Session, *, channel_id: str):
         if not channel_info:
             raise HTTPException(
                 status_code=422, detail="Mattermost channel not found")
-        channel_obj = crud_mattermost.populate_mm_channel_info(
+        channel_obj = populate_mm_channel_info(
             db, channel_info=channel_info)
 
     return channel_obj
