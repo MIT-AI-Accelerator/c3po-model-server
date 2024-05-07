@@ -196,7 +196,7 @@ class CRUDMattermostDocument(CRUDBase[MattermostDocumentModel, MattermostDocumen
                 root_message_id=row['root_id'],
                 type=row['type'],
                 hashtags=row['hashtags'],
-                has_reactions=str(row['has_reactions']).lower() == 'true',
+                has_reactions=str('has_reactions' in ddf.columns and row['has_reactions']).lower() == 'true',
                 props=row['props'],
                 doc_metadata=row['metadata'],
                 channel=row['channel'],
@@ -204,6 +204,23 @@ class CRUDMattermostDocument(CRUDBase[MattermostDocumentModel, MattermostDocumen
                 document=document_obj.id,
                 is_thread=is_thread)]
         return self.create_all_using_id(db, obj_in_list=mattermost_documents)
+
+    def get_by_substring(self, db: Session, *, search_str: str) -> Union[MattermostDocumentModel, None]:
+
+        docs = db.query(self.model, DocumentModel, MattermostUserModel, MattermostChannelModel).join(
+            DocumentModel, DocumentModel.id == self.model.document).join(
+                MattermostUserModel, MattermostUserModel.id == self.model.user).join(
+                    MattermostChannelModel, MattermostChannelModel.id == self.model.channel).filter(
+                        DocumentModel.text.ilike('%%%s%%' % search_str)).all()
+
+        ddf = pd.DataFrame()
+        for doc in docs:
+            ddf = pd.concat([ddf, pd.DataFrame([{'timestamp': doc[1].original_created_time,
+                                                 'message': doc[1].text,
+                                                 'link': '%s/%s/pl/%s' % (settings.mm_base_url, doc[3].team_name, doc[0].message_id)}])],
+                                                 ignore_index=True)
+
+        return ddf
 
 
 def populate_mm_user_info(db: Session, *, mm_user: dict, teams: dict) -> MattermostUserModel:
@@ -311,6 +328,76 @@ def populate_mm_channel_info(db: Session, *, channel_info: dict) -> MattermostCh
     else:
         logger.warning(f"Duplicate Mattermost channel found: {channel_info['id']}")
     return channel_obj
+
+
+def get_or_create_mm_channel_object(db: Session, *, channel_id: str):
+    channel_obj = mattermost_channels.get_by_channel_id(
+        db, channel_id=channel_id)
+    if not channel_obj:
+        channel_info = mattermost_utils.get_channel_info(
+            settings.mm_base_url, settings.mm_token, channel_id)
+        if not channel_info:
+            raise HTTPException(
+                status_code=422, detail="Mattermost channel not found")
+        channel_obj = crud_mattermost.populate_mm_channel_info(
+            db, channel_info=channel_info)
+
+    return channel_obj
+
+
+def get_or_create_mm_user_object(db: Session, *, user_id: str):
+    user_obj = mattermost_users.get_by_user_id(
+        db, user_id=user_id)
+    if not user_obj:
+        user_name = mattermost_utils.get_user_name(
+            settings.mm_base_url, settings.mm_token, user_id)
+        if not user_name:
+            raise HTTPException(
+                status_code=422, detail="Mattermost user not found")
+        user_obj = populate_mm_user_team_info(
+            db, user_name=user_name)
+
+    return user_obj
+
+
+def populate_mm_document_info(db: Session, *, document_df: pd.DataFrame):
+    new_doc_uuids = []
+    new_mattermost_docs = []
+
+    # get or create new channel objects in db
+    channel_ids = set(document_df.channel_id.values)
+    for channel_id in channel_ids:
+        channel_obj = get_or_create_mm_channel_object(db, channel_id=channel_id)
+        cdf = document_df[document_df.channel_id == channel_id]
+
+        # get or create new user objects in db
+        user_ids = set(cdf.user_id)
+        for user_id in user_ids:
+            user_obj = get_or_create_mm_user_object(db, user_id=user_id)
+            udf = cdf[cdf.user_id == user_id]
+
+            # create new document objects in db
+            for key, row in udf.iterrows():
+                document = DocumentCreate(
+                    text=row['message'],
+                    original_created_time=row['create_at'])
+                document_obj = crud_document.document.create(db, obj_in=document)
+                new_doc_uuids.append(document_obj.id)
+
+                new_mattermost_docs = new_mattermost_docs + [MattermostDocumentCreate(
+                    message_id=row['id'],
+                    root_message_id=row['root_id'],
+                    type=row['type'],
+                    hashtags=row['hashtags'],
+                    has_reactions=str('has_reactions' in udf.columns and row['has_reactions']).lower() == 'true',
+                    props=row['props'],
+                    doc_metadata=row['metadata'],
+                    channel=channel_obj.id,
+                    user=user_obj.id,
+                    document=document_obj.id,
+                    is_thread=False)]
+
+    return new_mattermost_docs, new_doc_uuids
 
 
 # Takes message utterances (i.e. individual rows) from chat dataframe, and converts them to conversation threads
