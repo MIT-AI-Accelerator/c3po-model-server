@@ -106,16 +106,7 @@ async def upload_mm_channel_docs(request: UploadDocumentRequest, db: Session = D
 
     adf = pd.DataFrame()
     for channel_id in request.channel_ids:
-        channel_obj = crud_mattermost.mattermost_channels.get_by_channel_id(
-            db, channel_id=channel_id)
-        if not channel_obj:
-            channel_info = mattermost_utils.get_channel_info(
-                settings.mm_base_url, settings.mm_token, channel_id)
-            if not channel_info:
-                raise HTTPException(
-                    status_code=422, detail="Mattermost channel not found")
-            channel_obj = crud_mattermost.populate_mm_channel_info(
-                db, channel_info=channel_info)
+        channel_obj = crud_mattermost.get_or_create_mm_channel_object(db, channel_id=channel_id)
         df = mattermost_utils.get_channel_posts(
             settings.mm_base_url,
             settings.mm_token,
@@ -130,13 +121,7 @@ async def upload_mm_channel_docs(request: UploadDocumentRequest, db: Session = D
     if not adf.empty:
         user_ids = adf['user_id'].unique()
         for uid in user_ids:
-            user_obj = crud_mattermost.mattermost_users.get_by_user_id(
-                db, user_id=uid)
-            if user_obj is None:
-                user_name = mattermost_utils.get_user_name(
-                    settings.mm_base_url, settings.mm_token, uid)
-                user_obj = crud_mattermost.populate_mm_user_team_info(
-                    db, user_name=user_name)
+            user_obj = crud_mattermost.get_or_create_mm_user_object(db, user_id=uid)
             adf.loc[adf['user_id'] == uid, 'user'] = user_obj.id
 
         channel_document_objs = crud_mattermost.mattermost_documents.get_all_channel_documents(
@@ -249,3 +234,47 @@ async def convert_conversation_threads(request: ConversationThreadRequest,
         raise HTTPException(status_code=422, detail="Unable to create conversation threads")
 
     return document_objs
+
+@router.post(
+    "/mattermost/search/upload",
+    response_model=dict,
+    responses={'422': {'model': HTTPValidationError}},
+    summary="Upload Mattermost documents containing substring",
+    response_description="Uploaded Mattermost documents containing substring")
+async def upload_mm_docs_by_substring(team_id: str, search_str: str, db: Session = Depends(get_db)) -> dict:
+    """
+    Retrieve mattermost posts by substring
+
+    - **team_id**: Required.  Team ID for post query.
+    - **search_str**: Required.  Substring for post query.
+    """
+    existing_doc_uuids = []
+    new_message_ids = []
+    ddf = mattermost_utils.get_all_team_posts_by_substring(settings.mm_base_url, settings.mm_token, team_id, search_str)
+    for key, row in ddf.iterrows():
+        mm_doc = crud_mattermost.mattermost_documents.get_by_message_id(db, message_id=row.id)
+        if mm_doc:
+            existing_doc_uuids.append(mm_doc.document)
+        else:
+            new_message_ids.append(row.id)
+    ddf = ddf[ddf.id.isin(new_message_ids)]
+
+    new_mattermost_docs, new_doc_uuids = crud_mattermost.populate_mm_document_info(db, document_df=ddf)
+    if new_mattermost_docs:
+        crud_mattermost.mattermost_documents.create_all_using_id(db, obj_in_list=new_mattermost_docs)
+
+    return crud_mattermost.mattermost_documents.get_document_dataframe(db, document_uuids=(existing_doc_uuids + new_doc_uuids)).transpose().to_dict()
+
+@router.get(
+    "/mattermost/search/get",
+    response_model=dict,
+    responses={'422': {'model': HTTPValidationError}},
+    summary="Retrieve Mattermost documents containing substring",
+    response_description="Retrieved Mattermost documents containing substring")
+async def get_mm_docs_by_substring(search_str: str, db: Session = Depends(get_db)) -> dict:
+    """
+    Retrieve mattermost posts by by substring
+
+    - **search_str**: Required.  Substring for post query.
+    """
+    return crud_mattermost.mattermost_documents.get_by_substring(db, search_str=search_str).transpose().to_dict()

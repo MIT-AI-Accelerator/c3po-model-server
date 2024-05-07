@@ -68,7 +68,8 @@ def test_initialize_llm(mock_s3: MagicMock,
     # don't create any files
     mocker.patch(
         'app.aimodels.bertopic.ai_services.topic_summarization.Path', return_value=MagicMock(), autospec=True)
-    mocker.patch('app.core.minio.download_file_from_minio', return_value=None)  # don't touch minio
+    mocker.patch(
+        'app.aimodels.bertopic.ai_services.topic_summarization.download_file_from_minio', return_value=None)  # don't touch minio
     mocker.patch('app.aimodels.bertopic.ai_services.topic_summarization.CTransformers', return_value=mock_llm)
 
     ts = TopicSummarizer()
