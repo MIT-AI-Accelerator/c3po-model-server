@@ -5,7 +5,7 @@ import pytest
 import pandas as pd
 from pytest_mock import MockerFixture
 from datetime import datetime, timedelta
-from unittest.mock import MagicMock
+from unittest.mock import Mock, MagicMock
 from fastapi.testclient import TestClient
 from app.main import versioned_app
 from app.aimodels.bertopic.ai_services.topic_summarization import TopicSummarizer, detect_trending_topics, \
@@ -178,3 +178,53 @@ def test_detect_trending_topics_single_day(document_info_train,
 
     assert (trending_id_one in trending_topic_ids) == expected_one
     assert (trending_id_two in trending_topic_ids) == expected_two
+
+
+def test_get_summary_empty_documents(mock_s3: MagicMock,
+                                     mock_model_obj: MagicMock,
+                                     mock_llm: MagicMock,
+                                     mocker: MockerFixture):
+    mocker.patch('os.path.isfile', return_value=True)
+    mocker.patch(
+        'app.aimodels.bertopic.ai_services.topic_summarization.CTransformers',
+        return_value=mock_llm)
+
+    documents = ['', '', '']
+    ts = TopicSummarizer()
+    ts.initialize_llm(mock_s3,
+                      mock_model_obj,
+                      DEFAULT_PROMPT_TEMPLATE,
+                      DEFAULT_REFINE_TEMPLATE,
+                      temp=DEFAULT_LLM_TEMP)
+    result = ts.get_summary(documents)
+    assert result == 'topic summarization disabled'
+
+
+@pytest.mark.parametrize('documents,output_text,summary_text', [
+    (['this', 'is', 'a', 'list', 'of', 'documents'], '', 'topic summary not available'),
+    (['this', 'is', 'a', 'list', 'of', 'documents'], 'blah blah', 'blah blah')
+])
+def test_get_summary(mock_s3: MagicMock,
+                     mock_model_obj: MagicMock,
+                     mock_llm: MagicMock,
+                     mocker: MockerFixture,
+                     documents,
+                     output_text,
+                     summary_text):
+    mocker.patch('os.path.isfile', return_value=True)
+    mocker.patch(
+        'app.aimodels.bertopic.ai_services.topic_summarization.CTransformers',
+        return_value=mock_llm)
+    mocker.patch(
+        'app.aimodels.bertopic.ai_services.topic_summarization.load_summarize_chain',
+        return_value=Mock(return_value=dict(output_text=output_text)))
+
+    ts = TopicSummarizer()
+    ts.initialize_llm(mock_s3,
+                      mock_model_obj,
+                      DEFAULT_PROMPT_TEMPLATE,
+                      DEFAULT_REFINE_TEMPLATE,
+                      temp=DEFAULT_LLM_TEMP)
+
+    result = ts.get_summary(documents)
+    assert result == summary_text
