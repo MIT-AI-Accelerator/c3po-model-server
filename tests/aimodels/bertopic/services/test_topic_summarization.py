@@ -178,3 +178,21 @@ def test_detect_trending_topics_single_day(document_info_train,
 
     assert (trending_id_one in trending_topic_ids) == expected_one
     assert (trending_id_two in trending_topic_ids) == expected_two
+
+
+def test_get_summary_empty_documents(mock_s3: MagicMock,
+                                     mock_model_obj: MagicMock,
+                                     mock_llm: MagicMock,
+                                     mocker: MockerFixture):
+    mocker.patch('os.path.isfile', return_value=True)
+    mocker.patch('app.aimodels.bertopic.ai_services.topic_summarization.CTransformers', return_value=mock_llm)
+
+    documents = ['', '', '']
+    ts = TopicSummarizer()
+    ts.initialize_llm(mock_s3,
+                      mock_model_obj,
+                      DEFAULT_PROMPT_TEMPLATE,
+                      DEFAULT_REFINE_TEMPLATE,
+                      temp=DEFAULT_LLM_TEMP)
+    result = ts.get_summary(documents)
+    assert result == 'topic summarization disabled'
