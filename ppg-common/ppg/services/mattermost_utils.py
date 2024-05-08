@@ -251,7 +251,7 @@ def get_all_team_posts_by_substring(mm_base_url, mm_token, team_id, search_str):
 
     url = f'{mm_base_url}/api/v4/teams/%s/posts/search' % team_id
     resp = requests.post(url, headers={'Authorization': f'Bearer {mm_token}'},
-                        json={'terms': search_str, 'is_or_search': True},
+                        json={'terms': search_str, 'is_or_search': False},
                         timeout=HTTP_REQUEST_TIMEOUT_S)
     rdata = resp.json()
 
