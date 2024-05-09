@@ -4,8 +4,8 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 from string import punctuation
-from langchain import PromptTemplate
-from langchain.llms import CTransformers
+from langchain_core.prompts import PromptTemplate
+from langchain_community.llms import CTransformers
 from langchain.chains.summarize import load_summarize_chain
 from langchain.text_splitter import CharacterTextSplitter
 from scipy.stats import shapiro
