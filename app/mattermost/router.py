@@ -2,6 +2,7 @@
 from typing import Union
 from pydantic import BaseModel, UUID4
 from fastapi import Depends, APIRouter, HTTPException
+from tqdm import tqdm
 import pandas as pd
 from sqlalchemy.orm import Session
 from ppg.schemas.bertopic.document import DocumentUpdate
@@ -105,7 +106,7 @@ async def upload_mm_channel_docs(request: UploadDocumentRequest, db: Session = D
         usernames_to_filter.add(mattermost_utils.MM_BOT_USERNAME)
 
     adf = pd.DataFrame()
-    for channel_id in request.channel_ids:
+    for channel_id in tqdm(request.channel_ids):
         channel_obj = crud_mattermost.get_or_create_mm_channel_object(db, channel_id=channel_id)
         df = mattermost_utils.get_channel_posts(
             settings.mm_base_url,
@@ -259,7 +260,7 @@ async def upload_mm_docs_by_substring(request: SubstringUploadRequest, db: Sessi
     existing_doc_uuids = []
     new_message_ids = []
     ddf = pd.DataFrame()
-    for search_str in request.search_terms:
+    for search_str in tqdm(request.search_terms):
         ddf = pd.concat([ddf,
                          mattermost_utils.get_all_team_posts_by_substring(settings.mm_base_url, settings.mm_token, request.team_id, search_str)],
                          ignore_index=True)
@@ -294,7 +295,7 @@ async def get_mm_docs_by_substring(search_terms: str, db: Session = Depends(get_
     search_terms = search_terms.split(',')
 
     ddf = pd.DataFrame()
-    for search_str in search_terms:
+    for search_str in tqdm(search_terms):
         ddf = pd.concat([ddf,
                          crud_mattermost.mattermost_documents.get_by_substring(db, search_str=search_str)],
                          ignore_index=True)

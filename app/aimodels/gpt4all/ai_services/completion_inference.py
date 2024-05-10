@@ -7,7 +7,7 @@ from enum import Enum
 from typing import Optional
 from pydantic import BaseModel, validator, ValidationError
 from langchain import PromptTemplate, LLMChain
-from langchain.llms import GPT4All
+from langchain_community.llms import GPT4All
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from pathlib import Path
 from app.aimodels.gpt4all.models.llm_pretrained import LlmFilenameEnum

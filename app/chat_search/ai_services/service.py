@@ -4,8 +4,9 @@ from .initialized_huggingface_embeddings import InitializedHuggingFaceEmbeddings
 from langchain.embeddings.huggingface import HuggingFaceEmbeddings
 from langchain.document_loaders.csv_loader import CSVLoader
 from langchain.docstore.document import Document
-from langchain.retrievers import BM25Retriever, EnsembleRetriever
-from langchain.vectorstores import FAISS
+from langchain_community.retrievers import BM25Retriever
+from langchain.retrievers import EnsembleRetriever
+from langchain_community.vectorstores import FAISS
 from langchain.chains import RetrievalQA
 from pydantic import BaseModel
 

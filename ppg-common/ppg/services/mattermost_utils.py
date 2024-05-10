@@ -54,8 +54,8 @@ def get_page_data(resp, rdf, per_page, is_channel):
 
     if len(rdata) > per_page:
         print(f"{resp.url} response length ({len(rdata)}) exceeds requested length ({per_page})")
-    else:
-        print(f"{resp.url} response length: {len(rdata)}")
+    # else:
+    #     print(f"{resp.url} response length: {len(rdata)}")
 
     return (rdf, len(rdata))
 
