@@ -29,6 +29,7 @@ from app.aimodels.bertopic import crud as bertopic_crud
 from app.aimodels.gpt4all import crud as gpt4all_crud
 
 from app.mattermost.crud import crud_mattermost
+from app.mattermost.models.mattermost_users import MattermostUserModel
 
 from sentence_transformers import SentenceTransformer, CrossEncoder
 
@@ -104,7 +105,7 @@ def get_s3(environment: str, db: Session) -> Union[Minio, None]:
     return s3
 
 
-def init_sentence_embedding_object(s3: Minio, db: Session, model_path: str) -> None:
+def init_sentence_embedding_object(s3: Minio, db: Session, model_path: str) -> BertopicEmbeddingPretrainedModel:
     # Create the SentenceTransformer object
     model_name = model_path.split('/')[-1]
 
@@ -162,7 +163,7 @@ def init_sentence_embedding_object(s3: Minio, db: Session, model_path: str) -> N
     return obj_by_sha
 
 
-def init_mistrallite_pretrained_model(s3: Minio, db: Session) -> None:
+def init_mistrallite_pretrained_model(s3: Minio, db: Session) -> LlmPretrainedModel:
 
     model_name = "mistrallite.Q4_K_M.gguf"
     local_path = os.path.join(
@@ -224,7 +225,7 @@ def init_mistrallite_pretrained_model(s3: Minio, db: Session) -> None:
     return obj_by_sha
 
 
-def init_llm_pretrained_model(s3: Minio, db: Session) -> None:
+def init_llm_pretrained_model(s3: Minio, db: Session) -> LlmPretrainedModel:
 
     model_name = "ggml-gpt4all-l13b-snoozy.bin"
     local_path = os.path.join(
@@ -326,7 +327,7 @@ def init_llm_db_obj_staging_prod(s3: Minio, db: Session, model_enum: LlmFilename
     return obj_by_sha
 
 
-def init_weak_learning_object(s3: Minio, db: Session) -> None:
+def init_weak_learning_object(s3: Minio, db: Session) -> BertopicEmbeddingPretrainedModel:
     # Create the weak learner object
     model_name = CHAT_DATASET_4_PATH.split('/')[-1]
     weak_learner_model_obj = WeakLearner().train_weak_learners(CHAT_DATASET_4_PATH)
@@ -391,7 +392,7 @@ def init_documents_from_chats(db: Session) -> str:
     return swagger_string
 
 
-def init_mattermost_bot_user(db: Session, user_name: str) -> None:
+def init_mattermost_bot_user(db: Session, user_name: str) -> MattermostUserModel:
     return crud_mattermost.populate_mm_user_team_info(db, user_name=user_name, get_teams=True)
 
 
