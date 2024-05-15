@@ -1,14 +1,17 @@
 import uuid
 import hashlib
 import os
+import pytest
 from sqlalchemy.orm import Session
 from unittest.mock import MagicMock
+from pytest_mock import MockerFixture
 from fastapi.testclient import TestClient
 from fastapi.encoders import jsonable_encoder
 from ppg.core.config import OriginationEnum
 from ppg.schemas.gpt4all.llm_pretrained import LlmPretrainedCreate
 from app.aimodels.gpt4all.models.llm_pretrained import LlmFilenameEnum
 import app.aimodels.gpt4all.crud.crud_llm_pretrained as crud
+
 
 def test_create_llm_pretrained_object_post_valid_request(client: TestClient, valid_sha256: str):
     body = LlmPretrainedCreate(sha256=valid_sha256)
@@ -88,7 +91,10 @@ def test_create_llm_pretrained_object_post_sha256_converted_to_lowercase(client:
 # ************ upload ************
 
 
-def test_upload_llm_pretrained_object_post_valid_request(client: TestClient, mocker):
+@pytest.mark.parametrize('model_type', [e for e in LlmFilenameEnum])
+def test_upload_llm_pretrained_object_post_valid_request(client: TestClient,
+                                                         mocker: MockerFixture,
+                                                         model_type: LlmFilenameEnum):
 
     # Create a file to upload
     test_file = "test_file"
@@ -103,8 +109,9 @@ def test_upload_llm_pretrained_object_post_valid_request(client: TestClient, moc
         while chunk := f.read(8192):
             sha256_hash.update(chunk)
 
-    # create the gpt4all Embedding Pretrained Model object
-    body = LlmPretrainedCreate(sha256=sha256_hash.hexdigest())
+    # create the LLM Embedding Pretrained Model object
+    body = LlmPretrainedCreate(sha256=sha256_hash.hexdigest(),
+                               model_type=model_type)
 
     response = client.post(
         "/aimodels/llm/pretrained",
@@ -113,7 +120,7 @@ def test_upload_llm_pretrained_object_post_valid_request(client: TestClient, moc
     )
     embedding_pretrained_id = response.json()["id"]
 
-    # Upload the file to the gpt4all Embedding Pretrained Model object
+    # Upload the file to the LLM Embedding Pretrained Model object
     with open(test_file, "rb") as f:
         mock_upload_file_to_minio = MagicMock(return_value=True)
         mocker.patch("app.aimodels.gpt4all.routers.pretrained.upload_file_to_minio",
@@ -128,6 +135,7 @@ def test_upload_llm_pretrained_object_post_valid_request(client: TestClient, moc
 
     assert response2.status_code == 200
     assert response2.json()["uploaded"] is True
+
 
 # test upload with sha256 not matching the one in the database
 def test_upload_llm_pretrained_object_post_invalid_sha256(client: TestClient, valid_sha256: str, mocker):
@@ -231,12 +239,18 @@ def test_get_llm_pretrained_object_invalid_name(client: TestClient):
     assert response.status_code == 422
     assert 'value is not a valid enumeration' in response.json()['detail'][0]['msg']
 
-def test_get_llm_pretrained_object_valid_name(client: TestClient, db: Session, mocker: MagicMock):
-    body = {'model_type': LlmFilenameEnum.L13B_SNOOZY}
 
-    mocked_model = crud.llm_pretrained.get_latest_uploaded_by_model_type(db,
-                                                                        model_type=LlmFilenameEnum.L13B_SNOOZY,
-                                                                        originated_from=OriginationEnum.ORIGINATED_FROM_TEST)
+@pytest.mark.parametrize('model_type', [e for e in LlmFilenameEnum])
+def test_get_llm_pretrained_object_valid_name(client: TestClient,
+                                              db: Session,
+                                              mocker: MagicMock,
+                                              model_type: LlmFilenameEnum):
+    body = {'model_type': model_type}
+
+    mocked_model = crud.llm_pretrained.get_latest_uploaded_by_model_type(
+        db,
+        model_type=model_type,
+        originated_from=OriginationEnum.ORIGINATED_FROM_TEST)
     mocker.patch(
         "app.aimodels.gpt4all.crud.crud_llm_pretrained.llm_pretrained.get_latest_uploaded_by_model_type",
         return_value=mocked_model

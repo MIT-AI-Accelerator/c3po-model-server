@@ -29,6 +29,7 @@ from app.aimodels.bertopic import crud as bertopic_crud
 from app.aimodels.gpt4all import crud as gpt4all_crud
 
 from app.mattermost.crud import crud_mattermost
+from app.mattermost.models.mattermost_users import MattermostUserModel
 
 from sentence_transformers import SentenceTransformer, CrossEncoder
 
@@ -104,7 +105,7 @@ def get_s3(environment: str, db: Session) -> Union[Minio, None]:
     return s3
 
 
-def init_sentence_embedding_object(s3: Minio, db: Session, model_path: str) -> None:
+def init_sentence_embedding_object(s3: Minio, db: Session, model_path: str) -> BertopicEmbeddingPretrainedModel:
     # Create the SentenceTransformer object
     model_name = model_path.split('/')[-1]
 
@@ -162,7 +163,7 @@ def init_sentence_embedding_object(s3: Minio, db: Session, model_path: str) -> N
     return obj_by_sha
 
 
-def init_mistrallite_pretrained_model(s3: Minio, db: Session) -> None:
+def init_mistrallite_pretrained_model(s3: Minio, db: Session) -> LlmPretrainedModel:
 
     model_name = "mistrallite.Q4_K_M.gguf"
     local_path = os.path.join(
@@ -224,7 +225,7 @@ def init_mistrallite_pretrained_model(s3: Minio, db: Session) -> None:
     return obj_by_sha
 
 
-def init_llm_pretrained_model(s3: Minio, db: Session) -> None:
+def init_llm_pretrained_model(s3: Minio, db: Session) -> LlmPretrainedModel:
 
     model_name = "ggml-gpt4all-l13b-snoozy.bin"
     local_path = os.path.join(
@@ -286,9 +287,12 @@ def init_llm_pretrained_model(s3: Minio, db: Session) -> None:
     return obj_by_sha
 
 
-def init_gpt4all_db_obj_staging_prod(s3: Minio, db: Session) -> None:
+def init_llm_db_obj_staging_prod(s3: Minio, db: Session, model_enum: LlmFilenameEnum) -> LlmPretrainedModel:
 
-    model_name = "ggml-gpt4all-l13b-snoozy.bin"
+    default_sha256 = settings.default_sha256_l13b_snoozy \
+        if model_enum == LlmFilenameEnum.L13B_SNOOZY \
+        else settings.default_sha256_q4_k_m
+    model_name = model_enum.value
     local_path = os.path.join(
         MODEL_CACHE_BASEDIR, model_name)
 
@@ -303,12 +307,12 @@ def init_gpt4all_db_obj_staging_prod(s3: Minio, db: Session) -> None:
 
     # check to make sure sha256 doesn't already exist
     obj_by_sha: LlmPretrainedModel = gpt4all_crud.llm_pretrained.get_by_sha256(
-        db, sha256=settings.default_sha256_l13b_snoozy)
+        db, sha256=default_sha256)
 
     if not obj_by_sha:
 
         llm_pretrained_obj = LlmPretrainedCreate(
-            sha256=settings.default_sha256_l13b_snoozy, use_base_model=True)
+            sha256=default_sha256, use_base_model=True)
 
         new_llm_pretrained_obj: LlmPretrainedModel = gpt4all_crud.llm_pretrained.create(
             db, obj_in=llm_pretrained_obj)
@@ -323,7 +327,7 @@ def init_gpt4all_db_obj_staging_prod(s3: Minio, db: Session) -> None:
     return obj_by_sha
 
 
-def init_weak_learning_object(s3: Minio, db: Session) -> None:
+def init_weak_learning_object(s3: Minio, db: Session) -> BertopicEmbeddingPretrainedModel:
     # Create the weak learner object
     model_name = CHAT_DATASET_4_PATH.split('/')[-1]
     weak_learner_model_obj = WeakLearner().train_weak_learners(CHAT_DATASET_4_PATH)
@@ -388,7 +392,7 @@ def init_documents_from_chats(db: Session) -> str:
     return swagger_string
 
 
-def init_mattermost_bot_user(db: Session, user_name: str) -> None:
+def init_mattermost_bot_user(db: Session, user_name: str) -> MattermostUserModel:
     return crud_mattermost.populate_mm_user_team_info(db, user_name=user_name, get_teams=True)
 
 
@@ -449,9 +453,17 @@ def init_large_objects(environment: str, migration_toggle: bool, s3: Minio, db: 
             f"Gpt4All Object ID: {llm_pretrained_obj.id}, SHA256: {llm_pretrained_obj.sha256}")
 
     if (environment == 'staging' or (environment == 'production' and migration_toggle is True)):
+        # Mistral
+        logger.info("Verifying Mistral object in MinIO")
+        llm_pretrained_obj = init_llm_db_obj_staging_prod(s3, db, LlmFilenameEnum.Q4_K_M)
+        logger.info("Verified Mistral object in MinIO.")
+        logger.info(
+            f"Mistral Object ID: {llm_pretrained_obj.id}, SHA256: {llm_pretrained_obj.sha256}")
+
+        # Gpt4All
         logger.info("Verifying Gpt4All object in MinIO")
-        llm_pretrained_obj = init_gpt4all_db_obj_staging_prod(s3, db)
-        logger.info("Verified Gpt4All object in MinIO")
+        llm_pretrained_obj = init_llm_db_obj_staging_prod(s3, db, LlmFilenameEnum.L13B_SNOOZY)
+        logger.info("Verified Gpt4All object in MinIO.")
         logger.info(
             f"Gpt4All Object ID: {llm_pretrained_obj.id}, SHA256: {llm_pretrained_obj.sha256}")
     ########## large object uploads ################
