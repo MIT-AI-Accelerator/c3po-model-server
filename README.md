@@ -124,8 +124,11 @@ In general, tensorflow and pytorch use the underlying `unittest` framework that 
 - [SonarQube for dependency check (model pipeline)](https://sonarqube.il4.dso.mil/dashboard?id=platform-one-products-ai-accel-transformers-c3po-model-gpu-dependencies)
 - [SonarQube for SCA & code coverage (data pipeline)](https://sonarqube.il4.dso.mil/dashboard?id=platform-one-products-ai-accel-transformers-c3po-model-server)
 - [SonarQube for SCA & code coverage (model pipeline)](https://sonarqube.il4.dso.mil/dashboard?id=platform-one-products-ai-accel-transformers-c3po-model-gpu)
-- [False Positive Clearing SQ and trufflehog](https://confluence.il2.dso.mil/display/PUCKBOARD/Sonarqube+False-Positive+Issue+Workflow)
+- [False Positive Clearing SQ](https://confluence.il2.dso.mil/display/PUCKBOARD/Sonarqube+False-Positive+Issue+Workflow)
 - [Argo page](https://argocd-il4.admin.dso.mil/applications/argocd/p1-il4-mission-staging-transformers-transformers?view=tree&resource=)
+
+### Trufflehog
+- [False Positive Clearing for trufflehog](https://confluence.il2.dso.mil/pages/viewpage.action?spaceKey=P1MDOHD&title=TS+-+Trufflehog+-+Stage+Failure)
 
 ### K8s configs
 - [IL4 mission bootstrap](https://code.il4.dso.mil/platform-one/devops/mission-bootstrap/il4-mission-bootstrap/-/tree/master/integrations/ai-accel/transformers)
