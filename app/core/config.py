@@ -65,6 +65,7 @@ class Settings(BaseSettings):
 
     # Default model hash settings
     default_sha256_l13b_snoozy: str = ""
+    default_sha256_q4_k_m: str = ""
 
 def get_env_file(environment_settings_in):
     # get the base directory
