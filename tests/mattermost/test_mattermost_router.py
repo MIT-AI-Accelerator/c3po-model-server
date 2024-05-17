@@ -3,9 +3,10 @@ import pytest
 import pandas as pd
 from sqlalchemy.orm import Session
 from fastapi.testclient import TestClient
+from _pytest.monkeypatch import MonkeyPatch
 from pytest_mock import MockerFixture
 from ppg.core.config import OriginationEnum
-from app.core.config import environment_settings
+from app.core.config import environment_settings, settings
 from app.mattermost.crud import crud_mattermost
 from app.mattermost.models.mattermost_channels import MattermostChannelModel
 from app.mattermost.models.mattermost_users import MattermostUserModel
@@ -133,16 +134,15 @@ def test_get_mattermost_user_info_invalid_input(client: TestClient):
     assert 'Mattermost' in response.json()['detail']
 
 # test user get endpoint
-def test_get_mattermost_user_info(client: TestClient):
+def test_get_mattermost_user_info(client: TestClient, monkeypatch: MonkeyPatch):
 
     if environment_settings.environment == 'test':
         return
 
-    # this test creates db entries for mm user and channel, these are
-    # operational entries and should not labeled as originated from test
-    response = client.get("/originated_from_app/")
-    originated_from = response.json()
-    assert originated_from == OriginationEnum.ORIGINATED_FROM_APP
+    # This test creates db entries for mm user and channel; these are
+    # operational entries and should not labeled as originated from test.
+    # Use monkeypatch to reset global settings attribute upon test completion
+    monkeypatch.setattr(settings, 'originated_from', OriginationEnum.ORIGINATED_FROM_APP)
 
     response = client.get(
         "/mattermost/user/get",
