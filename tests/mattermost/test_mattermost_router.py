@@ -98,10 +98,13 @@ def test_upload_mattermost_user_info_invalid_input(client: TestClient):
     assert 'Mattermost' in response.json()['detail']
 
 # test user upload endpoint
-def test_upload_mattermost_user_info(client: TestClient):
+def test_upload_mattermost_user_info(client: TestClient, monkeypatch: MonkeyPatch):
 
     if environment_settings.environment == 'test':
         return
+
+    # see note at tests/mattermost/test_mattermost_router.py::test_get_mattermost_user_info
+    monkeypatch.setattr(settings, 'originated_from', OriginationEnum.ORIGINATED_FROM_APP)
 
     response = client.post(
         "/mattermost/user/upload",
