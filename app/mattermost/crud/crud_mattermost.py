@@ -251,7 +251,7 @@ def populate_mm_user_info(db: Session, *, mm_user: dict, teams: dict) -> Matterm
             db, db_obj=user_obj, obj_in=update_user)
 
     if user_obj is None:
-        logger.debug(f"Unable to retrieve user: {user_name}")
+        logger.debug(f"Unable to retrieve user: {mm_user}")
 
     return user_obj
 
