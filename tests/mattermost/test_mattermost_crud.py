@@ -1,11 +1,13 @@
 import uuid, datetime
 import pandas as pd
+import app.mattermost.crud.crud_mattermost as crud
+from _pytest.monkeypatch import MonkeyPatch
 from sqlalchemy.orm import Session
 from app.core.config import environment_settings, settings
 from app.mattermost.models.mattermost_documents import MattermostDocumentModel
-import app.mattermost.crud.crud_mattermost as crud
 from app.aimodels.bertopic.models.document import DocumentModel
 from app.aimodels.bertopic.crud import crud_document
+from ppg.core.config import OriginationEnum
 
 
 def test_crud_mattermost(db: Session):
@@ -158,11 +160,14 @@ def test_crud_mattermost(db: Session):
     assert mmdoc.originated_from == settings.originated_from
 
 
-def test_populate_mm_user_team_info_local(db: Session):
+def test_populate_mm_user_team_info_local(db: Session, monkeypatch: MonkeyPatch):
     # test user info in database
 
     if environment_settings.environment == 'test':
         return
+
+    # see note at tests/mattermost/test_mattermost_router.py::test_get_mattermost_user_info
+    monkeypatch.setattr(settings, 'originated_from', OriginationEnum.ORIGINATED_FROM_APP)
 
     mm_name = 'nitmre-bot'
     user_obj = crud.populate_mm_user_team_info(db, user_name=mm_name)

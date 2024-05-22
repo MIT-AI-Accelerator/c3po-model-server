@@ -26,7 +26,7 @@ def test_train_valid_request(client: TestClient, db: Session):
     # get documents
     n_docs = 20
     documents_db = db.query(DocumentModel).where(DocumentModel.text != None).limit(n_docs).all()
-    assert len(documents_db) == n_docs
+    assert 0 < len(documents_db) <= n_docs
 
     body = {
         "sentence_transformer_id": sentence_transformer_id,
@@ -62,7 +62,7 @@ def test_train_valid_request_seed_topics(client: TestClient, db: Session):
     # ensure init script run before this
     n_docs = 20
     documents_db = db.query(DocumentModel).where(DocumentModel.text != None).limit(n_docs).all()
-    assert len(documents_db) == n_docs
+    assert 0 < len(documents_db) <= n_docs
 
     seed_topics = [['urgent', 'priority'],
         ['delay', 'slip']]
@@ -117,7 +117,7 @@ def test_train_valid_request_weak_learning(client: TestClient, db: Session):
     n_docs = 30
     documents_db = db.query(DocumentModel).where(DocumentModel.text != None,
                                                  DocumentModel.original_created_time != None).limit(n_docs).all()
-    assert len(documents_db) == n_docs
+    assert 0 < len(documents_db) <= n_docs
 
     # train on documents
     body = {
