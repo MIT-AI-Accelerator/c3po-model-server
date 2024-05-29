@@ -95,15 +95,6 @@ class WeakLearner:
             return ChatLabel.ABSTAIN
 
         @labeling_function()
-        def lf_roger(x):
-            if any([
-                (x['message'].find('rgr') >= 0),
-                (x['message'].find('roger') >= 0)
-            ]):
-                return ChatLabel.RECYCLE
-            return ChatLabel.ABSTAIN
-
-        @labeling_function()
         def lf_lunch(x):
             if any([
                 (x['message'].find('lunch') >= 0),
@@ -114,7 +105,7 @@ class WeakLearner:
             return ChatLabel.ABSTAIN
 
         labeling_functions = [lf_svm_rbf, lf_mlp, lf_channel,
-                              lf_length, lf_hello, lf_roger, lf_lunch]
+                              lf_length, lf_hello, lf_lunch]
         label_applier = PandasLFApplier(labeling_functions)
         return labeling_functions, label_applier
 
