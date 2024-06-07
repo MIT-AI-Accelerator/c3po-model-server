@@ -5,16 +5,18 @@ import io
 import pickle
 import logging
 import requests
+import time
 from pathlib import Path
 from tqdm import tqdm
 from typing import Union
 from fastapi import UploadFile
 from fastapi.encoders import jsonable_encoder
 from minio.error import InvalidResponseError
+
+import ppg.services.mattermost_utils as mattermost_utils
 from ppg.schemas.bertopic.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedCreate, BertopicEmbeddingPretrainedUpdate
 from ppg.schemas.gpt4all.llm_pretrained import LlmPretrainedCreate, LlmPretrainedUpdate
 from ppg.schemas.bertopic.document import DocumentCreate
-from ppg.services.mattermost_utils import MM_BOT_USERNAME
 
 from app.aimodels.bertopic.models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedModel, EmbeddingModelTypeEnum
 from app.aimodels.bertopic.models.document import DocumentModel
@@ -396,80 +398,135 @@ def init_mattermost_bot_user(db: Session, user_name: str) -> MattermostUserModel
     return crud_mattermost.populate_mm_user_team_info(db, user_name=user_name, get_teams=True)
 
 
-def init_large_objects(environment: str, migration_toggle: bool, s3: Minio, db: Session) -> None:
+def init_mattermost_documents(db:Session, bot_obj: MattermostUserModel) -> None:
+        cdf = mattermost_utils.get_all_user_team_channels(settings.mm_base_url,
+            settings.mm_token,
+            bot_obj.user_id,
+            bot_obj.teams)
+        channel_ids = cdf.id.values
+        logger.info('found %d nitmre-bot channels' % len(channel_ids))
 
-    ########## large object uploads ################
-    if (environment == 'local'):
-        # Sentence Transformer
-        logger.info("Uploading all-MiniLM-L6-v2 object to MinIO")
-        embedding_pretrained_obj1 = init_sentence_embedding_object(
-            s3, db, "all-MiniLM-L6-v2")
-        logger.info("all-MiniLM-L6-v2 object uploaded to MinIO.")
-        logger.info(
-            f"all-MiniLM-L6-v2 Embedding Pretrained Object ID: {embedding_pretrained_obj1.id}, SHA256: {embedding_pretrained_obj1.sha256}")
-        embedding_pretrained_obj2 = init_sentence_embedding_object(
-            s3, db, "sentence-transformers/all-mpnet-base-v2")
-        logger.info("all-mpnet-base-v2 object uploaded to MinIO.")
-        logger.info(
-            f"all-mpnet-base-v2 Embedding Pretrained Object ID: {embedding_pretrained_obj2.id}, SHA256: {embedding_pretrained_obj2.sha256}")
+        # nitmre-bot may be a member of 1000s of channels, this may take a lot of time
+        # start with 2 channels for now: fm_618aoc, jicc618aoc
+        channel_ids = ["49qb17rn4pyxzf8t7tn5q5i9by", "rzmytnht33fjxr7dy46p8aqb9e"]
+        history_depth = 0
+        filter_system_posts = True
 
-        # Weak learner
-        logger.info("Uploading WeakLearner object to MinIO")
-        embedding_pretrained_obj = init_weak_learning_object(s3, db)
-        logger.info("WeakLearner object uploaded to MinIO.")
-        logger.info(
-            f"Weak learner Pretrained Object ID: {embedding_pretrained_obj.id}, SHA256: {embedding_pretrained_obj.sha256}")
+        adf = pd.DataFrame()
+        for channel_id in tqdm(channel_ids):
+            channel_obj = crud_mattermost.get_or_create_mm_channel_object(db, channel_id=channel_id)
+            df = mattermost_utils.get_channel_posts(
+                settings.mm_base_url,
+                settings.mm_token,
+                channel_id,
+                history_depth=history_depth,
+                filter_system_types=filter_system_posts).assign(channel=channel_obj.id)
+            adf = pd.concat([adf, df], ignore_index=True)
+        channel_uuids = adf['channel'].unique()
 
-        # MARCO reranker
-        logger.info("Uploading MARCO cross-encoder object to MinIO")
-        marco_pretrained_obj = init_sentence_embedding_object(
-            s3, db, "cross-encoder/ms-marco-TinyBERT-L-6")
-        logger.info("MARCO cross-encoder object uploaded to MinIO.")
-        logger.info(
-            f"MARCO cross-encoder Pretrained Object ID: {marco_pretrained_obj.id}, SHA256: {marco_pretrained_obj.sha256}")
+        if not adf.empty:
+            user_ids = adf['user_id'].unique()
+            for uid in user_ids:
+                user_obj = crud_mattermost.get_or_create_mm_user_object(db, user_id=uid)
+                adf.loc[adf['user_id'] == uid, 'user'] = user_obj.id
 
-        # Mattermost user
-        logger.info("Uploading Mattermost bot user")
-        user_obj = init_mattermost_bot_user(db, MM_BOT_USERNAME)
-        if user_obj:
-            logger.info("Mattermost bot user uploaded to DB")
-            logger.info(
-                f"Mattermost bot user object ID: {user_obj.id}, mattermost ID: {user_obj.user_id}")
-        else:
-            logger.info("Unable to load Mattermost bot user")
+            channel_document_objs = crud_mattermost.mattermost_documents.get_all_channel_documents(
+                db, channels=channel_uuids)
+            existing_ids = [obj.message_id for obj in channel_document_objs]
+            adf = adf[~adf.id.isin(existing_ids)].drop_duplicates(subset='id')
 
-        # Mistral
-        logger.info("Uploading Mistral object to MinIO")
-        llm_pretrained_obj = init_mistrallite_pretrained_model(s3, db)
-        logger.info("Mistral object uploaded to MinIO.")
-        logger.info(
-            f"Mistral Object ID: {llm_pretrained_obj.id}, SHA256: {llm_pretrained_obj.sha256}")
+        adf.rename(columns={'id': 'message_id'}, inplace=True)
+        return crud_mattermost.mattermost_documents.create_all_using_df(db, ddf=adf, is_thread=False)
 
-        # Gpt4All
-        logger.info("Uploading Gpt4All object to MinIO")
-        llm_pretrained_obj = init_llm_pretrained_model(s3, db)
-        logger.info("Gpt4All object uploaded to MinIO.")
-        logger.info(
-            f"Gpt4All Object ID: {llm_pretrained_obj.id}, SHA256: {llm_pretrained_obj.sha256}")
+########## large object uploads ################
 
-    if (environment == 'staging' or (environment == 'production' and migration_toggle is True)):
-        # Mistral
-        logger.info("Verifying Mistral object in MinIO")
-        llm_pretrained_obj = init_llm_db_obj_staging_prod(s3, db, LlmFilenameEnum.Q4_K_M)
-        logger.info("Verified Mistral object in MinIO.")
-        logger.info(
-            f"Mistral Object ID: {llm_pretrained_obj.id}, SHA256: {llm_pretrained_obj.sha256}")
+def init_large_objects(db: Session) -> None:
 
-        # Gpt4All
-        logger.info("Verifying Gpt4All object in MinIO")
-        llm_pretrained_obj = init_llm_db_obj_staging_prod(s3, db, LlmFilenameEnum.L13B_SNOOZY)
-        logger.info("Verified Gpt4All object in MinIO.")
+    # Mattermost user
+    logger.info("Uploading Mattermost bot user")
+    bot_obj = init_mattermost_bot_user(db, mattermost_utils.MM_BOT_USERNAME)
+    if bot_obj:
+        logger.info("Mattermost bot user uploaded to DB")
         logger.info(
-            f"Gpt4All Object ID: {llm_pretrained_obj.id}, SHA256: {llm_pretrained_obj.sha256}")
-    ########## large object uploads ################
+            f"Mattermost bot user object ID: {bot_obj.id}, mattermost ID: {bot_obj.user_id}")
+    else:
+        logger.info("Unable to load Mattermost bot user")
+
+    # Mattermost documents
+    logger.info("Uploading Mattermost documents")
+    doc_objs = init_mattermost_documents(db, bot_obj)
+    if doc_objs:
+        logger.info("Uploaded %d Mattermost documents to DB" % len(doc_objs))
+    else:
+        logger.info("Unable to load Mattermost documents")
+
+
+def init_large_objects_local(s3: Minio, db: Session) -> None:
+
+    # Sentence Transformer
+    logger.info("Uploading all-MiniLM-L6-v2 object to MinIO")
+    embedding_pretrained_obj1 = init_sentence_embedding_object(
+        s3, db, "all-MiniLM-L6-v2")
+    logger.info("all-MiniLM-L6-v2 object uploaded to MinIO.")
+    logger.info(
+        f"all-MiniLM-L6-v2 Embedding Pretrained Object ID: {embedding_pretrained_obj1.id}, SHA256: {embedding_pretrained_obj1.sha256}")
+    embedding_pretrained_obj2 = init_sentence_embedding_object(
+        s3, db, "sentence-transformers/all-mpnet-base-v2")
+    logger.info("all-mpnet-base-v2 object uploaded to MinIO.")
+    logger.info(
+        f"all-mpnet-base-v2 Embedding Pretrained Object ID: {embedding_pretrained_obj2.id}, SHA256: {embedding_pretrained_obj2.sha256}")
+
+    # Weak learner
+    logger.info("Uploading WeakLearner object to MinIO")
+    embedding_pretrained_obj = init_weak_learning_object(s3, db)
+    logger.info("WeakLearner object uploaded to MinIO.")
+    logger.info(
+        f"Weak learner Pretrained Object ID: {embedding_pretrained_obj.id}, SHA256: {embedding_pretrained_obj.sha256}")
+
+    # MARCO reranker
+    logger.info("Uploading MARCO cross-encoder object to MinIO")
+    marco_pretrained_obj = init_sentence_embedding_object(
+        s3, db, "cross-encoder/ms-marco-TinyBERT-L-6")
+    logger.info("MARCO cross-encoder object uploaded to MinIO.")
+    logger.info(
+        f"MARCO cross-encoder Pretrained Object ID: {marco_pretrained_obj.id}, SHA256: {marco_pretrained_obj.sha256}")
+
+    # Mistral
+    logger.info("Uploading Mistral object to MinIO")
+    llm_pretrained_obj = init_mistrallite_pretrained_model(s3, db)
+    logger.info("Mistral object uploaded to MinIO.")
+    logger.info(
+        f"Mistral Object ID: {llm_pretrained_obj.id}, SHA256: {llm_pretrained_obj.sha256}")
+
+    # Gpt4All
+    logger.info("Uploading Gpt4All object to MinIO")
+    llm_pretrained_obj = init_llm_pretrained_model(s3, db)
+    logger.info("Gpt4All object uploaded to MinIO.")
+    logger.info(
+        f"Gpt4All Object ID: {llm_pretrained_obj.id}, SHA256: {llm_pretrained_obj.sha256}")
+
+def init_large_objects_p1(s3: Minio, db: Session) -> None:
+
+    # Mistral
+    logger.info("Verifying Mistral object in MinIO")
+    llm_pretrained_obj = init_llm_db_obj_staging_prod(s3, db, LlmFilenameEnum.Q4_K_M)
+    logger.info("Verified Mistral object in MinIO.")
+    logger.info(
+        f"Mistral Object ID: {llm_pretrained_obj.id}, SHA256: {llm_pretrained_obj.sha256}")
+
+    # Gpt4All
+    logger.info("Verifying Gpt4All object in MinIO")
+    llm_pretrained_obj = init_llm_db_obj_staging_prod(s3, db, LlmFilenameEnum.L13B_SNOOZY)
+    logger.info("Verified Gpt4All object in MinIO.")
+    logger.info(
+        f"Gpt4All Object ID: {llm_pretrained_obj.id}, SHA256: {llm_pretrained_obj.sha256}")
+
+########## large object uploads ################
 
 
 def main() -> None:
+    start = time.time()
+
     args = sys.argv[1:]
 
     migration_toggle = False
@@ -486,7 +543,14 @@ def main() -> None:
 
     s3 = get_s3(environment, db)
 
-    init_large_objects(environment, migration_toggle, s3, db)
+    init_large_objects(db)
+    if (environment == 'local'):
+        init_large_objects_local(s3, db)
+    elif (environment == 'staging' or (environment == 'production' and migration_toggle is True)):
+        init_large_objects_p1(s3, db)
+
+    end = time.time()
+    logger.info("Initialization complete in %fs" % (end - start))
 
 
 if __name__ == "__main__":

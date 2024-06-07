@@ -1,7 +1,7 @@
 from setuptools import find_packages, setup
 
 setup(name='ppg-common',
-      version='1.3.0',
+      version='1.4.0',
       description='A library for PPG common code',
       url='--',
       author='MIT Lincoln Laboratory',

@@ -77,8 +77,8 @@ async def get_mm_user_info(user_name: str, db: Session = Depends(get_db)) -> (
 class UploadDocumentRequest(BaseModel):
     channel_ids: list[str] = []
     history_depth: int = mattermost_utils.DEFAULT_HISTORY_DEPTH_DAYS
-    filter_bot_posts = True
-
+    filter_bot_posts = False
+    filter_system_posts = True
 
 @router.post(
     "/mattermost/documents/upload",
@@ -95,6 +95,7 @@ async def upload_mm_channel_docs(request: UploadDocumentRequest, db: Session = D
     - **channel_ids**: Required.  Mattermost channels to query for posts.
     - **history_depth**: Optional.  Number of days (prior to request) to upload posts for.
     - **filter_bot_posts**: Optional.  Eliminate bot posts from upload.
+    - **filter_system_posts**: Optional.  Eliminate system posts from upload.
     """
 
     if not request.channel_ids:
@@ -112,8 +113,9 @@ async def upload_mm_channel_docs(request: UploadDocumentRequest, db: Session = D
             settings.mm_base_url,
             settings.mm_token,
             channel_id,
-            request.history_depth,
-            usernames_to_filter).assign(channel=channel_obj.id)
+            history_depth=request.history_depth,
+            filter_system_types=request.filter_system_posts,
+            usernames_to_filter=usernames_to_filter).assign(channel=channel_obj.id)
         adf = pd.concat([adf, df], ignore_index=True)
     channel_uuids = adf['channel'].unique()
 
@@ -213,16 +215,19 @@ async def convert_conversation_threads(request: ConversationThreadRequest,
                                                        original_created_time=document_obj.original_created_time))
             updated_mm_doc_obj = crud_mattermost.mattermost_documents.update(db,
                                                                              db_obj=mm_document_obj,
-                                                                             obj_in=MattermostDocumentUpdate(message_id=mm_document_obj.message_id,
-                                                                             root_message_id=mm_document_obj.root_message_id,
-                                                                             type=mm_document_obj.type,hashtags=row['hashtags'],
-                                                                             has_reactions=str(row['has_reactions']).lower() == 'true',
-                                                                             props=row['props'],
-                                                                             doc_metadata=row['metadata'],
-                                                                             channel=mm_document_obj.channel,
-                                                                             user=mm_document_obj.user,
-                                                                             document=mm_document_obj.document,
-                                                                             is_thread=True))
+                                                                             obj_in=MattermostDocumentUpdate(
+                                                                                message_id=mm_document_obj.message_id,
+                                                                                root_message_id=mm_document_obj.root_message_id,
+                                                                                type=mm_document_obj.type,
+                                                                                hashtags=row['hashtags'],
+                                                                                has_reactions=str(row['has_reactions']).lower() == 'true',
+                                                                                props=row['props'],
+                                                                                doc_metadata=row['metadata'],
+                                                                                channel=mm_document_obj.channel,
+                                                                                user=mm_document_obj.user,
+                                                                                document=mm_document_obj.document,
+                                                                                is_thread=True,
+                                                                                info_type=mm_document_obj.info_type))
             document_objs = document_objs + [updated_mm_doc_obj]
 
         else:
@@ -273,9 +278,8 @@ async def upload_mm_docs_by_substring(request: SubstringUploadRequest, db: Sessi
             new_message_ids.append(row.id)
     ddf = ddf[ddf.id.isin(new_message_ids)]
 
-    new_mattermost_docs, new_doc_uuids = crud_mattermost.populate_mm_document_info(db, document_df=ddf)
-    if new_mattermost_docs:
-        crud_mattermost.mattermost_documents.create_all_using_id(db, obj_in_list=new_mattermost_docs)
+    new_mattermost_docs = crud_mattermost.populate_mm_document_info(db, document_df=ddf)
+    new_doc_uuids = [mm_doc.document for mm_doc in new_mattermost_docs]
 
     return crud_mattermost.mattermost_documents.get_document_dataframe(db, document_uuids=(existing_doc_uuids + new_doc_uuids)).transpose().to_dict()
 
