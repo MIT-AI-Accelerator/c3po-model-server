@@ -543,7 +543,9 @@ def main() -> None:
 
     s3 = get_s3(environment, db)
 
-    init_large_objects(db)
+    if (environment != 'test'):
+        init_large_objects(db)
+
     if (environment == 'local'):
         init_large_objects_local(s3, db)
     elif (environment == 'staging' or (environment == 'production' and migration_toggle is True)):
