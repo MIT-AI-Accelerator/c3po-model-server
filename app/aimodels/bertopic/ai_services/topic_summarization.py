@@ -163,7 +163,7 @@ class TopicSummarizer:
 
             # saves only the summary (but output includes intermediate steps of how we get to the summary
             # if we want to save that in the future for XAI or other reason e.g., output_summary['intermediate_steps'])
-            output_summary = chain.invoke({"input_documents": docs})
+            output_summary = chain({"input_documents": docs})
             summary_text = output_summary['output_text']
             if summary_text == '':
                 logger.warning('null output_text in topic summarization')
