@@ -1,5 +1,5 @@
 from typing import Union
-from datetime import datetime
+from datetime import datetime, timedelta
 import pandas as pd
 import numpy as np
 from fastapi import HTTPException
@@ -67,22 +67,25 @@ class CRUDMattermostDocument(CRUDBase[MattermostDocumentModel, MattermostDocumen
         # each mattermost document is allowed a single conversation thread
         return db.query(self.model).filter(self.model.message_id == message_id).all()
 
-    def get_all_channel_documents(self, db: Session, channels: list[str], history_depth: int = 0) -> Union[list[MattermostDocumentModel], None]:
+    def get_all_channel_documents(self, db: Session, channels: list[str], history_depth: int = 0, content_filter_list = []) -> Union[list[MattermostDocumentModel], None]:
+        stime = datetime.min
+        ctime = datetime.now() + timedelta(days=1)
 
         # get documents <= history_depth days old
         if history_depth > 0:
             ctime = datetime.now()
             stime = ctime - pd.DateOffset(days=history_depth)
-            documents = sum([db.query(self.model).join(DocumentModel).filter(self.model.channel == cuuid,
-                                                                             DocumentModel.original_created_time >= stime,
-                                                                             DocumentModel.original_created_time <= ctime,
-                                                                             self.model.is_thread == False)
-                                                                             .all() for cuuid in channels], [])
 
-        # get all documents
-        else:
-            documents = sum([db.query(self.model).filter(
-                self.model.channel == cuuid).all() for cuuid in channels], [])
+        if not content_filter_list:
+            content_filter_list = [f.value for f in InfoTypeEnum]
+
+        documents = []
+        for itype in content_filter_list:
+            documents += sum([db.query(self.model).join(DocumentModel).filter(self.model.channel == cuuid,
+                DocumentModel.original_created_time >= stime,
+                DocumentModel.original_created_time <= ctime,
+                self.model.is_thread == False,
+                self.model.info_type == itype).all() for cuuid in channels], [])
 
         return documents
 
@@ -372,7 +375,6 @@ def get_or_create_mm_user_object(db: Session, *, user_id: str):
 
 
 def populate_mm_document_info(db: Session, *, document_df: pd.DataFrame):
-    new_doc_uuids = []
     new_mattermost_docs = []
 
     # get or create new channel objects in db

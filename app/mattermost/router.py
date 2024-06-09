@@ -6,7 +6,7 @@ from tqdm import tqdm
 import pandas as pd
 from sqlalchemy.orm import Session
 from ppg.schemas.bertopic.document import DocumentUpdate
-from ppg.schemas.mattermost.mattermost_documents import MattermostDocument, MattermostDocumentUpdate
+from ppg.schemas.mattermost.mattermost_documents import MattermostDocument, MattermostDocumentUpdate, InfoTypeEnum
 from ppg.schemas.mattermost.mattermost_users import MattermostUser
 import ppg.services.mattermost_utils as mattermost_utils
 from app.core.config import settings
@@ -79,6 +79,7 @@ class UploadDocumentRequest(BaseModel):
     history_depth: int = mattermost_utils.DEFAULT_HISTORY_DEPTH_DAYS
     filter_bot_posts = False
     filter_system_posts = True
+    filter_post_content: list[str] = []
 
 @router.post(
     "/mattermost/documents/upload",
@@ -101,6 +102,12 @@ async def upload_mm_channel_docs(request: UploadDocumentRequest, db: Session = D
     if not request.channel_ids:
         raise HTTPException(
             status_code=422, detail="No Mattermost channels requested")
+
+    filters = [f.value for f in InfoTypeEnum]
+    if any(f not in filters for f in request.filter_post_content):
+        raise HTTPException(
+            status_code=422, detail="Invalid post content filter: %s. Available filters: %s" %
+            ([f for f in request.filter_post_content], filters))
 
     usernames_to_filter = set()
     if request.filter_bot_posts:
@@ -135,8 +142,10 @@ async def upload_mm_channel_docs(request: UploadDocumentRequest, db: Session = D
     adf.rename(columns={'id': 'message_id'}, inplace=True)
     crud_mattermost.mattermost_documents.create_all_using_df(db, ddf=adf, is_thread=False)
 
-    return crud_mattermost.mattermost_documents.get_all_channel_documents(
-        db, channels=channel_uuids, history_depth=request.history_depth)
+    return crud_mattermost.mattermost_documents.get_all_channel_documents(db,
+                                                                          channels=channel_uuids,
+                                                                          history_depth=request.history_depth,
+                                                                          content_filter_list=request.filter_post_content)
 
 
 @router.get(
