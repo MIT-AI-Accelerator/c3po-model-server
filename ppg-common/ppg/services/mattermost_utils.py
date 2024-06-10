@@ -195,7 +195,7 @@ def get_channel_info(mm_base_url, mm_token, channel_id):
     return channel
 
 
-def get_channel_posts(mm_base_url, mm_token, channel_id, history_depth=0, usernames_to_filter=set([MM_BOT_USERNAME])):
+def get_channel_posts(mm_base_url, mm_token, channel_id, history_depth=0, filter_system_types=True, usernames_to_filter=set([MM_BOT_USERNAME])):
     """get a list of posts for a single channel"""
 
     url = f'{mm_base_url}/api/v4/channels/%s/posts' % channel_id
@@ -216,8 +216,13 @@ def get_channel_posts(mm_base_url, mm_token, channel_id, history_depth=0, userna
             else:
                 print(f"skipping user filter for channel {channel_id}, unable to find mattermost id for {mm_user}")
 
+        # remove user posts
         user_ids_to_filter = user_ids_to_filter.intersection(posts['user_id'].unique())
         posts = posts[~posts['user_id'].isin(user_ids_to_filter)]
+
+        # remove system posts
+        if filter_system_types:
+            posts = posts[~posts['type'].str.contains('system_')]
 
     return posts
 

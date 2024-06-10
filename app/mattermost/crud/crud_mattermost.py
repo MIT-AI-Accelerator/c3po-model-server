@@ -1,11 +1,11 @@
 from typing import Union
-from datetime import datetime
+from datetime import datetime, timedelta
 import pandas as pd
 import numpy as np
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from ppg.schemas.mattermost.mattermost_channels import MattermostChannelCreate
-from ppg.schemas.mattermost.mattermost_documents import MattermostDocumentCreate
+from ppg.schemas.mattermost.mattermost_documents import MattermostDocumentCreate, InfoTypeEnum
 from ppg.schemas.mattermost.mattermost_users import MattermostUserCreate, MattermostUserUpdate
 from ppg.schemas.bertopic.document import DocumentCreate
 import ppg.services.mattermost_utils as mattermost_utils
@@ -67,22 +67,25 @@ class CRUDMattermostDocument(CRUDBase[MattermostDocumentModel, MattermostDocumen
         # each mattermost document is allowed a single conversation thread
         return db.query(self.model).filter(self.model.message_id == message_id).all()
 
-    def get_all_channel_documents(self, db: Session, channels: list[str], history_depth: int = 0) -> Union[list[MattermostDocumentModel], None]:
+    def get_all_channel_documents(self, db: Session, channels: list[str], history_depth: int = 0, content_filter_list = []) -> Union[list[MattermostDocumentModel], None]:
+        stime = datetime.min
+        ctime = datetime.now() + timedelta(days=1)
 
         # get documents <= history_depth days old
         if history_depth > 0:
             ctime = datetime.now()
             stime = ctime - pd.DateOffset(days=history_depth)
-            documents = sum([db.query(self.model).join(DocumentModel).filter(self.model.channel == cuuid,
-                                                                             DocumentModel.original_created_time >= stime,
-                                                                             DocumentModel.original_created_time <= ctime,
-                                                                             self.model.is_thread == False)
-                                                                             .all() for cuuid in channels], [])
 
-        # get all documents
-        else:
-            documents = sum([db.query(self.model).filter(
-                self.model.channel == cuuid).all() for cuuid in channels], [])
+        if not content_filter_list:
+            content_filter_list = [f.value for f in InfoTypeEnum]
+
+        documents = []
+        for itype in content_filter_list:
+            documents += sum([db.query(self.model).join(DocumentModel).filter(self.model.channel == cuuid,
+                DocumentModel.original_created_time >= stime,
+                DocumentModel.original_created_time <= ctime,
+                self.model.is_thread == False,
+                self.model.info_type == itype).all() for cuuid in channels], [])
 
         return documents
 
@@ -186,8 +189,17 @@ class CRUDMattermostDocument(CRUDBase[MattermostDocumentModel, MattermostDocumen
 
         mattermost_documents = []
         for key, row in ddf.iterrows():
+
+            msg = row['message']
+            info_type = InfoTypeEnum.CHAT
+
+            if msg == '' and row['props'] != '':
+                jobj = row.props
+                if 'attachments' in jobj:
+                    info_type, msg = parse_props(jobj)
+
             document = DocumentCreate(
-                text=row['message'],
+                text=msg,
                 original_created_time=row['create_at'])
             document_obj = crud_document.document.create(db, obj_in=document)
 
@@ -202,7 +214,9 @@ class CRUDMattermostDocument(CRUDBase[MattermostDocumentModel, MattermostDocumen
                 channel=row['channel'],
                 user=row['user'],
                 document=document_obj.id,
-                is_thread=is_thread)]
+                is_thread=is_thread,
+                info_type=info_type)]
+
         return self.create_all_using_id(db, obj_in_list=mattermost_documents)
 
     def get_by_substring(self, db: Session, *, search_str: str) -> Union[MattermostDocumentModel, None]:
@@ -361,7 +375,6 @@ def get_or_create_mm_user_object(db: Session, *, user_id: str):
 
 
 def populate_mm_document_info(db: Session, *, document_df: pd.DataFrame):
-    new_doc_uuids = []
     new_mattermost_docs = []
 
     # get or create new channel objects in db
@@ -375,29 +388,14 @@ def populate_mm_document_info(db: Session, *, document_df: pd.DataFrame):
         for user_id in user_ids:
             user_obj = get_or_create_mm_user_object(db, user_id=user_id)
             udf = cdf[cdf.user_id == user_id]
+            udf['channel'] = channel_obj.id
+            udf['user'] = user_obj.id
+            udf.rename(columns={"id": "message_id"}, inplace=True)
 
             # create new document objects in db
-            for key, row in udf.iterrows():
-                document = DocumentCreate(
-                    text=row['message'],
-                    original_created_time=row['create_at'])
-                document_obj = crud_document.document.create(db, obj_in=document)
-                new_doc_uuids.append(document_obj.id)
+            new_mattermost_docs = new_mattermost_docs + mattermost_documents.create_all_using_df(db, ddf=udf, is_thread=False)
 
-                new_mattermost_docs = new_mattermost_docs + [MattermostDocumentCreate(
-                    message_id=row['id'],
-                    root_message_id=row['root_id'],
-                    type=row['type'],
-                    hashtags=row['hashtags'],
-                    has_reactions=str('has_reactions' in udf.columns and row['has_reactions']).lower() == 'true',
-                    props=row['props'],
-                    doc_metadata=row['metadata'],
-                    channel=channel_obj.id,
-                    user=user_obj.id,
-                    document=document_obj.id,
-                    is_thread=False)]
-
-    return new_mattermost_docs, new_doc_uuids
+    return new_mattermost_docs
 
 
 # Takes message utterances (i.e. individual rows) from chat dataframe, and converts them to conversation threads
@@ -432,6 +430,101 @@ def convert_conversation_threads(df: pd.DataFrame):
         data.append(row)
 
     return pd.DataFrame(data, columns=df.columns)
+
+
+def parse_props(jobj: dict):
+    jobj = jobj['attachments'][0]
+
+    author_name = jobj['author_name']
+    title = jobj['title']
+    msg = '[%s] %s' % (jobj['title'], jobj['text'])
+
+    if 'Dataminr' in author_name:
+        info_type = InfoTypeEnum.DATAMINR
+        msg = parse_props_dataminr(jobj)
+    elif 'CAMPS' in author_name:
+        info_type = InfoTypeEnum.CAMPS
+    elif 'ARINC' in author_name:
+        info_type = InfoTypeEnum.ARINC
+    elif 'ACARS' in title:
+        info_type = InfoTypeEnum.ACARS
+        msg = parse_prose_acars(jobj)
+    elif 'NOTAM' in title:
+        info_type = InfoTypeEnum.NOTAM
+        msg = parse_props_notam(jobj)
+    elif 'DIPS' in title:
+        info_type = InfoTypeEnum.ENVISION
+    else:
+        info_type = InfoTypeEnum.UDL
+
+    return info_type, msg
+
+
+def parse_props_notam(jobj: dict):
+    msg = '[%s] %s' % (jobj['title'], jobj['text'])
+
+    if jobj['fields'] is not None:
+        icao = ''
+        tov = ''
+        for fld in jobj['fields']:
+            if fld['title'] == 'Location':
+                icao = fld['value']
+            if fld['title'] == 'Valid':
+                tov = fld['value']
+        msg = '[%s] %s (Location: %s, Time of Validity: %s)' % (jobj['title'],
+                                                                jobj['text'],
+                                                                icao,
+                                                                tov)
+
+    return msg
+
+
+def parse_prose_acars(jobj: dict):
+    msg = '[%s] %s' % (jobj['title'], jobj['text'])
+
+    if jobj['fields'] is not None:
+        tail_num = ''
+        msn_num = ''
+        callsign = ''
+        for fld in jobj['fields']:
+            if fld['title'] == 'Tail #':
+                tail_num = fld['value']
+            if fld['title'] == 'Mission #':
+                msn_num = fld['value']
+            if fld['title'] == 'Callsign':
+                callsign = fld['value']
+        msg = '[%s] %s (Tail #: %s, Mission #: %s, Callsign: %s)' % (jobj['title'],
+                                                                     jobj['text'],
+                                                                     tail_num,
+                                                                     msn_num,
+                                                                     callsign)
+    return msg
+
+
+def parse_props_dataminr(jobj: dict):
+    msg = '%s' % jobj['title']
+
+    if jobj['fields'] is not None:
+        alert_type = ''
+        event_time = ''
+        event_loc = ''
+        airfields = ''
+        for fld in jobj['fields']:
+            if fld['title'] == 'Alert Type':
+                alert_type = fld['value']
+            if fld['title'] == 'Event Time':
+                event_time = fld['value']
+            if fld['title'] == 'Event Location':
+                event_loc = fld['value']
+            if fld['title'] == 'Nearby Airfields':
+                airfields = fld['value']
+        msg = '%s (Alert Type: %s, Event Time: %s, Event Location: %s, Nearby Airfields: %s)' % (jobj['title'],
+                                                                                                 alert_type,
+                                                                                                 event_time,
+                                                                                                 event_loc,
+                                                                                                 airfields)
+
+    return msg
 
 
 mattermost_channels = CRUDMattermostChannel(MattermostChannelModel)
