@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import Column, UUID, String, ForeignKey, Enum, JSON, Boolean, UniqueConstraint
 from sqlalchemy.ext.mutable import MutableDict
 from ppg.core.config import OriginationEnum
+from ppg.schemas.mattermost.mattermost_documents import InfoTypeEnum
 from app.db.base_class import Base
 from app.core.config import get_originated_from
 
@@ -26,6 +27,7 @@ class MattermostDocumentModel(Base):
     props = Column(MutableDict.as_mutable(JSON))
     doc_metadata = Column(MutableDict.as_mutable(JSON))
     is_thread = Column(Boolean(), default=False)
+    info_type = Column(Enum(InfoTypeEnum), default=InfoTypeEnum.CHAT)
     originated_from = Column(Enum(OriginationEnum),
                              default=get_originated_from)
 

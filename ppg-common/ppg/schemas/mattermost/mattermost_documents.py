@@ -1,5 +1,17 @@
+import enum
 from pydantic import BaseModel, UUID4
 from ppg.core.config import OriginationEnum
+
+
+class InfoTypeEnum(str, enum.Enum):
+    CHAT = "chat"
+    NOTAM = "notam"
+    DATAMINR = "dataminr"
+    ACARS = "acars"
+    ENVISION = "envision"
+    CAMPS = "camps"
+    ARINC = "arinc"
+    UDL = "udl"
 
 
 # Shared properties
@@ -15,7 +27,7 @@ class MattermostDocumentBase(BaseModel):
     props: dict
     doc_metadata: dict
     is_thread: bool
-
+    info_type: InfoTypeEnum
 
 class MattermostDocumentCreate(MattermostDocumentBase):
     # Properties to receive on MattermostDocument creation
