@@ -11,7 +11,6 @@ from ppg.schemas.mattermost.mattermost_users import MattermostUser
 import ppg.services.mattermost_utils as mattermost_utils
 from app.core.config import settings
 from app.core.errors import HTTPValidationError
-from app.core.logging import logger
 from app.dependencies import get_db
 from app.aimodels.bertopic import crud as crud_document
 from app.mattermost.crud import crud_mattermost
@@ -97,6 +96,7 @@ async def upload_mm_channel_docs(request: UploadDocumentRequest, db: Session = D
     - **history_depth**: Optional.  Number of days (prior to request) to upload posts for.
     - **filter_bot_posts**: Optional.  Eliminate bot posts from upload.
     - **filter_system_posts**: Optional.  Eliminate system posts from upload.
+    - **filter_post_content**: Optional.  A list of bot properties to include, e.g. "chat".
     """
 
     if not request.channel_ids:
@@ -301,7 +301,7 @@ async def upload_mm_docs_by_substring(request: SubstringUploadRequest, db: Sessi
     response_description="Retrieved Mattermost documents containing substring")
 async def get_mm_docs_by_substring(search_terms: str, db: Session = Depends(get_db)) -> dict:
     """
-    Retrieve mattermost posts by by substring
+    Retrieve mattermost posts by substring
 
     - **search_terms**: Required.  Comma-separated list of case-insensitive substrings for post query.
     """

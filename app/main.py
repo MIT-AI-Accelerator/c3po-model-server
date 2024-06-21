@@ -1,16 +1,25 @@
 
 
 import json
-from fastapi import FastAPI
+import datetime as dt
+import pandas as pd
+import sqlalchemy as sa
+from io import StringIO
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_versioning import VersionedFastAPI
+from fastapi.responses import StreamingResponse
+from sqlalchemy.orm import Session
+from sqlalchemy.sql import text
+from logging.config import dictConfig
 from ppg.core.config import OriginationEnum
 from .core.config import settings, set_acronym_dictionary
+from .core.errors import HTTPValidationError
 from .core.logging import logger, LogConfig
-from logging.config import dictConfig
+from .db.session import table_names
 from .experimental_features_router import router as experimental_router
 from .aimodels.router import router as aimodels_router
-from .dependencies import httpx_client
+from .dependencies import httpx_client, get_db
 
 dictConfig(LogConfig().dict())
 logger.info("Dummy Info")
@@ -56,6 +65,35 @@ async def originated_from_test():
 @app.post('/upload_acronym_dictionary/')
 async def upload_acronym_list(acronym_dictionary: str):
     return set_acronym_dictionary(json.loads(acronym_dictionary))
+
+@app.get(
+    "/download",
+    responses={'422': {'model': HTTPValidationError}},
+    summary="Retrieve items from database",
+    response_description="Retrieved items from database")
+async def get_items_from_db(table_name: str, limit: int = 0, db: Session = Depends(get_db)):
+    """
+    Retrieve items from database
+
+    - **table_name**: Required.  Database table name to query.
+    - **limit**: Optional.  Number of table rows to return (default returns all rows).
+    """
+    if table_name not in table_names:
+        raise HTTPException(status_code=422, detail=f"Database table ({table_name}) not found")
+
+    dquery = sa.select('*').select_from(text(table_name))
+    if limit < 0:
+        raise HTTPException(status_code=422, detail=f"Limit ({limit}) below threshold")
+    elif limit > 0:
+        dquery = dquery.limit(limit)
+    ddf = pd.DataFrame([row for row in db.execute(dquery)])
+
+    dtnow = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
+    stream = StringIO()
+    ddf.to_csv(stream, index=False)
+    response = StreamingResponse(iter([stream.getvalue()]), media_type="text/csv")
+    response.headers["Content-Disposition"] = f"attachment; filename={dtnow}_{table_name}.csv"
+    return response
 
 # setup for major versioning
 # ensure to copy over all the non-title args to the original FastAPI call...read docs here: https://pypi.org/project/fastapi-versioning/
