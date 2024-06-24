@@ -8,6 +8,7 @@ from bertopic import BERTopic
 import hdbscan
 from pydantic import BaseModel, StrictFloat, StrictInt, StrictBool, validator
 from minio import Minio
+from umap import UMAP
 from plotly.graph_objs import Figure
 from ppg.schemas.bertopic.topic import TopicSummaryCreate
 from app.core.logging import logger
@@ -24,10 +25,20 @@ BASE_CKPT_DIR = os.path.join(os.path.abspath(
 
 MIN_BERTOPIC_DOCUMENTS = 7
 DEFAULT_TRAIN_PERCENT = 0.7
-DEFAULT_HDBSCAN_MIN_CLUSTER_SIZE = 10
-DEFAULT_HDBSCAN_MIN_SAMPLES = 10
 DEFAULT_BERTOPIC_VISUALIZATION_WORDS = 5
 DEFAULT_BERTOPIC_TIME_BINS = 20
+
+DEFAULT_HDBSCAN_MIN_CLUSTER_SIZE = 10
+DEFAULT_HDBSCAN_MIN_SAMPLES = 10
+DEFAULT_HDBSCAN_METRIC = 'euclidean'
+DEFAULT_HDBSCAN_CLUSTER_METHOD = 'eom'
+
+DEFAULT_UMAP_NEIGHBORS = 15
+DEFAULT_UMAP_COMPONENTS = 5
+DEFAULT_UMAP_MIN_DIST = 0.0
+DEFAULT_UMAP_METRIC = 'cosine'
+DEFAULT_UMAP_RANDOM_STATE = 577
+
 
 # keep this approach or change to pydantic.dataclasses?
 # see here: https://docs.pydantic.dev/usage/dataclasses/
@@ -162,6 +173,7 @@ class TopicDocumentData(BaseModel):
     document_timestamps: list[datetime]
     document_users: list[str]
     document_nicknames: list[str]
+    document_channels: list[str]
     document_links: list[str]
     embeddings: np.ndarray
 
@@ -221,6 +233,7 @@ class BasicInference:
         document_info['Timestamp'] = topic_document_data.document_timestamps
         document_info['User'] = topic_document_data.document_users
         document_info['Nickname'] = topic_document_data.document_nicknames
+        document_info['Channel'] = topic_document_data.document_channels
         document_info['Link'] = topic_document_data.document_links
         return document_info
 
@@ -235,11 +248,13 @@ class BasicInference:
 
         document_df.user_name.fillna(value='', inplace=True)
         document_df.nickname.fillna(value='', inplace=True)
+        document_df.channel_name.fillna(value='', inplace=True)
         document_df.mm_link.fillna(value='', inplace=True)
         topic_document_data = TopicDocumentData(document_text_list = document_text_list,
                                                 document_timestamps = list(document_df['create_at'].values),
                                                 document_users = list(document_df['user_name'].values),
                                                 document_nicknames = list(document_df['nickname'].values),
+                                                document_channels = list(document_df['channel_name'].values),
                                                 document_links = list(document_df['mm_link'].values),
                                                 embeddings = embeddings)
 
@@ -256,15 +271,14 @@ class BasicInference:
         topics, probs = topic_model.transform(documents=topic_document_data_test.document_text_list,
                                               embeddings=topic_document_data_test.embeddings)
 
-        # TODO - determine whether to update topics for data_test, impacts topics_timeline and topic_words
-        topic_model.update_topics(docs=topic_document_data_test.document_text_list, topics=topics)
-
         # train documents needed for representative documents / summarization
         # test documents needed for trend detection
         document_df_test = pd.DataFrame({'Document': topic_document_data_test.document_text_list,
                                          'Timestamp': topic_document_data_test.document_timestamps,
                                          'Topic': topics})
 
+        # note: removed topic_model.update_topics for topic_document_data_test - impacts topics_timeline and topic_words
+        # adjust the following function if it is added back in
         topic_info, new_topic_obj_list, topics_over_time_test, topic_timeline_visualization_list = self.create_topic_visualizations(
             document_info_train, topic_model, document_df_test, num_related_docs, num_topics, trends_only, trend_depth)
 
@@ -342,17 +356,18 @@ class BasicInference:
     def build_topic_model(self, topic_document_data: TopicDocumentData, num_topics, seed_topic_list, train_percent) -> BERTopic:
         # validate input
         BuildTopicModelInputs(
-            documents_text_list=topic_document_data.document_text_list,
-            document_timestamps=topic_document_data.document_timestamps,
-            embeddings=topic_document_data.embeddings,
-            num_topics=num_topics,
-            seed_topic_list=seed_topic_list)
+            documents_text_list = topic_document_data.document_text_list,
+            document_timestamps = topic_document_data.document_timestamps,
+            embeddings = topic_document_data.embeddings,
+            num_topics = num_topics,
+            seed_topic_list = seed_topic_list)
 
         data_train = pd.DataFrame(
             {'message': topic_document_data.document_text_list,
                 'timestamp': topic_document_data.document_timestamps,
                 'user': topic_document_data.document_users,
                 'nickname': topic_document_data.document_nicknames,
+                'channel': topic_document_data.document_channels,
                 'link': topic_document_data.document_links})
 
         if self.weak_learner_obj:
@@ -376,22 +391,34 @@ class BasicInference:
                                                       document_timestamps = list(data_train['timestamp']),
                                                       document_users = list(data_train['user']),
                                                       document_nicknames = list(data_train['nickname']),
+                                                      document_channels = list(data_train['channel']),
                                                       document_links = list(data_train['link']),
                                                       embeddings = topic_document_data.embeddings[:train_len-1])
         topic_document_data_test = TopicDocumentData(document_text_list = list(data_test['message']),
                                                      document_timestamps = list(data_test['timestamp']),
                                                      document_users = list(data_test['user']),
                                                      document_nicknames = list(data_test['nickname']),
+                                                     document_channels= list(data_test['channel']),
                                                      document_links = list(data_test['link']),
                                                      embeddings = topic_document_data.embeddings[train_len:])
 
-        hdbscan_model = hdbscan.HDBSCAN(min_cluster_size=DEFAULT_HDBSCAN_MIN_CLUSTER_SIZE,
-                                        min_samples=DEFAULT_HDBSCAN_MIN_SAMPLES,
-                                        metric='euclidean', prediction_data=True)
-        topic_model = BERTopic(nr_topics=num_topics, seed_topic_list=seed_topic_list,
-                               hdbscan_model=hdbscan_model, vectorizer_model=self.vectorizer)
-        topic_model = topic_model.fit(documents=topic_document_data_train.document_text_list,
-                                      embeddings=topic_document_data_train.embeddings)
+        umap_model = UMAP(n_neighbors = DEFAULT_UMAP_NEIGHBORS,
+                          n_components = DEFAULT_UMAP_COMPONENTS,
+                          min_dist = DEFAULT_UMAP_MIN_DIST,
+                          metric = DEFAULT_UMAP_METRIC,
+                          random_state = DEFAULT_UMAP_RANDOM_STATE)
+        hdbscan_model = hdbscan.HDBSCAN(min_cluster_size = DEFAULT_HDBSCAN_MIN_CLUSTER_SIZE,
+                                        min_samples = DEFAULT_HDBSCAN_MIN_SAMPLES,
+                                        metric = DEFAULT_HDBSCAN_METRIC,
+                                        cluster_selection_method = DEFAULT_HDBSCAN_CLUSTER_METHOD,
+                                        prediction_data = True)
+        topic_model = BERTopic(nr_topics = num_topics,
+                               seed_topic_list = seed_topic_list,
+                               hdbscan_model = hdbscan_model,
+                               vectorizer_model = self.vectorizer,
+                               umap_model = umap_model)
+        topic_model = topic_model.fit(documents = topic_document_data_train.document_text_list,
+                                      embeddings = topic_document_data_train.embeddings)
 
         return topic_model, topic_document_data_train, topic_document_data_test
 
@@ -404,8 +431,8 @@ class BasicInference:
         # if update_topics is run in train_bertopic_on_documents, use document_df_test
         # otherwise, use document_info_train
         topics_over_time = topic_model.topics_over_time(
-            docs=document_df_test['Document'],
-            timestamps=document_df_test['Timestamp'],
+            docs=document_info_train['Document'],
+            timestamps=document_info_train['Timestamp'],
             nr_bins=DEFAULT_BERTOPIC_TIME_BINS)
 
         # set is_trending outside of loop, skip -1 cluster
@@ -435,7 +462,7 @@ class BasicInference:
                     name=row['Name'],
                     top_n_words=topic_docs['Top_n_words'].unique()[0],
                     top_n_documents=topic_docs[[
-                        'Document', 'Timestamp', 'User', 'Nickname', 'Link', 'Probability']].to_dict(),
+                        'Document', 'Timestamp', 'User', 'Nickname', 'Channel', 'Link', 'Probability']].to_dict(),
                     summary=summary_text,
                     is_trending=row['is_trending'])]
 
