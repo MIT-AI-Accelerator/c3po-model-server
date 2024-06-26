@@ -448,7 +448,7 @@ def parse_props(jobj: dict):
         info_type = InfoTypeEnum.ARINC
     elif 'ACARS' in title:
         info_type = InfoTypeEnum.ACARS
-        msg = parse_prose_acars(jobj)
+        msg = parse_props_acars(jobj)
     elif 'NOTAM' in title:
         info_type = InfoTypeEnum.NOTAM
         msg = parse_props_notam(jobj)
@@ -479,7 +479,7 @@ def parse_props_notam(jobj: dict):
     return msg
 
 
-def parse_prose_acars(jobj: dict):
+def parse_props_acars(jobj: dict):
     msg = '[%s] %s' % (jobj['title'], jobj['text'])
 
     if jobj['fields'] is not None:
