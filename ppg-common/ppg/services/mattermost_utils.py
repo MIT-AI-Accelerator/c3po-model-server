@@ -202,6 +202,7 @@ def get_channel_posts(mm_base_url, mm_token, channel_id, history_depth=0, filter
     posts = get_all_pages(url, mm_token, is_channel=True)
     if not posts.empty:
         posts['datetime'] = [datetime.fromtimestamp(x / 1000) for x in posts['create_at']]
+        posts.sort_values(by=['datetime'], inplace=True)
 
         if history_depth > 0:
             ctime = datetime.now()

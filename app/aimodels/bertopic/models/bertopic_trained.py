@@ -26,10 +26,7 @@ class BertopicTrainedModel(Base):
     refine_template = Column(String)
     originated_from = Column(Enum(OriginationEnum), default=get_originated_from)
 
-    embedding_pretrained_id = Column(UUID, ForeignKey("bertopicembeddingpretrainedmodel.id"))
+    embedding_pretrained_id = Column(UUID, ForeignKey("bertopicembeddingpretrainedmodel.id", ondelete="CASCADE", onupdate="CASCADE"))
     embedding_pretrained = relationship("BertopicEmbeddingPretrainedModel", back_populates="trained_models")
 
     trained_on_documents = relationship("DocumentModel", secondary="documentbertopictrainedmodel", back_populates="used_in_trained_models")
-
-    topic_summary_id = Column(UUID, ForeignKey("topicsummarymodel.id"))
-    topic_summaries = relationship("TopicSummaryModel", back_populates="trained_model")
