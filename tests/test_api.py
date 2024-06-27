@@ -1,10 +1,13 @@
 import json
 import pandas as pd
 from io import StringIO
+from sqlalchemy.orm import Session
 from fastapi.testclient import TestClient
 from ppg.core.config import OriginationEnum
+from ppg.schemas.bertopic.document import DocumentCreate
 from app.main import versioned_app
 from app.core.config import get_acronym_dictionary
+from app.aimodels.bertopic.crud.crud_document import document
 
 client = TestClient(versioned_app)
 
@@ -41,13 +44,18 @@ def test_download_db_data_invalid():
     response = client.get("/v1/download", params={'table_name': table_name})
     assert response.status_code == 422
 
-    table_name = 'bertopicembeddingpretrainedmodel'
+    table_name = 'documentmodel'
     response = client.get("/v1/download", params={'table_name': table_name, 'limit': -1})
     assert response.status_code == 422
 
 # test download db data
-def test_download_db_data_valid():
-    table_name = 'bertopicembeddingpretrainedmodel'
+def test_download_db_data_valid(db: Session):
+
+    # create a bertopic_embedding_pretrained
+    document_create = DocumentCreate(text='a test document')
+    document.create(db, obj_in=document_create)
+
+    table_name = 'documentmodel'
     limit = 1
     response = client.get("/v1/download", params={'table_name': table_name, 'limit': limit})
     assert response.status_code == 200
