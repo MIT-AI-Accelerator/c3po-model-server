@@ -148,6 +148,8 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
         new_bertopic_trained_obj = crud.bertopic_trained.update(
             db, db_obj=new_bertopic_trained_obj, obj_in=BertopicTrainedUpdate(uploaded=True))
 
+    upload_topics_and_visualizations(db, new_bertopic_trained_obj.id, inference_output)
+
     # save the join table between the documents and the trained model
     # see here: https://docs.sqlalchemy.org/en/20/orm/basic_relationships.html#many-to-many
     # and here: https://stackoverflow.com/questions/25668092/flask-sqlalchemy-many-to-many-insert-data
@@ -158,8 +160,6 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
     # refresh the new trained model object model
     # (see docs here for info: https://docs.sqlalchemy.org/en/20/orm/session_state_management.html#refreshing-expiring)
     db.refresh(new_bertopic_trained_obj)
-
-    upload_topics_and_visualizations(db, new_bertopic_trained_obj.id, inference_output)
 
     return new_bertopic_trained_obj
 

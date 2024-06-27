@@ -1,4 +1,6 @@
 import json
+import pandas as pd
+from io import StringIO
 from fastapi.testclient import TestClient
 from ppg.core.config import OriginationEnum
 from app.main import versioned_app
@@ -32,6 +34,27 @@ def test_upload_acronym_dictionary():
     assert response.status_code == 200
     assert response.json() == acronym_dictionary
     assert get_acronym_dictionary() == acronym_dictionary
+
+# test download db data
+def test_download_db_data_invalid():
+    table_name = 'notatablemodel'
+    response = client.get("/v1/download", params={'table_name': table_name})
+    assert response.status_code == 422
+
+    table_name = 'bertopicembeddingpretrainedmodel'
+    response = client.get("/v1/download", params={'table_name': table_name, 'limit': -1})
+    assert response.status_code == 422
+
+# test download db data
+def test_download_db_data_valid():
+    table_name = 'bertopicembeddingpretrainedmodel'
+    limit = 1
+    response = client.get("/v1/download", params={'table_name': table_name, 'limit': limit})
+    assert response.status_code == 200
+
+    cstr = StringIO(response.text)
+    df = pd.read_csv(cstr, sep=",")
+    assert len(df) == limit
 
 def test_shutdown():
     with client as c:

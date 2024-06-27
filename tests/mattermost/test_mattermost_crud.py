@@ -8,6 +8,7 @@ from app.mattermost.models.mattermost_documents import MattermostDocumentModel
 from app.aimodels.bertopic.models.document import DocumentModel
 from app.aimodels.bertopic.crud import crud_document
 from ppg.core.config import OriginationEnum
+from ppg.schemas.mattermost.mattermost_documents import InfoTypeEnum
 
 
 def test_crud_mattermost(db: Session):
@@ -216,3 +217,105 @@ def test_convert_conversation_threads():
 
     assert len(conversation_df) == (len(document_df) - 1)
     assert conversation_df['message'].iloc[0] == '%s\n%s' % (msg1, msg2)
+
+
+def test_parse_props():
+    # test parse mm props
+
+    ittl = 'DIPS'
+    aname = ''
+    imsg = 'Inspiring Cat Overcomes Prejudice To Win Westminster Dog Show.'
+    jobj = {'attachments': [{'id': 0,
+                             'author_name': aname,
+                             'title': ittl,
+                             'text': imsg,
+                             'fields': []}]}
+    itype, omsg = crud.parse_props(jobj)
+    emsg = '[%s] %s' % (ittl, imsg)
+
+    assert itype == InfoTypeEnum.ENVISION
+    assert omsg[0:len(emsg)] == emsg
+
+    ittl = ''
+    aname = 'CAMPS'
+    jobj['attachments'][0]['title'] = ittl
+    jobj['attachments'][0]['author_name'] = aname
+    itype, omsg = crud.parse_props(jobj)
+    emsg = '[%s] %s' % (ittl, imsg)
+
+    assert itype == InfoTypeEnum.CAMPS
+    assert omsg[0:len(emsg)] == emsg
+
+    ittl = ''
+    aname = 'ARINC'
+    jobj['attachments'][0]['title'] = ittl
+    jobj['attachments'][0]['author_name'] = aname
+    itype, omsg = crud.parse_props(jobj)
+    emsg = '[%s] %s' % (ittl, imsg)
+
+    assert itype == InfoTypeEnum.ARINC
+    assert omsg[0:len(emsg)] == emsg
+
+    ittl = ''
+    aname = ''
+    jobj['attachments'][0]['title'] = ittl
+    jobj['attachments'][0]['author_name'] = aname
+    itype, omsg = crud.parse_props(jobj)
+    emsg = '[%s] %s' % (ittl, imsg)
+
+    assert itype == InfoTypeEnum.UDL
+    assert omsg[0:len(emsg)] == emsg
+
+def test_parse_props_notam():
+    # test parse mm notam props
+
+    ittl = 'NOTAM'
+    imsg = 'House Cat Announces Plans To Just Sit There For 46 Minutes.'
+    jobj = {'attachments': [{'id': 0,
+                             'author_name': '',
+                             'title': ittl,
+                             'text': imsg,
+                             'fields': [{'title': 'Location', 'value': 'KCAT', 'short': True},
+                                        {'title': 'Valid', 'value': '4149/0409Z - 4201/2359Z', 'short': True}]}]}
+    itype, omsg = crud.parse_props(jobj)
+    emsg = '[%s] %s' % (ittl, imsg)
+
+    assert itype == InfoTypeEnum.NOTAM
+    assert omsg[0:len(emsg)] == emsg
+
+
+def test_parse_props_acars():
+    # test parse mm acars props
+
+    ittl = 'ACARS'
+    imsg = '8th Cat Acquired In Hopes Of Easing Tension Between First 7 Cats.'
+    jobj = {'attachments': [{'id': 0,
+                             'author_name': '',
+                             'title': ittl,
+                             'text': imsg,
+                             'fields': [{'title': 'Tail #', 'value': '8675309', 'short': True},
+                                        {'title': 'Mission #', 'value': '8675309', 'short': True},
+                                        {'title': 'Callsign', 'value': 'CAT123', 'short': True}]}]}
+    itype, omsg = crud.parse_props(jobj)
+    emsg = '[%s] %s' % (ittl, imsg)
+
+    assert itype == InfoTypeEnum.ACARS
+    assert omsg[0:len(emsg)] == emsg
+
+
+def test_parse_props_dataminr():
+    # test parse mm dataminr props
+
+    imsg = 'War On String May Be Unwinnable, Says Cat General.'
+    jobj = {'attachments': [{'id': 0,
+                             'author_name': 'Dataminr',
+                             'title': imsg,
+                             'text': '',
+                             'fields': [{'title': 'Alert Type', 'value': 'Urgent', 'short': False},
+                                        {'title': 'Event Time', 'value': '26/06/2024 18:08:19', 'short': False},
+                                        {'title': 'Event Location', 'value': 'Lexington, MA USA\n', 'short': False},
+                                        {'title': 'Nearby Airfields', 'value': 'KCAT\n', 'short': False}]}]}
+    itype, omsg = crud.parse_props(jobj)
+
+    assert itype == InfoTypeEnum.DATAMINR
+    assert omsg[0:len(imsg)] == imsg

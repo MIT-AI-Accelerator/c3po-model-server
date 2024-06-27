@@ -9,6 +9,6 @@ if TYPE_CHECKING:
 # see here for basic many-to-many in fastapi without metadata: https://www.gormanalysis.com/blog/many-to-many-relationships-in-fastapi/
 # pylint: disable=no-member
 DocumentBertopicTrainedModel = Table('documentbertopictrainedmodel', Base.metadata,
-    Column('document_id', ForeignKey('documentmodel.id'), primary_key=True),
-    Column('bertopic_trained_model_id', ForeignKey('bertopictrainedmodel.id'), primary_key=True)
+    Column('document_id', ForeignKey('documentmodel.id', ondelete="CASCADE", onupdate="CASCADE"), primary_key=True),
+    Column('bertopic_trained_model_id', ForeignKey('bertopictrainedmodel.id', ondelete="CASCADE", onupdate="CASCADE"), primary_key=True)
 )

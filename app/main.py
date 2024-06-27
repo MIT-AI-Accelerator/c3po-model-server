@@ -16,7 +16,7 @@ from ppg.core.config import OriginationEnum
 from .core.config import settings, set_acronym_dictionary
 from .core.errors import HTTPValidationError
 from .core.logging import logger, LogConfig
-from .db.session import table_names
+from .db.base import Base
 from .experimental_features_router import router as experimental_router
 from .aimodels.router import router as aimodels_router
 from .dependencies import httpx_client, get_db
@@ -78,7 +78,7 @@ async def get_items_from_db(table_name: str, limit: int = 0, db: Session = Depen
     - **table_name**: Required.  Database table name to query.
     - **limit**: Optional.  Number of table rows to return (default returns all rows).
     """
-    if table_name not in table_names:
+    if table_name not in Base.metadata.tables.keys():
         raise HTTPException(status_code=422, detail=f"Database table ({table_name}) not found")
 
     dquery = sa.select('*').select_from(text(table_name))

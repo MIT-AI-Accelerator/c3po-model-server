@@ -22,7 +22,7 @@ from app.aimodels.bertopic.models.bertopic_embedding_pretrained import BertopicE
 from app.aimodels.bertopic.models.document import DocumentModel
 from app.aimodels.gpt4all.models.llm_pretrained import LlmPretrainedModel, LlmFilenameEnum
 
-from app.db.init_db import init_db, wipe_db
+from app.db.init_db import init_db, wipe_db, drop_constraints
 from app.db.session import SessionLocal
 from app.core.minio import build_client, download_file_from_minio, upload_file_to_minio
 
@@ -59,6 +59,7 @@ def get_db(environment: str, migration_toggle: bool) -> Union[Session, None]:
     # note: reenabled wipe_db for staging (['local', 'staging']) due to db schema changes, remove staging when schema stable
     if (environment in ['local', 'staging'] and migration_toggle is False):
         logger.info("Clearing database")
+        drop_constraints()
         wipe_db()
         logger.info("Database cleared")
 
