@@ -13,8 +13,8 @@ if TYPE_CHECKING:
 class DocumentEmbeddingComputationModel(Base):
     id = Column(UUID, primary_key=True, unique=True, default=uuid.uuid4)
     embedding_vector = Column(ARRAY(Float, dimensions=1))
-    document_id = Column(UUID, ForeignKey("documentmodel.id"))
+    document_id = Column(UUID, ForeignKey("documentmodel.id", ondelete="CASCADE", onupdate="CASCADE"))
     document = relationship("DocumentModel", back_populates="embedding_computations")
-    bertopic_embedding_pretrained_id = Column(UUID, ForeignKey("bertopicembeddingpretrainedmodel.id"))
+    bertopic_embedding_pretrained_id = Column(UUID, ForeignKey("bertopicembeddingpretrainedmodel.id", ondelete="CASCADE", onupdate="CASCADE"))
     bertopic_embedding_pretrained = relationship("BertopicEmbeddingPretrainedModel", back_populates="document_embedding_computations")
     originated_from = Column(Enum(OriginationEnum), default=get_originated_from)
