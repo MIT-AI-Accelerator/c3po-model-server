@@ -41,7 +41,7 @@ import pandas as pd
 from sample_data import CHAT_DATASET_1_PATH
 from app.core.model_cache import MODEL_CACHE_BASEDIR
 
-from app.aimodels.bertopic.ai_services.weak_learning import WeakLearner
+from app.aimodels.bertopic.ai_services.weak_learning import WeakLearner, labeling_dict
 from sample_data import CHAT_DATASET_4_PATH
 
 logging.basicConfig(level=logging.INFO)
@@ -147,7 +147,7 @@ def init_sentence_embedding_object(s3: Minio, db: Session, model_path: str) -> B
                 sha256=hex_dig, model_name=model_name, model_type=EmbeddingModelTypeEnum.CROSS_ENCODERS)
         else:
             bertopic_embedding_pretrained_obj = BertopicEmbeddingPretrainedCreate(
-                sha256=hex_dig, model_name=model_name)
+                sha256=hex_dig, model_name=model_name, model_type=EmbeddingModelTypeEnum.SENTENCE_TRANSFORMERS)
 
         new_bertopic_embedding_pretrained_obj: BertopicEmbeddingPretrainedModel = bertopic_crud.bertopic_embedding_pretrained.create(
             db, obj_in=bertopic_embedding_pretrained_obj)
@@ -357,7 +357,7 @@ def init_weak_learning_object(s3: Minio, db: Session) -> BertopicEmbeddingPretra
         file_obj.seek(0)
 
         bertopic_embedding_pretrained_obj = BertopicEmbeddingPretrainedCreate(
-            sha256=hex_dig, model_name=model_name, model_type=EmbeddingModelTypeEnum.WEAK_LEARNERS)
+            sha256=hex_dig, model_name=model_name, model_type=EmbeddingModelTypeEnum.WEAK_LEARNERS, reference=labeling_dict)
 
         new_bertopic_embedding_pretrained_obj: BertopicEmbeddingPretrainedModel = bertopic_crud.bertopic_embedding_pretrained.create(
             db, obj_in=bertopic_embedding_pretrained_obj)

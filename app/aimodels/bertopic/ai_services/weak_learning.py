@@ -1,6 +1,6 @@
-from enum import IntEnum
 import numpy as np
 import pandas as pd
+from enum import IntEnum
 from snorkel.labeling import labeling_function
 from snorkel.labeling import PandasLFApplier
 from snorkel.labeling import LFAnalysis
@@ -9,6 +9,11 @@ from sklearn.svm import SVC
 from sklearn.neural_network import MLPClassifier
 from sklearn.feature_extraction.text import CountVectorizer, ENGLISH_STOP_WORDS
 from pydantic import BaseModel
+
+
+labeling_dict = {'labeling_terms': [['joined the channel', 'added to the channel'],
+                                    ['hello', 'hola', 'good morning', 'good evening', 'good night'],
+                                    ['lunch', 'dinner', 'food']]}
 
 
 class ChatLabel(IntEnum):
@@ -67,45 +72,20 @@ class WeakLearner:
             return y_pred
 
         @labeling_function()
-        def lf_channel(x):
-            x = x['message']
-            if any([
-                (x.find('joined the channel') >= 0),
-                (x.find('added to the channel') >= 0)
-            ]):
-                return ChatLabel.RECYCLE
-            return ChatLabel.ABSTAIN
-
-        @labeling_function()
         def lf_length(x):
             if (len(x['message']) < 6):
                 return ChatLabel.RECYCLE
             return ChatLabel.ABSTAIN
 
         @labeling_function()
-        def lf_hello(x):
-            if any([
-                (x['message'].find('hello') >= 0),
-                (x['message'].find('hola') >= 0),
-                (x['message'].find('good morning') >= 0),
-                (x['message'].find('good evening') >= 0),
-                (x['message'].find('good night') >= 0)
-            ]):
-                return ChatLabel.RECYCLE
+        def lf_dict(x):
+            for category in labeling_dict['labeling_terms']:
+                for term in category:
+                    if x['message'].find(term) >= 0:
+                        return ChatLabel.RECYCLE
             return ChatLabel.ABSTAIN
 
-        @labeling_function()
-        def lf_lunch(x):
-            if any([
-                (x['message'].find('lunch') >= 0),
-                (x['message'].find('dinner') >= 0),
-                (x['message'].find('food') >= 0)
-            ]):
-                return ChatLabel.RECYCLE
-            return ChatLabel.ABSTAIN
-
-        labeling_functions = [lf_svm_rbf, lf_mlp, lf_channel,
-                              lf_length, lf_hello, lf_lunch]
+        labeling_functions = [lf_svm_rbf, lf_mlp, lf_length, lf_dict]
         label_applier = PandasLFApplier(labeling_functions)
         return labeling_functions, label_applier
 
@@ -132,7 +112,7 @@ class WeakLearner:
         self.label_model = LabelModel(cardinality=6, verbose=True)
         self.label_model.fit(L_train=l_train, n_epochs=500,
                              log_freq=100, seed=123)
-        return (self.vectorizer, self.svm, self.mlp, self.label_model)
+        return (self.vectorizer, self.svm, self.mlp, self.label_model, labeling_dict)
 
     def get_label_model(self):
         return self.label_model

@@ -1,6 +1,7 @@
 import uuid
 from typing import TYPE_CHECKING
-from sqlalchemy import Column, Enum, Integer, UUID, String, Boolean, Sequence
+from sqlalchemy import Column, Enum, Integer, UUID, String, Boolean, Sequence, JSON
+from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy.orm import relationship
 from ppg.core.config import OriginationEnum
 from ppg.schemas.bertopic.bertopic_embedding_pretrained import EmbeddingModelTypeEnum
@@ -20,6 +21,7 @@ class BertopicEmbeddingPretrainedModel(Base):
     version = Column(Integer, version_sequence, server_default=version_sequence.next_value(), index=True, unique=True, nullable=False)
     sha256 = Column(String(64))
     uploaded = Column(Boolean(), default=False)
+    reference = Column(MutableDict.as_mutable(JSON))
     originated_from = Column(Enum(OriginationEnum), default=get_originated_from)
     document_embedding_computations = relationship("DocumentEmbeddingComputationModel", back_populates="bertopic_embedding_pretrained")
     trained_models = relationship("BertopicTrainedModel", back_populates="embedding_pretrained")

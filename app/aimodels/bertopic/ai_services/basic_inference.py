@@ -9,6 +9,7 @@ import hdbscan
 from pydantic import BaseModel, StrictFloat, StrictInt, StrictBool, validator
 from minio import Minio
 from umap import UMAP
+from fastapi import HTTPException
 from plotly.graph_objs import Figure
 from ppg.schemas.bertopic.topic import TopicSummaryCreate
 from app.core.logging import logger
@@ -17,7 +18,7 @@ from ..models.document import DocumentModel
 from ..models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedModel
 from ..models.topic import TopicSummaryModel
 from ..crud import crud_topic
-from .weak_learning import WeakLearner, get_vectorizer
+from .weak_learning import WeakLearner, get_vectorizer, labeling_dict
 from .topic_summarization import topic_summarizer, detect_trending_topics, DEFAULT_N_REPR_DOCS, DEFAULT_TREND_DEPTH_DAYS
 
 BASE_CKPT_DIR = os.path.join(os.path.abspath(
@@ -207,6 +208,9 @@ class BasicInference:
             self.svm = weak_models[1]
             self.mlp = weak_models[2]
             self.label_model = weak_models[3]
+            if labeling_dict != weak_models[4]:
+                raise HTTPException(status_code=422, detail="Retrain weak learner (labeling_dict mismatch)")
+
             self.weak_learner = WeakLearner(
                 self.vectorizer, self.svm, self.mlp, self.label_model)
             labeling_functions, self.label_applier = self.weak_learner.create_label_applier()

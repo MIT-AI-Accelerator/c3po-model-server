@@ -10,12 +10,13 @@ from pydantic import UUID4
 
 from sqlalchemy.orm import Session
 from minio import Minio
-from ppg.schemas.bertopic.bertopic_embedding_pretrained import BertopicEmbeddingPretrained, BertopicEmbeddingPretrainedCreate, BertopicEmbeddingPretrainedUpdate
+from ppg.schemas.bertopic.bertopic_embedding_pretrained import BertopicEmbeddingPretrained, BertopicEmbeddingPretrainedCreate, BertopicEmbeddingPretrainedUpdate, EmbeddingModelTypeEnum
 from app.core.minio import upload_file_to_minio
 from app.core.errors import HTTPValidationError, ValidationError
 from app.dependencies import get_db, get_minio
 from .. import crud
 from ..models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedModel
+from ..ai_services.weak_learning import labeling_dict
 
 
 router = APIRouter(
@@ -46,6 +47,9 @@ def create_bertopic_embedding_pretrained_object_post(bertopic_embedding_pretrain
             status_code=400,
             content=jsonable_encoder(HTTPValidationError(detail=[ValidationError(loc=['body', 'sha256'], msg='sha256 already exists', type='value_error')]))
         )
+
+    if bertopic_embedding_pretrained_obj.model_type == EmbeddingModelTypeEnum.WEAK_LEARNERS:
+        bertopic_embedding_pretrained_obj.reference = labeling_dict
 
     # pydantic handles validation
     new_bertopic_embedding_pretrained_obj: BertopicEmbeddingPretrainedModel = crud.bertopic_embedding_pretrained.create(

@@ -14,7 +14,8 @@ class EmbeddingModelTypeEnum(str, enum.Enum):
 class BertopicEmbeddingPretrainedBase(BaseModel):
     sha256: Optional[str] = None
     model_type: Optional[EmbeddingModelTypeEnum] = None
-    model_name: Optional[str] = None
+    model_name: Optional[str] = ''
+    reference: Optional[dict] = {}
 
     # ensure valid sha256 format
     @validator('sha256')
@@ -35,6 +36,7 @@ class BertopicEmbeddingPretrainedBase(BaseModel):
 class BertopicEmbeddingPretrainedCreate(BertopicEmbeddingPretrainedBase):
     sha256: str
     model_name: str = ''
+    reference: dict = {}
 
 # Properties to receive on BertopicEmbeddingPretrained update
 class BertopicEmbeddingPretrainedUpdate(BertopicEmbeddingPretrainedBase):
@@ -46,6 +48,7 @@ class BertopicEmbeddingPretrainedInDBBase(BertopicEmbeddingPretrainedBase):
     model_type: EmbeddingModelTypeEnum
     model_name: str = ''
     uploaded: bool = False
+    reference: dict = {}
     version: int
     sha256: str
     originated_from: OriginationEnum
