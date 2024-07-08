@@ -65,6 +65,7 @@ def test_train_valid_input_request(
         model_name = "all-MiniLM-L6-v2",
         sha256 = valid_sha256,
         uploaded = True,
+        reference = {},
     )
     db.add(mock_embedding_obj)
     db.commit()
