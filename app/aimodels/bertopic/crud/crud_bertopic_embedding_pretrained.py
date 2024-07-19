@@ -23,6 +23,16 @@ class CRUDBertopicEmbeddingPretrained(CRUDBase[BertopicEmbeddingPretrainedModel,
                                            self.model.uploaded,
                                            self.model.originated_from == originated_from).order_by(self.model.version.desc()).first()
 
+    def get_latest_label_dictionary(self, db: Session, *, originated_from = OriginationEnum.ORIGINATED_FROM_APP) -> Union[list, None]:
+        label_dictionary = None
+
+        db_obj = db.query(self.model).filter(self.model.uploaded,
+            self.model.originated_from == originated_from).order_by(self.model.version.desc()).first()
+
+        if db_obj and 'labeling_terms' in db_obj.reference.keys():
+            label_dictionary = db_obj.reference
+
+        return label_dictionary
 
 bertopic_embedding_pretrained = CRUDBertopicEmbeddingPretrained(
     BertopicEmbeddingPretrainedModel)

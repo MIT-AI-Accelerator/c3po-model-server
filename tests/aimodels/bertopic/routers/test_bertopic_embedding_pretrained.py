@@ -246,22 +246,20 @@ def test_upload_bertopic_embedding_pretrained_object_post_invalid_id(client: Tes
 def test_upload_bertopic_embedding_pretrained_weak_learner_object_post_valid_request(client: TestClient):
 
     # Create a file to upload
-    test_file = "test_file.csv"
-    tdf = pd.DataFrame({'createat': [0,0,0,0,0,0,0,0,0,0],
-                    'message': [''.join(random.choices(string.ascii_lowercase, k=10)),
-                                ''.join(random.choices(string.ascii_lowercase, k=10)),
-                                ''.join(random.choices(string.ascii_lowercase, k=10)),
-                                ''.join(random.choices(string.ascii_lowercase, k=10)),
-                                ''.join(random.choices(string.ascii_lowercase, k=10)),
-                                ''.join(random.choices(string.ascii_lowercase, k=10)),
-                                ''.join(random.choices(string.ascii_lowercase, k=10)),
-                                ''.join(random.choices(string.ascii_lowercase, k=10)),
-                                ''.join(random.choices(string.ascii_lowercase, k=10)),
-                                ''.join(random.choices(string.ascii_lowercase, k=10))],
-                    'labels': [0,1,2,0,1,2,0,1,2,0]})
-    tdf.to_csv(test_file)
+    df_train = pd.DataFrame({'createat': [0,0,0,0,0,0,0,0,0,0],
+                             'message': [''.join(random.choices(string.ascii_lowercase, k=10)),
+                                         ''.join(random.choices(string.ascii_lowercase, k=10)),
+                                         ''.join(random.choices(string.ascii_lowercase, k=10)),
+                                         ''.join(random.choices(string.ascii_lowercase, k=10)),
+                                         ''.join(random.choices(string.ascii_lowercase, k=10)),
+                                         ''.join(random.choices(string.ascii_lowercase, k=10)),
+                                         ''.join(random.choices(string.ascii_lowercase, k=10)),
+                                         ''.join(random.choices(string.ascii_lowercase, k=10)),
+                                         ''.join(random.choices(string.ascii_lowercase, k=10)),
+                                         ''.join(random.choices(string.ascii_lowercase, k=10))],
+                                         'labels': [0,1,2,0,1,2,0,1,2,0]})
 
-    weak_learner_model_obj = WeakLearner().train_weak_learners(test_file)
+    weak_learner_model_obj = WeakLearner().train_weak_learners(df_train)
 
     # Serialize the object
     serialized_obj = pickle.dumps(weak_learner_model_obj)
@@ -288,8 +286,6 @@ def test_upload_bertopic_embedding_pretrained_weak_learner_object_post_valid_req
     # Upload the file to the BERTopic Embedding Pretrained Model object
     response2 = client.post(
         f"/aimodels/bertopic/bertopic-embedding-pretrained/{embedding_pretrained_id}/upload/", files={"new_file": file_obj})
-
-    os.remove(test_file)
 
     assert response2.status_code == 200
     assert response2.json()["uploaded"] is True
