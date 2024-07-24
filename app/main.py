@@ -13,13 +13,15 @@ from sqlalchemy.orm import Session
 from sqlalchemy.sql import text
 from logging.config import dictConfig
 from ppg.core.config import OriginationEnum
-from .core.config import settings, set_acronym_dictionary
+from .dependencies import httpx_client, get_db
+from .core.config import settings, set_acronym_dictionary, get_label_dictionary, set_label_dictionary
 from .core.errors import HTTPValidationError
 from .core.logging import logger, LogConfig
 from .db.base import Base
+from .db.session import SessionLocal
 from .experimental_features_router import router as experimental_router
 from .aimodels.router import router as aimodels_router
-from .dependencies import httpx_client, get_db
+from .aimodels.bertopic import crud
 
 dictConfig(LogConfig().dict())
 logger.info("Dummy Info")
@@ -109,6 +111,17 @@ versioned_app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# check for latest label_dictionary in database during startup
+@versioned_app.on_event('startup')
+async def startup_event():
+
+    db = SessionLocal()
+    label_dictionary = crud.bertopic_embedding_pretrained.get_latest_label_dictionary(db)
+
+    if label_dictionary is not None and label_dictionary != get_label_dictionary():
+        logger.info(f"label dictionary mismatch, updating: {label_dictionary}")
+        set_label_dictionary(label_dictionary)
 
 # close the httpx client when app is shutdown
 # see here: https://stackoverflow.com/questions/73721736/what-is-the-proper-way-to-make-downstream-https-requests-inside-of-uvicorn-fasta

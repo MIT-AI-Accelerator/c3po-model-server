@@ -1,22 +1,26 @@
 import hashlib
+import pickle
+import pandas as pd
 from typing import Union
+from io import TextIOWrapper, StringIO, BytesIO
+
 from fastapi import Depends, APIRouter, UploadFile
-
 from fastapi import HTTPException
-
 from fastapi.encoders import jsonable_encoder
-from fastapi.responses import JSONResponse
-from pydantic import UUID4
+from fastapi.responses import JSONResponse, StreamingResponse
 
+from pydantic import UUID4, BaseModel
 from sqlalchemy.orm import Session
 from minio import Minio
+
 from ppg.schemas.bertopic.bertopic_embedding_pretrained import BertopicEmbeddingPretrained, BertopicEmbeddingPretrainedCreate, BertopicEmbeddingPretrainedUpdate, EmbeddingModelTypeEnum
 from app.core.minio import upload_file_to_minio
 from app.core.errors import HTTPValidationError, ValidationError
+from app.core.config import get_label_dictionary, set_label_dictionary
 from app.dependencies import get_db, get_minio
 from .. import crud
 from ..models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedModel
-from ..ai_services.weak_learning import labeling_dict
+from ..ai_services.weak_learning import WeakLearner
 
 
 router = APIRouter(
@@ -49,13 +53,48 @@ def create_bertopic_embedding_pretrained_object_post(bertopic_embedding_pretrain
         )
 
     if bertopic_embedding_pretrained_obj.model_type == EmbeddingModelTypeEnum.WEAK_LEARNERS:
-        bertopic_embedding_pretrained_obj.reference = labeling_dict
+        bertopic_embedding_pretrained_obj.reference = get_label_dictionary()
 
     # pydantic handles validation
     new_bertopic_embedding_pretrained_obj: BertopicEmbeddingPretrainedModel = crud.bertopic_embedding_pretrained.create(
         db, obj_in=bertopic_embedding_pretrained_obj)
 
     return new_bertopic_embedding_pretrained_obj
+
+@router.post(
+    "/train/",
+    response_model=Union[list, HTTPValidationError],
+    responses={'422': {'model': HTTPValidationError}},
+    summary="Train a Weak Learner Model for upload",
+    response_description="Trained the Weak Learner Model"
+)
+async def upload_bertopic_embedding_post(new_file: UploadFile, db: Session = Depends(get_db), s3: Minio = Depends(get_minio)) -> (
+    Union[list, HTTPValidationError]
+):
+    """
+    Train a Weak Learner Model for upload.
+
+    - **new_file**: Required.  The training data.
+    """
+
+    # load the training data
+    cstr = ""
+    with new_file.file as f:
+        for line in TextIOWrapper(f, encoding='utf-8'):
+            cstr += line
+    df_train = pd.read_csv(StringIO(cstr))
+
+    # check for columns required to train weak learner
+    if not set(['message', 'createat', 'labels']).issubset(df_train.columns):
+        raise HTTPException(status_code=422, detail="unable to train weak learner")
+
+    # train and serialize the weak learner object, return as binary
+    weak_learners_model_obj = WeakLearner().train_weak_learners(df_train)
+    bin_data = pickle.dumps(weak_learners_model_obj)
+    response = StreamingResponse(BytesIO(bin_data), media_type="application/octet-stream")
+
+    response.headers["Content-Disposition"] = f"attachment; filename={new_file.filename}.bin"
+    return response
 
 @router.post(
     "/{id}/upload/",
@@ -119,3 +158,65 @@ def get_latest_bertopic_embedding_pretrained_object(model_name: str, db: Session
         raise HTTPException(status_code=422, detail="BERTopic Embedding Pretrained Model not found")
 
     return bertopic_embedding_pretrained_obj
+
+@router.get(
+    "/label-dictionary/get",
+    response_model=Union[list, HTTPValidationError],
+    responses={'422': {'model': HTTPValidationError}},
+    summary="Get label dictionary for latest uploaded BERTopic Weak Learner Model object",
+    response_description="Retrieved label dictionary for latest uploaded BERTopic Weak Learner Model object"
+)
+def get_latest_weak_label_dictionary(model_name: str, db: Session = Depends(get_db)) -> (
+    Union[list, HTTPValidationError]
+):
+    """
+    Get label dictionary for latest uploaded BERTopic Weak Learner Model object.
+    """
+    bertopic_embedding_pretrained_obj = crud.bertopic_embedding_pretrained.get_by_model_name(
+        db, model_name=model_name)
+
+    if not bertopic_embedding_pretrained_obj:
+        raise HTTPException(status_code=422, detail="BERTopic Embedding Pretrained Model not found")
+
+    if bertopic_embedding_pretrained_obj.model_type != EmbeddingModelTypeEnum.WEAK_LEARNERS:
+        raise HTTPException(status_code=422, detail=f"Label dictionary not used for model type {bertopic_embedding_pretrained_obj.model_type}")
+
+    if 'labeling_terms' not in bertopic_embedding_pretrained_obj.reference.keys():
+        raise HTTPException(status_code=422, detail="Label dictionary not found")
+
+    return bertopic_embedding_pretrained_obj.reference['labeling_terms']
+
+class LabelDictionaryRequest(BaseModel):
+    model_name: str = ""
+    labeling_terms: list = []
+
+@router.post(
+    "/label-dictionary/append",
+    response_model=Union[list, HTTPValidationError],
+    responses={'422': {'model': HTTPValidationError}},
+    summary="Append to latest label dictionary, train and upload a new BERTopic Weak Learner Model object",
+    response_description="Uploaded Embedding Pretrained Model Binary"
+)
+def append_latest_weak_label_dictionary(request: LabelDictionaryRequest, db: Session = Depends(get_db)) -> (
+    Union[list, HTTPValidationError]
+):
+    """
+    Append to latest label dictionary, train and upload a new BERTopic Weak Learner Model object.
+    """
+    bertopic_embedding_pretrained_obj = crud.bertopic_embedding_pretrained.get_by_model_name(
+        db, model_name=request.model_name)
+
+    if not bertopic_embedding_pretrained_obj:
+        raise HTTPException(status_code=422, detail="BERTopic Embedding Pretrained Model not found")
+
+    if bertopic_embedding_pretrained_obj.model_type != EmbeddingModelTypeEnum.WEAK_LEARNERS:
+        raise HTTPException(status_code=422, detail=f"Label dictionary not used for model type {bertopic_embedding_pretrained_obj.model_type}")
+
+    if 'labeling_terms' not in bertopic_embedding_pretrained_obj.reference.keys():
+        raise HTTPException(status_code=422, detail="Label dictionary not found")
+
+    label_dictionary = bertopic_embedding_pretrained_obj.reference
+    label_dictionary['labeling_terms'] = label_dictionary['labeling_terms'] + [request.labeling_terms]
+    label_dictionary = set_label_dictionary(label_dictionary)
+
+    return label_dictionary['labeling_terms']
