@@ -26,7 +26,7 @@ from app.db.init_db import init_db, wipe_db, drop_constraints
 from app.db.session import SessionLocal
 from app.core.minio import build_client, download_file_from_minio, upload_file_to_minio
 
-from app.core.config import settings, environment_settings
+from app.core.config import settings, environment_settings, get_label_dictionary
 from app.aimodels.bertopic import crud as bertopic_crud
 from app.aimodels.gpt4all import crud as gpt4all_crud
 
@@ -41,7 +41,7 @@ import pandas as pd
 from sample_data import CHAT_DATASET_1_PATH
 from app.core.model_cache import MODEL_CACHE_BASEDIR
 
-from app.aimodels.bertopic.ai_services.weak_learning import WeakLearner, labeling_dict
+from app.aimodels.bertopic.ai_services.weak_learning import WeakLearner
 from sample_data import CHAT_DATASET_4_PATH
 
 logging.basicConfig(level=logging.INFO)
@@ -333,7 +333,8 @@ def init_llm_db_obj_staging_prod(s3: Minio, db: Session, model_enum: LlmFilename
 def init_weak_learning_object(s3: Minio, db: Session) -> BertopicEmbeddingPretrainedModel:
     # Create the weak learner object
     model_name = CHAT_DATASET_4_PATH.split('/')[-1]
-    weak_learner_model_obj = WeakLearner().train_weak_learners(CHAT_DATASET_4_PATH)
+    df_train = pd.read_csv(CHAT_DATASET_4_PATH)
+    weak_learner_model_obj = WeakLearner().train_weak_learners(df_train)
 
     # Serialize the object
     serialized_obj = pickle.dumps(weak_learner_model_obj)
@@ -357,7 +358,7 @@ def init_weak_learning_object(s3: Minio, db: Session) -> BertopicEmbeddingPretra
         file_obj.seek(0)
 
         bertopic_embedding_pretrained_obj = BertopicEmbeddingPretrainedCreate(
-            sha256=hex_dig, model_name=model_name, model_type=EmbeddingModelTypeEnum.WEAK_LEARNERS, reference=labeling_dict)
+            sha256=hex_dig, model_name=model_name, model_type=EmbeddingModelTypeEnum.WEAK_LEARNERS, reference=get_label_dictionary())
 
         new_bertopic_embedding_pretrained_obj: BertopicEmbeddingPretrainedModel = bertopic_crud.bertopic_embedding_pretrained.create(
             db, obj_in=bertopic_embedding_pretrained_obj)

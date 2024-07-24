@@ -9,12 +9,7 @@ from sklearn.svm import SVC
 from sklearn.neural_network import MLPClassifier
 from sklearn.feature_extraction.text import CountVectorizer, ENGLISH_STOP_WORDS
 from pydantic import BaseModel
-
-
-labeling_dict = {'labeling_terms': [['joined the channel', 'added to the channel'],
-                                    ['hello', 'hola', 'good morning', 'good evening', 'good night'],
-                                    ['lunch', 'dinner', 'food']]}
-
+from app.core.config import get_label_dictionary
 
 class ChatLabel(IntEnum):
     ACTION = 0
@@ -79,7 +74,7 @@ class WeakLearner:
 
         @labeling_function()
         def lf_dict(x):
-            for category in labeling_dict['labeling_terms']:
+            for category in get_label_dictionary()['labeling_terms']:
                 for term in category:
                     if x['message'].find(term) >= 0:
                         return ChatLabel.RECYCLE
@@ -89,15 +84,14 @@ class WeakLearner:
         label_applier = PandasLFApplier(labeling_functions)
         return labeling_functions, label_applier
 
-    def train_weak_learners(self, filepath_train, stop_words_list = []):
+    def train_weak_learners(self, df_train, stop_words_list = []):
 
         # train the classifiers
-        data_train = pd.read_csv(filepath_train)
-        data_train['message'] = data_train['message'].astype(str)
-        data_train = data_train[data_train['createat'].notnull()]
+        df_train['message'] = df_train['message'].astype(str)
+        df_train = df_train[df_train['createat'].notnull()]
         self.vectorizer = get_vectorizer(stop_word_list=stop_words_list)
-        x_train = self.vectorizer.fit_transform(data_train['message'])
-        y_train = data_train['labels']
+        x_train = self.vectorizer.fit_transform(df_train['message'])
+        y_train = df_train['labels']
 
         self.svm = SVC(gamma=2, C=1, probability=True)
         self.mlp = MLPClassifier(alpha=1, max_iter=1000)
@@ -105,14 +99,14 @@ class WeakLearner:
         self.mlp.fit(x_train.toarray(), y_train)
 
         labeling_functions, label_applier = self.create_label_applier()
-        l_train = label_applier.apply(pd.DataFrame(data_train['message']))
+        l_train = label_applier.apply(pd.DataFrame(df_train['message']))
 
         # train the weak learner and apply it to the dataset
         LFAnalysis(L=l_train, lfs=labeling_functions).lf_summary()
         self.label_model = LabelModel(cardinality=6, verbose=True)
         self.label_model.fit(L_train=l_train, n_epochs=500,
                              log_freq=100, seed=123)
-        return (self.vectorizer, self.svm, self.mlp, self.label_model, labeling_dict)
+        return (self.vectorizer, self.svm, self.mlp, self.label_model, get_label_dictionary())
 
     def get_label_model(self):
         return self.label_model

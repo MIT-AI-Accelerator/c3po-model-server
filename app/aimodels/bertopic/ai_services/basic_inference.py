@@ -14,11 +14,12 @@ from plotly.graph_objs import Figure
 from ppg.schemas.bertopic.topic import TopicSummaryCreate
 from app.core.logging import logger
 from app.core.minio import download_pickled_object_from_minio
+from app.core.config import get_label_dictionary
 from ..models.document import DocumentModel
 from ..models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedModel
 from ..models.topic import TopicSummaryModel
 from ..crud import crud_topic
-from .weak_learning import WeakLearner, get_vectorizer, labeling_dict
+from .weak_learning import WeakLearner, get_vectorizer
 from .topic_summarization import topic_summarizer, detect_trending_topics, DEFAULT_N_REPR_DOCS, DEFAULT_TREND_DEPTH_DAYS
 
 BASE_CKPT_DIR = os.path.join(os.path.abspath(
@@ -208,7 +209,7 @@ class BasicInference:
             self.svm = weak_models[1]
             self.mlp = weak_models[2]
             self.label_model = weak_models[3]
-            if labeling_dict != weak_models[4]:
+            if get_label_dictionary() != weak_models[4]:
                 raise HTTPException(status_code=422, detail="Retrain weak learner (labeling_dict mismatch)")
 
             self.weak_learner = WeakLearner(

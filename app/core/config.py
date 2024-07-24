@@ -67,6 +67,12 @@ class Settings(BaseSettings):
     default_sha256_l13b_snoozy: str = ""
     default_sha256_q4_k_m: str = ""
 
+    # Weak learner settings
+    label_dictionary = {'labeling_terms': [['joined the channel', 'added to the channel'],
+                                           ['hello', 'hola', 'good morning', 'good evening', 'good night'],
+                                           ['lunch', 'dinner', 'food']]}
+
+
 def get_env_file(environment_settings_in):
     # get the base directory
     BASEDIR = os.path.join(os.path.abspath(
@@ -105,3 +111,11 @@ def set_acronym_dictionary(acronym_dictionary):
 
 def get_acronym_dictionary():
     return settings.acronym_dictionary
+
+# Functions to access weak learning label dictionary
+def set_label_dictionary(label_dictionary):
+    settings.label_dictionary = label_dictionary
+    return settings.label_dictionary
+
+def get_label_dictionary():
+    return settings.label_dictionary
