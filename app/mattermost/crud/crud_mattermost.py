@@ -193,10 +193,13 @@ class CRUDMattermostDocument(CRUDBase[MattermostDocumentModel, MattermostDocumen
             msg = row['message']
             info_type = InfoTypeEnum.CHAT
 
-            if msg == '' and row['props'] != '':
+            if row['props'] != '':
                 jobj = row.props
-                if 'attachments' in jobj:
+
+                if msg == '' and 'attachments' in jobj:
                     info_type, msg = parse_props(jobj)
+                elif 'from_bot' in jobj and bool(jobj['from_bot']):
+                    info_type = InfoTypeEnum.BOT
 
             document = DocumentCreate(
                 text=msg,

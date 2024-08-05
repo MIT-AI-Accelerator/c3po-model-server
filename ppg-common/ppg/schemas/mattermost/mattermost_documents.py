@@ -5,6 +5,7 @@ from ppg.core.config import OriginationEnum
 
 class InfoTypeEnum(str, enum.Enum):
     CHAT = "chat"
+    BOT = "bot"
     NOTAM = "notam"
     DATAMINR = "dataminr"
     ACARS = "acars"
