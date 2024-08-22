@@ -23,6 +23,9 @@ from ..models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedMo
 from ..ai_services.weak_learning import WeakLearner
 
 
+ERR_MSG_MODEL_NOT_FOUND = "BERTopic Embedding Pretrained Model not found"
+
+
 router = APIRouter(
     prefix="/bertopic-embedding-pretrained"
 )
@@ -116,7 +119,7 @@ async def upload_bertopic_embedding_post(new_file: UploadFile, id: UUID4, db: Se
     bertopic_embedding_pretrained_obj: BertopicEmbeddingPretrainedModel = crud.bertopic_embedding_pretrained.get(
         db, id)
     if not bertopic_embedding_pretrained_obj:
-        raise HTTPException(status_code=422, detail="BERTopic Embedding Pretrained Model not found")
+        raise HTTPException(status_code=422, detail=ERR_MSG_MODEL_NOT_FOUND)
 
     # check for hash
     if not bertopic_embedding_pretrained_obj.sha256:
@@ -155,7 +158,7 @@ def get_latest_bertopic_embedding_pretrained_object(model_name: str, db: Session
         db, model_name=model_name)
 
     if not bertopic_embedding_pretrained_obj:
-        raise HTTPException(status_code=422, detail="BERTopic Embedding Pretrained Model not found")
+        raise HTTPException(status_code=422, detail=ERR_MSG_MODEL_NOT_FOUND)
 
     return bertopic_embedding_pretrained_obj
 
@@ -176,7 +179,7 @@ def get_latest_weak_label_dictionary(model_name: str, db: Session = Depends(get_
         db, model_name=model_name)
 
     if not bertopic_embedding_pretrained_obj:
-        raise HTTPException(status_code=422, detail="BERTopic Embedding Pretrained Model not found")
+        raise HTTPException(status_code=422, detail=ERR_MSG_MODEL_NOT_FOUND)
 
     if bertopic_embedding_pretrained_obj.model_type != EmbeddingModelTypeEnum.WEAK_LEARNERS:
         raise HTTPException(status_code=422, detail=f"Label dictionary not used for model type {bertopic_embedding_pretrained_obj.model_type}")
@@ -207,7 +210,7 @@ def append_latest_weak_label_dictionary(request: LabelDictionaryRequest, db: Ses
         db, model_name=request.model_name)
 
     if not bertopic_embedding_pretrained_obj:
-        raise HTTPException(status_code=422, detail="BERTopic Embedding Pretrained Model not found")
+        raise HTTPException(status_code=422, detail=ERR_MSG_MODEL_NOT_FOUND)
 
     if bertopic_embedding_pretrained_obj.model_type != EmbeddingModelTypeEnum.WEAK_LEARNERS:
         raise HTTPException(status_code=422, detail=f"Label dictionary not used for model type {bertopic_embedding_pretrained_obj.model_type}")
