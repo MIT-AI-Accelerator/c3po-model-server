@@ -135,6 +135,7 @@ class CRUDMattermostDocument(CRUDBase[MattermostDocumentModel, MattermostDocumen
             team_name = None
             mm_link = None
             create_at = None
+            mm_metadata = {}
 
             mm_document = db.query(self.model, DocumentModel, MattermostUserModel, MattermostChannelModel).join(
                 DocumentModel, DocumentModel.id == self.model.document).join(
@@ -156,6 +157,7 @@ class CRUDMattermostDocument(CRUDBase[MattermostDocumentModel, MattermostDocumen
                 team_name = mm_document[3].team_name
                 mm_link = '%s/%s/pl/%s' % (settings.mm_base_url, team_name, message_id)
                 create_at = mm_document[1].original_created_time
+                mm_metadata = mm_document[0].doc_metadata
 
             else:
                 document = db.query(DocumentModel).filter(DocumentModel.id == duuid).first()
@@ -180,6 +182,7 @@ class CRUDMattermostDocument(CRUDBase[MattermostDocumentModel, MattermostDocumen
                                                  'channel_name': channel_name,
                                                  'team_name': team_name,
                                                  'mm_link' : mm_link,
+                                                 'mm_metadata' : mm_metadata,
                                                  'create_at': create_at}])],
                                                  ignore_index=True)
 
