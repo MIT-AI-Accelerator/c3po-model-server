@@ -172,6 +172,7 @@ class BuildTopicModelInputs(BaseModel):
 
 class TopicDocumentData(BaseModel):
     document_text_list: list[str]
+    document_messages: list[str]
     document_timestamps: list[datetime]
     document_users: list[str]
     document_nicknames: list[str]
@@ -235,6 +236,7 @@ class BasicInference:
         topic_model.representative_docs_ = repr_docs
 
         document_info = topic_model.get_document_info(topic_document_data.document_text_list)
+        document_info['Message'] = topic_document_data.document_messages
         document_info['Timestamp'] = topic_document_data.document_timestamps
         document_info['User'] = topic_document_data.document_users
         document_info['Nickname'] = topic_document_data.document_nicknames
@@ -256,6 +258,7 @@ class BasicInference:
         document_df.channel_name.fillna(value='', inplace=True)
         document_df.mm_link.fillna(value='', inplace=True)
         topic_document_data = TopicDocumentData(document_text_list = document_text_list,
+                                                document_messages = document_text_list,
                                                 document_timestamps = list(document_df['create_at'].values),
                                                 document_users = list(document_df['user_name'].values),
                                                 document_nicknames = list(document_df['nickname'].values),
@@ -279,6 +282,7 @@ class BasicInference:
         # train documents needed for representative documents / summarization
         # test documents needed for trend detection
         document_df_test = pd.DataFrame({'Document': topic_document_data_test.document_text_list,
+                                         'Message': topic_document_data_test.document_messages,
                                          'Timestamp': topic_document_data_test.document_timestamps,
                                          'Topic': topics})
 
@@ -383,6 +387,9 @@ class BasicInference:
                 data_train['y_pred'] < 2]
             data_train = data_train[data_train['y_pred'] < 2]
 
+        # convert documents to lowercase prior to stopword removal
+        data_train['document'] = data_train['message'].str.lower()
+
         # split data, train, then infer. assumes documents, embeddings
         # sorted by timestamp previously (in train request)
         train_len = round(len(data_train) * train_percent)
@@ -392,14 +399,16 @@ class BasicInference:
         if len(data_train) < MIN_BERTOPIC_DOCUMENTS or len(data_test) < MIN_BERTOPIC_DOCUMENTS:
             logger.error('document set reduced below minimum required for topic modeling')
 
-        topic_document_data_train = TopicDocumentData(document_text_list = list(data_train['message']),
+        topic_document_data_train = TopicDocumentData(document_text_list = list(data_train['document']),
+                                                      document_messages = list(data_train['message']),
                                                       document_timestamps = list(data_train['timestamp']),
                                                       document_users = list(data_train['user']),
                                                       document_nicknames = list(data_train['nickname']),
                                                       document_channels = list(data_train['channel']),
                                                       document_links = list(data_train['link']),
                                                       embeddings = topic_document_data.embeddings[:train_len-1])
-        topic_document_data_test = TopicDocumentData(document_text_list = list(data_test['message']),
+        topic_document_data_test = TopicDocumentData(document_text_list = list(data_test['document']),
+                                                     document_messages = list(data_test['message']),
                                                      document_timestamps = list(data_test['timestamp']),
                                                      document_users = list(data_test['user']),
                                                      document_nicknames = list(data_test['nickname']),
@@ -455,7 +464,7 @@ class BasicInference:
 
                 summary_text = 'topic summarization disabled'
                 if self.topic_summarizer:
-                    summary_text = self.topic_summarizer.get_summary(topic_docs['Document'].to_list())
+                    summary_text = self.topic_summarizer.get_summary(topic_docs['Message'].to_list())
 
                 # topic-level timeline visualization
                 topic_timeline_visualization_list = topic_timeline_visualization_list + [topic_model.visualize_topics_over_time(
@@ -466,7 +475,7 @@ class BasicInference:
                     topic_id=row['Topic'],
                     name=row['Name'],
                     top_n_words=topic_docs['Top_n_words'].unique()[0],
-                    top_n_documents=topic_docs[[
+                    top_n_documents=topic_docs.rename(columns={'Document': 'Lowercase', 'Message': 'Document'})[[
                         'Document', 'Timestamp', 'User', 'Nickname', 'Channel', 'Link', 'Probability']].to_dict(),
                     summary=summary_text,
                     is_trending=row['is_trending'])]
