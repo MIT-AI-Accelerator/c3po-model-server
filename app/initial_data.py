@@ -24,7 +24,7 @@ from app.aimodels.gpt4all.models.llm_pretrained import LlmPretrainedModel, LlmFi
 
 from app.db.init_db import init_db, wipe_db, drop_constraints
 from app.db.session import SessionLocal
-from app.core.minio import build_client, download_file_from_minio, upload_file_to_minio
+from app.core.minio import build_client, download_file_from_minio, upload_file_to_minio, list_minio_objects
 
 from app.core.config import settings, environment_settings, get_label_dictionary
 from app.aimodels.bertopic import crud as bertopic_crud
@@ -552,6 +552,8 @@ def main() -> None:
         init_large_objects_local(s3, db)
     elif (environment == 'staging' or (environment == 'production' and migration_toggle is True)):
         init_large_objects_p1(s3, db)
+
+    list_minio_objects(s3)
 
     end = time.time()
     logger.info("Initialization complete in %fs" % (end - start))
