@@ -111,4 +111,3 @@ def list_minio_objects(s3: Minio) -> Any:
     objects = s3.list_objects(settings.minio_bucket_name, recursive=True)
     for obj in objects:
         logger.info(f"{obj.bucket_name} {obj.object_name} {obj.last_modified} {obj.size}")
-list_minio_objects(build_client())
