@@ -90,13 +90,6 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
     documents, precalculated_embeddings = get_documents_and_embeddings(db, request.document_ids, request.sentence_transformer_id)
     document_df = crud_mattermost.mattermost_documents.get_document_dataframe(db, document_uuids=request.document_ids)
 
-    # add emojis to stopword list
-    emojis = set()
-    df_emoji = document_df[document_df['mm_metadata'].map(lambda x: 'emojis' in x)]
-    for key, row in df_emoji.iterrows():
-        for e in row['mm_metadata']['emojis']:
-            emojis.add(e['name'])
-
     # train the model
     basic_inference = BasicInference(bertopic_sentence_transformer_obj,
                                      s3,
@@ -104,7 +97,7 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
                                      request.refine_template,
                                      bertopic_weak_learner_obj,
                                      llm_pretrained_obj,
-                                     stop_word_list=request.stop_words + list(emojis))
+                                     stop_word_list=request.stop_words)
     inference_output = basic_inference.train_bertopic_on_documents(db,
                                                                    documents, precalculated_embeddings=precalculated_embeddings, num_topics=request.num_topics,
                                                                    document_df=document_df,
