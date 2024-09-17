@@ -206,8 +206,12 @@ async def convert_conversation_threads(request: ConversationThreadRequest,
     if document_df.empty:
         raise HTTPException(status_code=422, detail="Mattermost documents not found")
 
+    # only thread user chat messages. other types, such as ACARS, NOTAMS should remain unthreaded
+    chat_df = document_df[document_df['info_type'] == InfoTypeEnum.CHAT]
+    other_df = document_df[document_df['info_type'] != InfoTypeEnum.CHAT]
+
     # convert message utterances to conversation threads
-    conversation_df = crud_mattermost.convert_conversation_threads(df=document_df)
+    conversation_df = crud_mattermost.convert_conversation_threads(df=chat_df)
     conversation_df.rename(columns={'user_uuid': 'user','channel_uuid': 'channel'}, inplace=True)
 
     document_objs = []
@@ -249,6 +253,14 @@ async def convert_conversation_threads(request: ConversationThreadRequest,
 
     if len(document_objs) != len(conversation_df):
         raise HTTPException(status_code=422, detail="Unable to create conversation threads")
+
+    if not other_df.empty:
+        other_mm_doc_objs = crud_mattermost.mattermost_documents.get_all_by_message_id(other_df.message_id.values)
+
+        if len(other_mm_doc_objs) != len(other_df):
+            raise HTTPException(status_code=422, detail="Unable to find non chat documents")
+
+        document_objs = document_objs + other_mm_doc_objs
 
     return document_objs
 

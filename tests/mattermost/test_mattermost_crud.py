@@ -209,9 +209,9 @@ def test_convert_conversation_threads():
     # construct message data frame with reply and convert to conversation thread
     document_df = pd.DataFrame()
     document_df = pd.concat([document_df,  pd.DataFrame(
-        [{'message_id': '1', 'message': msg1, 'root_id': ''}])])
+        [{'message_id': '1', 'message': msg1, 'root_id': '', 'info_type': InfoTypeEnum.CHAT}])])
     document_df = pd.concat([document_df,  pd.DataFrame(
-        [{'message_id': '2', 'message': msg2, 'root_id': '1'}])])
+        [{'message_id': '2', 'message': msg2, 'root_id': '1', 'info_type': InfoTypeEnum.CHAT}])])
 
     conversation_df = crud.convert_conversation_threads(document_df)
 
@@ -229,6 +229,7 @@ def test_parse_props():
                              'author_name': aname,
                              'title': ittl,
                              'text': imsg,
+                             'fallback': '',
                              'fields': []}]}
     itype, omsg = crud.parse_props(jobj)
     emsg = '[%s] %s' % (ittl, imsg)
@@ -275,6 +276,7 @@ def test_parse_props_notam():
                              'author_name': '',
                              'title': ittl,
                              'text': imsg,
+                             'fallback': '',
                              'fields': [{'title': 'Location', 'value': 'KCAT', 'short': True},
                                         {'title': 'Valid', 'value': '4149/0409Z - 4201/2359Z', 'short': True}]}]}
     itype, omsg = crud.parse_props(jobj)
@@ -293,6 +295,7 @@ def test_parse_props_acars():
                              'author_name': '',
                              'title': ittl,
                              'text': imsg,
+                             'fallback': '',
                              'fields': [{'title': 'Tail #', 'value': '8675309', 'short': True},
                                         {'title': 'Mission #', 'value': '8675309', 'short': True},
                                         {'title': 'Callsign', 'value': 'CAT123', 'short': True}]}]}
@@ -311,6 +314,7 @@ def test_parse_props_dataminr():
                              'author_name': 'Dataminr',
                              'title': imsg,
                              'text': '',
+                             'fallback': '',
                              'fields': [{'title': 'Alert Type', 'value': 'Urgent', 'short': False},
                                         {'title': 'Event Time', 'value': '26/06/2024 18:08:19', 'short': False},
                                         {'title': 'Event Location', 'value': 'Lexington, MA USA\n', 'short': False},

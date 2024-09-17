@@ -65,7 +65,7 @@ class CRUDMattermostDocument(CRUDBase[MattermostDocumentModel, MattermostDocumen
             return None
 
         # each mattermost document is allowed a single conversation thread
-        return db.query(self.model).filter(self.model.message_id == message_id).all()
+        return db.query(self.model).filter(self.model.message_id == message_id, self.model.is_thread == is_thread).all()
 
     def get_all_channel_documents(self, db: Session, channels: list[str], history_depth: int = 0, content_filter_list = []) -> Union[list[MattermostDocumentModel], None]:
         stime = datetime.min
@@ -112,6 +112,7 @@ class CRUDMattermostDocument(CRUDBase[MattermostDocumentModel, MattermostDocumen
                                                      'props': document[0][0].props,
                                                      'metadata': document[0][0].doc_metadata,
                                                      'document_id': document[0][1].id,
+                                                     'info_type': document[0][0].info_type,
                                                      'is_thread': document[0][0].is_thread}])],
                                                      ignore_index=True)
 
@@ -408,6 +409,7 @@ def populate_mm_document_info(db: Session, *, document_df: pd.DataFrame):
 # Returns a dataframe with original structure; messages updated to include full conversation
 def convert_conversation_threads(df: pd.DataFrame):
 
+
     df['root_id'] = df['root_id'].fillna('')
     df['message'] = df['message'].fillna('')
     threads = {}
@@ -443,7 +445,8 @@ def parse_props(jobj: dict):
 
     author_name = jobj['author_name']
     title = jobj['title']
-    msg = '[%s] %s' % (jobj['title'], jobj['text'])
+    fallback = jobj['fallback']
+    msg = '[%s] %s' % (title, jobj['text'])
 
     if 'Dataminr' in author_name:
         info_type = InfoTypeEnum.DATAMINR
@@ -454,7 +457,10 @@ def parse_props(jobj: dict):
         info_type = InfoTypeEnum.ARINC
     elif 'ACARS' in title:
         info_type = InfoTypeEnum.ACARS
-        msg = parse_props_acars(jobj)
+        msg = parse_props_acars(jobj, title=title)
+    elif 'ACARS Free Text' in fallback:
+        info_type = InfoTypeEnum.ACARS
+        msg = parse_props_acars(jobj, title='ACARS Free Text')
     elif 'NOTAM' in title:
         info_type = InfoTypeEnum.NOTAM
         msg = parse_props_notam(jobj)
@@ -485,8 +491,8 @@ def parse_props_notam(jobj: dict):
     return msg
 
 
-def parse_props_acars(jobj: dict):
-    msg = '[%s] %s' % (jobj['title'], jobj['text'])
+def parse_props_acars(jobj: dict, title: str):
+    msg = '[%s] %s' % (title, jobj['text'])
 
     if jobj['fields'] is not None:
         tail_num = ''
