@@ -254,13 +254,12 @@ async def convert_conversation_threads(request: ConversationThreadRequest,
     if len(document_objs) != len(conversation_df):
         raise HTTPException(status_code=422, detail="Unable to create conversation threads")
 
-    if not other_df.empty:
-        other_mm_doc_objs = crud_mattermost.mattermost_documents.get_all_by_message_id(other_df.message_id.values)
+    other_mm_doc_objs = [crud_mattermost.mattermost_documents.get_by_message_id(db, message_id=row['message_id'])
+                         for key, row in other_df.iterrows()]
+    if not other_df.empty and (len(other_mm_doc_objs) != len(other_df)):
+        raise HTTPException(status_code=422, detail="Unable to find non chat documents")
 
-        if len(other_mm_doc_objs) != len(other_df):
-            raise HTTPException(status_code=422, detail="Unable to find non chat documents")
-
-        document_objs = document_objs + other_mm_doc_objs
+    document_objs = document_objs + other_mm_doc_objs
 
     return document_objs
 

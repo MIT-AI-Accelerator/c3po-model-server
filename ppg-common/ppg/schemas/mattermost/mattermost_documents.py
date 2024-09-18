@@ -9,6 +9,7 @@ class InfoTypeEnum(str, enum.Enum):
     NOTAM = "notam"
     DATAMINR = "dataminr"
     ACARS = "acars"
+    ACARS_TEXT = "acars_text"
     ENVISION = "envision"
     CAMPS = "camps"
     ARINC = "arinc"

@@ -60,12 +60,12 @@ class CRUDMattermostDocument(CRUDBase[MattermostDocumentModel, MattermostDocumen
         # each mattermost document is allowed a single conversation thread
         return db.query(self.model).filter(self.model.message_id == message_id, self.model.is_thread == is_thread).first()
 
-    def get_all_by_message_id(self, db: Session, *, message_id: str, is_thread = False) -> Union[MattermostDocumentModel, None]:
+    def get_all_by_message_id(self, db: Session, *, message_id: str) -> Union[MattermostDocumentModel, None]:
         if not message_id:
             return None
 
         # each mattermost document is allowed a single conversation thread
-        return db.query(self.model).filter(self.model.message_id == message_id, self.model.is_thread == is_thread).all()
+        return db.query(self.model).filter(self.model.message_id == message_id).all()
 
     def get_all_channel_documents(self, db: Session, channels: list[str], history_depth: int = 0, content_filter_list = []) -> Union[list[MattermostDocumentModel], None]:
         stime = datetime.min
@@ -459,7 +459,7 @@ def parse_props(jobj: dict):
         info_type = InfoTypeEnum.ACARS
         msg = parse_props_acars(jobj, title=title)
     elif 'ACARS Free Text' in fallback:
-        info_type = InfoTypeEnum.ACARS
+        info_type = InfoTypeEnum.ACARS_TEXT
         msg = parse_props_acars(jobj, title='ACARS Free Text')
     elif 'NOTAM' in title:
         info_type = InfoTypeEnum.NOTAM
