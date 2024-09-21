@@ -15,6 +15,11 @@ class InfoTypeEnum(str, enum.Enum):
     ARINC = "arinc"
     UDL = "udl"
 
+class ThreadTypeEnum(str, enum.Enum):
+    MESSAGE = "message"
+    THREAD = "thread"
+    THREAD_USER = "thread_user"
+    THREAD_USER_PERSONA = "thread_user_persona"
 
 # Shared properties
 class MattermostDocumentBase(BaseModel):
@@ -28,7 +33,7 @@ class MattermostDocumentBase(BaseModel):
     has_reactions: bool
     props: dict
     doc_metadata: dict
-    is_thread: bool
+    thread_type: ThreadTypeEnum
     info_type: InfoTypeEnum
 
 class MattermostDocumentCreate(MattermostDocumentBase):

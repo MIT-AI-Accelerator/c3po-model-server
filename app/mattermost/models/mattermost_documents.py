@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import Column, UUID, String, ForeignKey, Enum, JSON, Boolean, UniqueConstraint
 from sqlalchemy.ext.mutable import MutableDict
 from ppg.core.config import OriginationEnum
-from ppg.schemas.mattermost.mattermost_documents import InfoTypeEnum
+from ppg.schemas.mattermost.mattermost_documents import InfoTypeEnum, ThreadTypeEnum
 from app.db.base_class import Base
 from app.core.config import get_originated_from
 
@@ -26,11 +26,11 @@ class MattermostDocumentModel(Base):
     has_reactions = Column(Boolean(), default=False)
     props = Column(MutableDict.as_mutable(JSON))
     doc_metadata = Column(MutableDict.as_mutable(JSON))
-    is_thread = Column(Boolean(), default=False)
+    thread_type = Column(Enum(ThreadTypeEnum), default=ThreadTypeEnum.MESSAGE)
     info_type = Column(Enum(InfoTypeEnum), default=InfoTypeEnum.CHAT)
     originated_from = Column(Enum(OriginationEnum),
                              default=get_originated_from)
 
     # mattermost message IDs must be unique,
     # allow for a single conversation thread for each message
-    __table_args__ = (UniqueConstraint('message_id', 'is_thread', name='_messageid_isthread_uc'),)
+    __table_args__ = (UniqueConstraint('message_id', 'thread_type', name='_messageid_threadtype_uc'),)

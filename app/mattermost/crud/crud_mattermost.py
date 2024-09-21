@@ -5,7 +5,7 @@ import numpy as np
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from ppg.schemas.mattermost.mattermost_channels import MattermostChannelCreate
-from ppg.schemas.mattermost.mattermost_documents import MattermostDocumentCreate, InfoTypeEnum
+from ppg.schemas.mattermost.mattermost_documents import MattermostDocumentCreate, InfoTypeEnum, ThreadTypeEnum
 from ppg.schemas.mattermost.mattermost_users import MattermostUserCreate, MattermostUserUpdate
 from ppg.schemas.bertopic.document import DocumentCreate
 import ppg.services.mattermost_utils as mattermost_utils
@@ -53,12 +53,12 @@ class CRUDMattermostUser(CRUDBase[MattermostUserModel, MattermostUserCreate, Mat
 
 
 class CRUDMattermostDocument(CRUDBase[MattermostDocumentModel, MattermostDocumentCreate, MattermostDocumentCreate]):
-    def get_by_message_id(self, db: Session, *, message_id: str, is_thread = False) -> Union[MattermostDocumentModel, None]:
+    def get_by_message_id(self, db: Session, *, message_id: str, thread_type = ThreadTypeEnum.MESSAGE) -> Union[MattermostDocumentModel, None]:
         if not message_id:
             return None
 
         # each mattermost document is allowed a single conversation thread
-        return db.query(self.model).filter(self.model.message_id == message_id, self.model.is_thread == is_thread).first()
+        return db.query(self.model).filter(self.model.message_id == message_id, self.model.thread_type == thread_type).first()
 
     def get_all_by_message_id(self, db: Session, *, message_id: str) -> Union[MattermostDocumentModel, None]:
         if not message_id:
@@ -84,7 +84,7 @@ class CRUDMattermostDocument(CRUDBase[MattermostDocumentModel, MattermostDocumen
             documents += sum([db.query(self.model).join(DocumentModel).filter(self.model.channel == cuuid,
                 DocumentModel.original_created_time >= stime,
                 DocumentModel.original_created_time <= ctime,
-                self.model.is_thread == False,
+                self.model.thread_type == ThreadTypeEnum.MESSAGE,
                 self.model.info_type == itype).all() for cuuid in channels], [])
 
         return documents
@@ -104,6 +104,8 @@ class CRUDMattermostDocument(CRUDBase[MattermostDocumentModel, MattermostDocumen
                                                      'document': document[0][1].id,
                                                      'user_id': document[0][2].user_id,
                                                      'user_uuid': document[0][2].id,
+                                                     'user_name': document[0][2].user_name,
+                                                     'nickname': document[0][2].nickname,
                                                      'channel_id': document[0][3].channel_id,
                                                      'channel_uuid': document[0][3].id,
                                                      'create_at': document[0][1].original_created_time,
@@ -113,7 +115,7 @@ class CRUDMattermostDocument(CRUDBase[MattermostDocumentModel, MattermostDocumen
                                                      'metadata': document[0][0].doc_metadata,
                                                      'document_id': document[0][1].id,
                                                      'info_type': document[0][0].info_type,
-                                                     'is_thread': document[0][0].is_thread}])],
+                                                     'thread_type': document[0][0].thread_type}])],
                                                      ignore_index=True)
 
         return ddf
@@ -189,7 +191,7 @@ class CRUDMattermostDocument(CRUDBase[MattermostDocumentModel, MattermostDocumen
 
         return ddf
 
-    def create_all_using_df(self, db: Session, *, ddf: pd.DataFrame, is_thread = False) -> Union[MattermostDocumentModel, None]:
+    def create_all_using_df(self, db: Session, *, ddf: pd.DataFrame, thread_type = ThreadTypeEnum.MESSAGE) -> Union[MattermostDocumentModel, None]:
 
         mattermost_documents = []
         for key, row in ddf.iterrows():
@@ -221,7 +223,7 @@ class CRUDMattermostDocument(CRUDBase[MattermostDocumentModel, MattermostDocumen
                 channel=row['channel'],
                 user=row['user'],
                 document=document_obj.id,
-                is_thread=is_thread,
+                thread_type=thread_type,
                 info_type=info_type)]
 
         return self.create_all_using_id(db, obj_in_list=mattermost_documents)
@@ -400,7 +402,7 @@ def populate_mm_document_info(db: Session, *, document_df: pd.DataFrame):
             udf.rename(columns={"id": "message_id"}, inplace=True)
 
             # create new document objects in db
-            new_mattermost_docs = new_mattermost_docs + mattermost_documents.create_all_using_df(db, ddf=udf, is_thread=False)
+            new_mattermost_docs = new_mattermost_docs + mattermost_documents.create_all_using_df(db, ddf=udf, thread_type=ThreadTypeEnum.MESSAGE)
 
     return new_mattermost_docs
 
@@ -409,35 +411,52 @@ def populate_mm_document_info(db: Session, *, document_df: pd.DataFrame):
 # Returns a dataframe with original structure; messages updated to include full conversation
 def convert_conversation_threads(df: pd.DataFrame):
 
-
     df['root_id'] = df['root_id'].fillna('')
     df['message'] = df['message'].fillna('')
+    df['thread'] = df['message'].fillna('')
+    df['thread_speaker'] = df['message'].fillna('')
+    df['thread_speaker_persona'] = df['message'].fillna('')
     threads = {}
+    threads_speaker = {}
+    threads_speaker_persona = {}
     threads_row = {}
+
     for index, row in df.iterrows():
         thread = row['root_id']
         utterance = row['message']
+        utterance.replace("\n", " ")
+        speaker = row['user_name']
+        persona = row['nickname']
+        utterance_speaker = speaker + ': ' + utterance
+        utterance_speaker_persona = speaker + ' (' + persona + '): ' + utterance
         p_id = row['message_id']
+
         if utterance.find("added to the channel") < 0 and utterance.find("joined the channel") < 0 and utterance.find("left the channel") < 0:
             if len(thread) > 0:
                 if thread not in threads:
-                    threads[thread] = [utterance.replace("\n", " ")]
+                    threads[thread] = [utterance]
+                    threads_speaker[thread] = [utterance_speaker]
+                    threads_speaker_persona[thread] = [utterance_speaker_persona]
                 else:
-                    threads[thread].append(utterance.replace("\n", " "))
+                    threads[thread].append(utterance)
+                    threads_speaker[thread].append(utterance_speaker)
+                    threads_speaker_persona[thread].append(utterance_speaker_persona)
             else:
-                t = []
-                t.append(utterance.replace("\n", " "))
-                threads[p_id] = t
+                threads[p_id] = [utterance]
+                threads_speaker[p_id] = [utterance_speaker]
+                threads_speaker_persona[p_id] = [utterance_speaker_persona]
                 threads_row[p_id] = row
     keys = set(sorted(threads.keys())).intersection(threads_row.keys())
 
-    data = []
+    conversations = []
     for index, key in enumerate(keys):
         row = threads_row[key]
-        row['message'] = "\n".join(threads[key])
-        data.append(row)
+        row['thread'] = "\n".join(threads[key])
+        row['thread_speaker'] = "\n".join(threads_speaker[key])
+        row['thread_speaker_persona'] = "\n".join(threads_speaker_persona[key])
+        conversations.append(row)
 
-    return pd.DataFrame(data, columns=df.columns)
+    return pd.DataFrame(conversations, columns=df.columns)
 
 
 def parse_props(jobj: dict):
