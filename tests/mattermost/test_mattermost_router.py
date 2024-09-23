@@ -13,6 +13,7 @@ from app.mattermost.models.mattermost_users import MattermostUserModel
 from app.mattermost.models.mattermost_documents import MattermostDocumentModel
 from app.aimodels.bertopic.crud import crud_document
 from ppg.schemas.bertopic.document import DocumentCreate
+from ppg.schemas.mattermost.mattermost_documents import ThreadTypeEnum
 
 @pytest.fixture(scope='module')
 def channel_db_obj(db: Session):
@@ -72,7 +73,7 @@ def mm_db_obj_thread(channel_db_obj: MattermostChannelModel,
                                             hashtags='',
                                             props=dict(),
                                             doc_metadata=dict(),
-                                            is_thread=True)
+                                            thread_type=ThreadTypeEnum.THREAD)
     return crud_mattermost.mattermost_documents.create(db, obj_in=mm_doc_obj_in)
 
 # returns 422
@@ -335,7 +336,9 @@ def test_mattermost_conversation_thread_no_thread(mm_db_obj: MattermostDocumentM
     mm_docs = response.json()
 
     assert response.status_code == 200
-    assert str(mm_db_obj.message_id) in [mm_doc['message_id'] for mm_doc in mm_docs]
+    assert str(mm_db_obj.message_id) in [mm_doc['message_id'] for mm_doc in mm_docs['threads']]
+    assert str(mm_db_obj.message_id) in [mm_doc['message_id'] for mm_doc in mm_docs['threads_speaker']]
+    assert str(mm_db_obj.message_id) in [mm_doc['message_id'] for mm_doc in mm_docs['threads_speaker_persona']]
 
 def test_mattermost_conversation_thread_thread(mm_db_obj_thread: MattermostDocumentModel,
                                                client: TestClient):
@@ -346,4 +349,6 @@ def test_mattermost_conversation_thread_thread(mm_db_obj_thread: MattermostDocum
     mm_docs = response.json()
 
     assert response.status_code == 200
-    assert str(mm_db_obj_thread.message_id) in [mm_doc['message_id'] for mm_doc in mm_docs]
+    assert str(mm_db_obj_thread.message_id) in [mm_doc['message_id'] for mm_doc in mm_docs['threads']]
+    assert str(mm_db_obj_thread.message_id) in [mm_doc['message_id'] for mm_doc in mm_docs['threads_speaker']]
+    assert str(mm_db_obj_thread.message_id) in [mm_doc['message_id'] for mm_doc in mm_docs['threads_speaker_persona']]

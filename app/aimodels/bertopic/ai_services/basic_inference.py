@@ -179,6 +179,7 @@ class TopicDocumentData(BaseModel):
     document_channels: list[str]
     document_links: list[str]
     document_metadata: list[dict]
+    document_summarization_messages: list[str]
     embeddings: np.ndarray
 
     class Config:
@@ -244,6 +245,7 @@ class BasicInference:
         document_info['Channel'] = topic_document_data.document_channels
         document_info['Link'] = topic_document_data.document_links
         document_info['Metadata'] = topic_document_data.document_metadata
+        document_info['Summarization_Message'] = topic_document_data.document_summarization_messages
         return document_info
 
     def train_bertopic_on_documents(self, db, documents, precalculated_embeddings, num_topics, document_df, seed_topic_list=None, num_related_docs=DEFAULT_N_REPR_DOCS, trends_only=False, trend_depth=DEFAULT_TREND_DEPTH_DAYS, train_percent=DEFAULT_TRAIN_PERCENT) -> BasicInferenceOutputs:
@@ -267,6 +269,7 @@ class BasicInference:
                                                 document_channels = list(document_df['channel_name'].values),
                                                 document_links = list(document_df['mm_link'].values),
                                                 document_metadata = list(document_df['mm_metadata'].values),
+                                                document_summarization_messages = list(document_df['summarization_message'].values),
                                                 embeddings = embeddings)
 
         topic_model, topic_document_data_train, topic_document_data_test = self.build_topic_model(
@@ -381,7 +384,8 @@ class BasicInference:
                 'nickname': topic_document_data.document_nicknames,
                 'channel': topic_document_data.document_channels,
                 'link': topic_document_data.document_links,
-                'metadata': topic_document_data.document_metadata})
+                'metadata': topic_document_data.document_metadata,
+                'summarization_message': topic_document_data.document_summarization_messages})
 
         if self.weak_learner_obj:
             l_test = self.label_applier.apply(
@@ -414,6 +418,7 @@ class BasicInference:
                                                       document_channels = list(data_train['channel']),
                                                       document_links = list(data_train['link']),
                                                       document_metadata = list(data_train['metadata']),
+                                                      document_summarization_messages = list(data_train['summarization_message']),
                                                       embeddings = topic_document_data.embeddings[:train_len-1])
         topic_document_data_test = TopicDocumentData(document_text_list = list(data_test['document']),
                                                      document_messages = list(data_test['message']),
@@ -422,7 +427,8 @@ class BasicInference:
                                                      document_nicknames = list(data_test['nickname']),
                                                      document_channels= list(data_test['channel']),
                                                      document_links = list(data_test['link']),
-                                                      document_metadata = list(data_test['metadata']),
+                                                     document_metadata = list(data_test['metadata']),
+                                                     document_summarization_messages = list(data_test['summarization_message']),
                                                      embeddings = topic_document_data.embeddings[train_len:])
 
         umap_model = UMAP(n_neighbors = DEFAULT_UMAP_NEIGHBORS,
@@ -473,7 +479,7 @@ class BasicInference:
 
                 summary_text = 'topic summarization disabled'
                 if self.topic_summarizer:
-                    summary_text = self.topic_summarizer.get_summary(topic_docs['Message'].to_list())
+                    summary_text = self.topic_summarizer.get_summary(topic_docs['Summarization_Message'].to_list())
 
                 # topic-level timeline visualization
                 topic_timeline_visualization_list = topic_timeline_visualization_list + [topic_model.visualize_topics_over_time(
@@ -484,7 +490,7 @@ class BasicInference:
                     topic_id=row['Topic'],
                     name=row['Name'],
                     top_n_words=topic_docs['Top_n_words'].unique()[0],
-                    top_n_documents=topic_docs.rename(columns={'Document': 'Lowercase', 'Message': 'Document'})[[
+                    top_n_documents=topic_docs.rename(columns={'Document': 'Lowercase', 'Summarization_Message': 'Document'})[[
                         'Document', 'Timestamp', 'User', 'Nickname', 'Channel', 'Link', 'Probability']].to_dict(),
                     summary=summary_text,
                     is_trending=row['is_trending'])]

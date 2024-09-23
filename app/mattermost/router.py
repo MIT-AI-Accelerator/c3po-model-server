@@ -6,7 +6,7 @@ from tqdm import tqdm
 import pandas as pd
 from sqlalchemy.orm import Session
 from ppg.schemas.bertopic.document import DocumentUpdate
-from ppg.schemas.mattermost.mattermost_documents import MattermostDocument, MattermostDocumentUpdate, InfoTypeEnum
+from ppg.schemas.mattermost.mattermost_documents import MattermostDocument, MattermostDocumentUpdate, InfoTypeEnum, ThreadTypeEnum
 from ppg.schemas.mattermost.mattermost_users import MattermostUser
 import ppg.services.mattermost_utils as mattermost_utils
 from app.core.config import settings
@@ -140,7 +140,7 @@ async def upload_mm_channel_docs(request: UploadDocumentRequest, db: Session = D
         adf = adf[~adf.id.isin(existing_ids)].drop_duplicates(subset='id')
 
     adf.rename(columns={'id': 'message_id'}, inplace=True)
-    crud_mattermost.mattermost_documents.create_all_using_df(db, ddf=adf, is_thread=False)
+    crud_mattermost.mattermost_documents.create_all_using_df(db, ddf=adf, thread_type=ThreadTypeEnum.MESSAGE)
 
     return crud_mattermost.mattermost_documents.get_all_channel_documents(db,
                                                                           channels=channel_uuids,
@@ -184,16 +184,20 @@ async def get_mm_channel_docs(team_name: str, channel_name: str,
 class ConversationThreadRequest(BaseModel):
     mattermost_document_ids: list[UUID4] = []
 
+class ConversationThreadResponse(BaseModel):
+    threads: list[MattermostDocument] = []
+    threads_speaker: list[MattermostDocument] = []
+    threads_speaker_persona: list[MattermostDocument] = []
 
 @router.post(
     "/mattermost/conversation_threads",
-    response_model=Union[list[MattermostDocument], HTTPValidationError],
+    response_model=Union[ConversationThreadResponse, HTTPValidationError],
     responses={'422': {'model': HTTPValidationError}},
     summary="Retrieve Mattermost conversation documents",
     response_description="Retrieved Mattermost conversation documents")
 async def convert_conversation_threads(request: ConversationThreadRequest,
                               db: Session = Depends(get_db)) -> (
-    Union[list[MattermostDocument], HTTPValidationError]
+    Union[ConversationThreadResponse, HTTPValidationError]
 ):
     """
     Retrieve Mattermost conversation documents
@@ -206,21 +210,54 @@ async def convert_conversation_threads(request: ConversationThreadRequest,
     if document_df.empty:
         raise HTTPException(status_code=422, detail="Mattermost documents not found")
 
+    # only thread user chat messages. other types, such as ACARS, NOTAMS should remain unthreaded
+    chat_df = document_df[document_df['info_type'] == InfoTypeEnum.CHAT]
+    other_df = document_df[document_df['info_type'] != InfoTypeEnum.CHAT]
+
     # convert message utterances to conversation threads
-    conversation_df = crud_mattermost.convert_conversation_threads(df=document_df)
+    conversation_df = crud_mattermost.convert_conversation_threads(df=chat_df)
     conversation_df.rename(columns={'user_uuid': 'user','channel_uuid': 'channel'}, inplace=True)
 
-    document_objs = []
-    new_threads_df = pd.DataFrame()
+    other_mm_doc_objs = [crud_mattermost.mattermost_documents.get_by_message_id(db, message_id=row['message_id'])
+                         for key, row in other_df.iterrows()]
+    if not other_df.empty and (len(other_mm_doc_objs) != len(other_df)):
+        raise HTTPException(status_code=422, detail="Unable to find non chat documents")
+
+    thread_document_objs = ConversationThreadResponse()
+    thread_document_objs.threads = create_conversation_objects(db=db,
+                                                               thread_type=ThreadTypeEnum.THREAD,
+                                                               conversation_df=conversation_df) + other_mm_doc_objs
+
+    thread_document_objs.threads_speaker = create_conversation_objects(db=db,
+                                                               thread_type=ThreadTypeEnum.THREAD_USER,
+                                                               conversation_df=conversation_df) + other_mm_doc_objs
+    thread_document_objs.threads_speaker_persona = create_conversation_objects(db=db,
+                                                               thread_type=ThreadTypeEnum.THREAD_USER_PERSONA,
+                                                               conversation_df=conversation_df) + other_mm_doc_objs
+
+    return thread_document_objs
+
+def create_conversation_objects(db: Session, thread_type: ThreadTypeEnum, conversation_df: pd.DataFrame) -> list[MattermostDocument]:
+
+    thread_document_objs = []
+    thread_df = pd.DataFrame()
+
     for _, row in conversation_df.iterrows():
-        mm_document_obj = crud_mattermost.mattermost_documents.get_by_message_id(db, message_id=row['message_id'], is_thread=True)
+
+        thread_str = row['thread']
+        if thread_type == ThreadTypeEnum.THREAD_USER:
+            thread_str = row['thread_speaker']
+        if thread_type == ThreadTypeEnum.THREAD_USER_PERSONA:
+            thread_str = row['thread_speaker_persona']
+
+        mm_document_obj = crud_mattermost.mattermost_documents.get_by_message_id(db, message_id=row['message_id'], thread_type=thread_type)
 
         # update existing thread
         if mm_document_obj:
             document_obj = crud_document.document.get(db, id=row['document_id'])
             crud_document.document.update(db,
                                  db_obj=document_obj,
-                                 obj_in=DocumentUpdate(text=row['message'],
+                                 obj_in=DocumentUpdate(text=thread_str,
                                                        original_created_time=document_obj.original_created_time))
             updated_mm_doc_obj = crud_mattermost.mattermost_documents.update(db,
                                                                              db_obj=mm_document_obj,
@@ -235,23 +272,23 @@ async def convert_conversation_threads(request: ConversationThreadRequest,
                                                                                 channel=mm_document_obj.channel,
                                                                                 user=mm_document_obj.user,
                                                                                 document=mm_document_obj.document,
-                                                                                is_thread=True,
+                                                                                thread_type=thread_type,
                                                                                 info_type=mm_document_obj.info_type))
-            document_objs = document_objs + [updated_mm_doc_obj]
+            thread_document_objs = thread_document_objs + [updated_mm_doc_obj]
 
         else:
-            new_threads_df = pd.concat([new_threads_df, pd.DataFrame([row])])
+            row['message'] = thread_str
+            thread_df = pd.concat([thread_df, pd.DataFrame([row])])
 
     # create new thread objects
-    if not new_threads_df.empty:
-        new_mm_doc_objs = crud_mattermost.mattermost_documents.create_all_using_df(db, ddf=new_threads_df, is_thread=True)
-        document_objs = document_objs + new_mm_doc_objs
+    if not thread_df.empty:
+        new_mm_doc_objs = crud_mattermost.mattermost_documents.create_all_using_df(db, ddf=thread_df, thread_type=thread_type)
+        thread_document_objs = thread_document_objs + new_mm_doc_objs
 
-    if len(document_objs) != len(conversation_df):
+    if len(thread_document_objs) != len(conversation_df):
         raise HTTPException(status_code=422, detail="Unable to create conversation threads")
 
-    return document_objs
-
+    return thread_document_objs
 
 class SubstringUploadRequest(BaseModel):
     team_id: str

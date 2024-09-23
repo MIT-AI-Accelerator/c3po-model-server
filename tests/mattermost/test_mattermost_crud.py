@@ -8,7 +8,7 @@ from app.mattermost.models.mattermost_documents import MattermostDocumentModel
 from app.aimodels.bertopic.models.document import DocumentModel
 from app.aimodels.bertopic.crud import crud_document
 from ppg.core.config import OriginationEnum
-from ppg.schemas.mattermost.mattermost_documents import InfoTypeEnum
+from ppg.schemas.mattermost.mattermost_documents import InfoTypeEnum, ThreadTypeEnum
 
 
 def test_crud_mattermost(db: Session):
@@ -142,8 +142,11 @@ def test_crud_mattermost(db: Session):
                          'props': {'leggo': 'myeggo'},
                          'metadata': {'cuckoo': 'forcocoapuffs'},
                          }])
-    cdf_is_thread = cdf.loc[0, 'root_id'] == db_obj.root_message_id
-    mmdocs = crud.mattermost_documents.create_all_using_df(db, ddf=cdf, is_thread=cdf_is_thread)
+    if cdf.loc[0, 'root_id'] == db_obj.root_message_id:
+        cdf_thread_type = ThreadTypeEnum.THREAD
+    else:
+        cdf_thread_type = ThreadTypeEnum.MESSAGE
+    mmdocs = crud.mattermost_documents.create_all_using_df(db, ddf=cdf, thread_type=cdf_thread_type)
     assert len(mmdocs) == 1
     mmdoc = mmdocs[0]
     newdoc = crud_document.document.get(db, mmdoc.document)
@@ -157,7 +160,7 @@ def test_crud_mattermost(db: Session):
     assert mmdoc.has_reactions == cdf.loc[0, 'has_reactions']
     assert mmdoc.props == cdf.loc[0, 'props']
     assert mmdoc.doc_metadata == cdf.loc[0, 'metadata']
-    assert mmdoc.is_thread == cdf_is_thread
+    assert mmdoc.thread_type == cdf_thread_type
     assert mmdoc.originated_from == settings.originated_from
 
 
@@ -205,18 +208,30 @@ def test_convert_conversation_threads():
 
     msg1 = 'message 1.'
     msg2 = 'message 2.'
+    usr1 = 'user_a'
+    usr2 = 'user_b'
 
     # construct message data frame with reply and convert to conversation thread
     document_df = pd.DataFrame()
-    document_df = pd.concat([document_df,  pd.DataFrame(
-        [{'message_id': '1', 'message': msg1, 'root_id': ''}])])
-    document_df = pd.concat([document_df,  pd.DataFrame(
-        [{'message_id': '2', 'message': msg2, 'root_id': '1'}])])
+    document_df = pd.concat([document_df,  pd.DataFrame([{'message_id': '1',
+                                                          'message': msg1,
+                                                          'root_id': '',
+                                                          'user_name': usr1,
+                                                          'nickname': usr1,
+                                                          'info_type': InfoTypeEnum.CHAT}])])
+    document_df = pd.concat([document_df,  pd.DataFrame([{'message_id': '2',
+                                                          'message': msg2,
+                                                          'root_id': '1',
+                                                          'user_name': usr2,
+                                                          'nickname': usr2,
+                                                          'info_type': InfoTypeEnum.CHAT}])])
 
     conversation_df = crud.convert_conversation_threads(document_df)
 
     assert len(conversation_df) == (len(document_df) - 1)
-    assert conversation_df['message'].iloc[0] == '%s\n%s' % (msg1, msg2)
+    assert conversation_df['thread'].iloc[0] == '%s\n%s' % (msg1, msg2)
+    assert conversation_df['thread_speaker'].iloc[0] == '%s: %s\n%s: %s' % (usr1, msg1, usr2, msg2)
+    assert conversation_df['thread_speaker_persona'].iloc[0] == '%s (%s): %s\n%s (%s): %s' % (usr1, usr1, msg1, usr2, usr2, msg2)
 
 
 def test_parse_props():
@@ -229,6 +244,7 @@ def test_parse_props():
                              'author_name': aname,
                              'title': ittl,
                              'text': imsg,
+                             'fallback': '',
                              'fields': []}]}
     itype, omsg = crud.parse_props(jobj)
     emsg = '[%s] %s' % (ittl, imsg)
@@ -275,6 +291,7 @@ def test_parse_props_notam():
                              'author_name': '',
                              'title': ittl,
                              'text': imsg,
+                             'fallback': '',
                              'fields': [{'title': 'Location', 'value': 'KCAT', 'short': True},
                                         {'title': 'Valid', 'value': '4149/0409Z - 4201/2359Z', 'short': True}]}]}
     itype, omsg = crud.parse_props(jobj)
@@ -293,6 +310,7 @@ def test_parse_props_acars():
                              'author_name': '',
                              'title': ittl,
                              'text': imsg,
+                             'fallback': '',
                              'fields': [{'title': 'Tail #', 'value': '8675309', 'short': True},
                                         {'title': 'Mission #', 'value': '8675309', 'short': True},
                                         {'title': 'Callsign', 'value': 'CAT123', 'short': True}]}]}
@@ -311,6 +329,7 @@ def test_parse_props_dataminr():
                              'author_name': 'Dataminr',
                              'title': imsg,
                              'text': '',
+                             'fallback': '',
                              'fields': [{'title': 'Alert Type', 'value': 'Urgent', 'short': False},
                                         {'title': 'Event Time', 'value': '26/06/2024 18:08:19', 'short': False},
                                         {'title': 'Event Location', 'value': 'Lexington, MA USA\n', 'short': False},

@@ -8,6 +8,7 @@ from ppg.schemas.bertopic.document_embedding_computation import DocumentEmbeddin
 from ppg.schemas.bertopic.bertopic_trained import BertopicTrained, BertopicTrainedCreate, BertopicTrainedUpdate
 from ppg.schemas.bertopic.bertopic_visualization import BertopicVisualizationCreate
 from ppg.schemas.bertopic.topic import TopicSummaryUpdate
+from app.core.logging import logger
 from app.core.minio import pickle_and_upload_object_to_minio
 from ..ai_services.basic_inference import BasicInference, MIN_BERTOPIC_DOCUMENTS, DEFAULT_TRAIN_PERCENT
 from app.dependencies import get_db, get_minio
@@ -32,6 +33,7 @@ class TrainModelRequest(BaseModel):
     weak_learner_id: UUID4 | None
     summarization_model_id: UUID4 | None
     document_ids: list[UUID4] = []
+    summarization_document_ids: list[UUID4] = []
     num_topics: int = 2
     seed_topics: list[list] = []
     stop_words: list[str] = []
@@ -65,6 +67,9 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
     if len(request.document_ids) < MIN_BERTOPIC_DOCUMENTS:
         raise HTTPException(
             status_code=400, detail="must have at least 7 documents to find topics")
+    elif len(request.summarization_document_ids) == 0 or len(request.document_ids) != len(request.summarization_document_ids):
+        logger.warning("reusing document_ids for summarization, length mismatch")
+        request.summarization_document_ids = request.document_ids
 
     # validate train percent
     if request.train_percent < 0.0 or request.train_percent > 1.0:
@@ -89,6 +94,21 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
 
     documents, precalculated_embeddings = get_documents_and_embeddings(db, request.document_ids, request.sentence_transformer_id)
     document_df = crud_mattermost.mattermost_documents.get_document_dataframe(db, document_uuids=request.document_ids)
+    summarization_document_df = crud_mattermost.mattermost_documents.get_document_dataframe(db, document_uuids=request.summarization_document_ids)
+
+    if all(document_df['message_id'].str.len() > 0):
+        # merge original messages with summarization text
+        document_df = pd.merge(document_df,
+                            summarization_document_df[['message_id', 'message']],
+                            on='message_id',
+                            how='left',
+                            validate='1:1').rename(columns={"message_x": "message",
+                                                            "message_y": "summarization_message"})
+        fix_mask = document_df['summarization_message'].isnull()
+        document_df.summarization_message[fix_mask] = document_df.message[fix_mask]
+    else:
+        logger.warning("reusing document_ids for summarization, missing merge criteria")
+        document_df['summarization_message'] = document_df['message']
 
     # train the model
     basic_inference = BasicInference(bertopic_sentence_transformer_obj,
