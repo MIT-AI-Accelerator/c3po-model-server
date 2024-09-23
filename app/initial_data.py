@@ -17,6 +17,7 @@ import ppg.services.mattermost_utils as mattermost_utils
 from ppg.schemas.bertopic.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedCreate, BertopicEmbeddingPretrainedUpdate
 from ppg.schemas.gpt4all.llm_pretrained import LlmPretrainedCreate, LlmPretrainedUpdate
 from ppg.schemas.bertopic.document import DocumentCreate
+from ppg.schemas.mattermost.mattermost_documents import ThreadTypeEnum
 
 from app.aimodels.bertopic.models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedModel, EmbeddingModelTypeEnum
 from app.aimodels.bertopic.models.document import DocumentModel
@@ -438,7 +439,7 @@ def init_mattermost_documents(db:Session, bot_obj: MattermostUserModel) -> None:
             adf = adf[~adf.id.isin(existing_ids)].drop_duplicates(subset='id')
 
         adf.rename(columns={'id': 'message_id'}, inplace=True)
-        return crud_mattermost.mattermost_documents.create_all_using_df(db, ddf=adf, is_thread=False)
+        return crud_mattermost.mattermost_documents.create_all_using_df(db, ddf=adf, thread_type=ThreadTypeEnum.MESSAGE)
 
 ########## large object uploads ################
 

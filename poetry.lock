@@ -3011,7 +3011,7 @@ testing = ["pytest", "pytest-benchmark"]
 
 [[package]]
 name = "ppg-common"
-version = "1.7.0"
+version = "1.9.0"
 description = "A library for PPG common code"
 optional = false
 python-versions = "*"
