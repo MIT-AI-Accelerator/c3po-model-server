@@ -1,9 +1,9 @@
 # If you want to use conda, not required
 1. Make sure that you have `conda` installed.  [Recommend this article if on Mac, just do through step 2](https://caffeinedev.medium.com/how-to-install-tensorflow-on-m1-mac-8e9b91d93706).
 
-2. Create and activate a new conda environment, e.g., `transformers-api` with python 3.11.
+2. Create and activate a new conda environment, e.g., `transformers-api` with python 3.10.
 ```bash
-conda create --name transformers-api python==3.11.9
+conda create --name transformers-api python==3.10.15
 conda activate transformers-api
 ```
 
