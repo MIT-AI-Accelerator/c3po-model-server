@@ -408,7 +408,7 @@ class BasicInference:
         # sorted by timestamp previously (in train request)
         train_len = round(len(data_train) * train_percent)
         if train_percent < 1.0:
-            data_test = data_train[train_len+1:]
+            data_test = data_train[train_len:]
             data_train = data_train[:train_len]
         else:
             data_test = []
@@ -436,7 +436,7 @@ class BasicInference:
                                                         document_links = list(data_test['link']),
                                                         document_metadata = list(data_test['metadata']),
                                                         document_summarization_messages = list(data_test['summarization_message']),
-                                                        embeddings = topic_document_data.embeddings[train_len+1:])
+                                                        embeddings = topic_document_data.embeddings[train_len:])
         else:
             topic_document_data_test = None
 
