@@ -281,6 +281,9 @@ class BasicInference:
             topic_document_data_train,
             num_related_docs)
 
+        if topic_document_data_test is None:
+            topic_document_data_test = topic_document_data_train
+
         # update topics for test documents
         topics, probs = topic_model.transform(documents=topic_document_data_test.document_text_list,
                                               embeddings=topic_document_data_test.embeddings)
@@ -404,10 +407,13 @@ class BasicInference:
         # split data, train, then infer. assumes documents, embeddings
         # sorted by timestamp previously (in train request)
         train_len = round(len(data_train) * train_percent)
-        data_test = data_train[train_len:]
-        data_train = data_train[:train_len-1]
+        if train_percent < 1.0:
+            data_test = data_train[train_len:]
+            data_train = data_train[:train_len]
+        else:
+            data_test = []
 
-        if len(data_train) < MIN_BERTOPIC_DOCUMENTS or len(data_test) < MIN_BERTOPIC_DOCUMENTS:
+        if len(data_train) < MIN_BERTOPIC_DOCUMENTS:
             logger.error('document set reduced below minimum required for topic modeling')
 
         topic_document_data_train = TopicDocumentData(document_text_list = list(data_train['document']),
@@ -419,17 +425,20 @@ class BasicInference:
                                                       document_links = list(data_train['link']),
                                                       document_metadata = list(data_train['metadata']),
                                                       document_summarization_messages = list(data_train['summarization_message']),
-                                                      embeddings = topic_document_data.embeddings[:train_len-1])
-        topic_document_data_test = TopicDocumentData(document_text_list = list(data_test['document']),
-                                                     document_messages = list(data_test['message']),
-                                                     document_timestamps = list(data_test['timestamp']),
-                                                     document_users = list(data_test['user']),
-                                                     document_nicknames = list(data_test['nickname']),
-                                                     document_channels= list(data_test['channel']),
-                                                     document_links = list(data_test['link']),
-                                                     document_metadata = list(data_test['metadata']),
-                                                     document_summarization_messages = list(data_test['summarization_message']),
-                                                     embeddings = topic_document_data.embeddings[train_len:])
+                                                      embeddings = topic_document_data.embeddings[:train_len])
+        if len(data_test):
+            topic_document_data_test = TopicDocumentData(document_text_list = list(data_test['document']),
+                                                        document_messages = list(data_test['message']),
+                                                        document_timestamps = list(data_test['timestamp']),
+                                                        document_users = list(data_test['user']),
+                                                        document_nicknames = list(data_test['nickname']),
+                                                        document_channels= list(data_test['channel']),
+                                                        document_links = list(data_test['link']),
+                                                        document_metadata = list(data_test['metadata']),
+                                                        document_summarization_messages = list(data_test['summarization_message']),
+                                                        embeddings = topic_document_data.embeddings[train_len:])
+        else:
+            topic_document_data_test = None
 
         umap_model = UMAP(n_neighbors = DEFAULT_UMAP_NEIGHBORS,
                           n_components = DEFAULT_UMAP_COMPONENTS,
