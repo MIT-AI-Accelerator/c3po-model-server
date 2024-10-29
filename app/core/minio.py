@@ -114,5 +114,3 @@ def list_minio_objects(s3: Minio) -> Any:
             logger.info(f"{obj.bucket_name} {obj.object_name} {obj.last_modified} {obj.size}")
     except: # pylint: disable=bare-except
         logger.warning(f"unable to list minio objects for {settings.minio_bucket_name}")
-
-list_minio_objects(build_client())
