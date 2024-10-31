@@ -494,18 +494,16 @@ def parse_props(jobj: dict):
 def parse_props_notam(jobj: dict):
     msg = '[%s] %s' % (jobj['title'], jobj['text'])
 
+    fld_list = ['ID', 'Type', 'From', 'To', 'Aerodrome', 'FIR', 'Subject', 'Condition', 'Traffic', 'Purpose', 'Scope', 'Area']
     if jobj['fields'] is not None:
-        icao = ''
-        tov = ''
+        nstrs = []
+
         for fld in jobj['fields']:
-            if fld['title'] == 'Location':
-                icao = fld['value']
-            if fld['title'] == 'Valid':
-                tov = fld['value']
-        msg = '[%s] %s (Location: %s, Time of Validity: %s)' % (jobj['title'],
-                                                                jobj['text'],
-                                                                icao,
-                                                                tov)
+            if fld['title'] in fld_list:
+                nstrs.append('%s: %s' % (fld['title'], fld['value']))
+
+        if len(nstrs):
+            msg = '%s (%s)' % (msg, ', '.join(s for s in nstrs))
 
     return msg
 
@@ -513,47 +511,33 @@ def parse_props_notam(jobj: dict):
 def parse_props_acars(jobj: dict, title: str):
     msg = '[%s] %s' % (title, jobj['text'])
 
+    fld_list = ['Tail #', 'Mission #', 'Callsign']
     if jobj['fields'] is not None:
-        tail_num = ''
-        msn_num = ''
-        callsign = ''
+        nstrs = []
+
         for fld in jobj['fields']:
-            if fld['title'] == 'Tail #':
-                tail_num = fld['value']
-            if fld['title'] == 'Mission #':
-                msn_num = fld['value']
-            if fld['title'] == 'Callsign':
-                callsign = fld['value']
-        msg = '[%s] %s (Tail #: %s, Mission #: %s, Callsign: %s)' % (jobj['title'],
-                                                                     jobj['text'],
-                                                                     tail_num,
-                                                                     msn_num,
-                                                                     callsign)
+            if fld['title'] in fld_list:
+                nstrs.append('%s: %s' % (fld['title'], fld['value']))
+
+        if len(nstrs):
+            msg = '%s (%s)' % (msg, ', '.join(s for s in nstrs))
+
     return msg
 
 
 def parse_props_dataminr(jobj: dict):
     msg = '%s' % jobj['title']
 
+    fld_list = ['Alert Type', 'Event Time', 'Event Location', 'Nearby Airfields']
     if jobj['fields'] is not None:
-        alert_type = ''
-        event_time = ''
-        event_loc = ''
-        airfields = ''
+        nstrs = []
+
         for fld in jobj['fields']:
-            if fld['title'] == 'Alert Type':
-                alert_type = fld['value']
-            if fld['title'] == 'Event Time':
-                event_time = fld['value']
-            if fld['title'] == 'Event Location':
-                event_loc = fld['value']
-            if fld['title'] == 'Nearby Airfields':
-                airfields = fld['value']
-        msg = '%s (Alert Type: %s, Event Time: %s, Event Location: %s, Nearby Airfields: %s)' % (jobj['title'],
-                                                                                                 alert_type,
-                                                                                                 event_time,
-                                                                                                 event_loc,
-                                                                                                 airfields)
+            if fld['title'] in fld_list:
+                nstrs.append('%s: %s' % (fld['title'], fld['value']))
+
+        if len(nstrs):
+            msg = '%s (%s)' % (msg, ', '.join(s for s in nstrs))
 
     return msg
 
