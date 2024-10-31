@@ -106,8 +106,11 @@ def download_pickled_object_from_minio(id: UUID4, s3: Minio) -> Any:
 
 def list_minio_objects(s3: Minio) -> Any:
     """Lists all objects in the specified bucket."""
-    logger.info("Minio objects:")
 
-    objects = s3.list_objects(settings.minio_bucket_name, recursive=True)
-    for obj in objects:
-        logger.info(f"{obj.bucket_name} {obj.object_name} {obj.last_modified} {obj.size}")
+    try:
+        objects = s3.list_objects(settings.minio_bucket_name, recursive=True)
+        logger.info("Minio objects:")
+        for obj in objects:
+            logger.info(f"{obj.bucket_name} {obj.object_name} {obj.last_modified} {obj.size}")
+    except: # pylint: disable=bare-except
+        logger.warning(f"unable to list minio objects for {settings.minio_bucket_name}")
