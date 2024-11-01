@@ -1,6 +1,6 @@
 from pydantic import BaseModel, UUID4
 from typing import Optional
-from ppg.core.config import OriginationEnum
+from app.core.config import OriginationEnum
 
 # Shared properties
 class TopicSummaryBase(BaseModel):

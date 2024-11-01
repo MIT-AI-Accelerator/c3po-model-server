@@ -1,7 +1,7 @@
 import uuid
 import pandas as pd
-from ppg.services import mattermost_utils
 from app.core.config import settings, environment_settings
+from app.ppg_common.services import mattermost_utils
 
 def test_mattermost_bot():
 # test mattermost api calls for user, team, and channel info
@@ -24,14 +24,15 @@ def test_mattermost_bot():
         settings.mm_base_url, settings.mm_token, user['id'], teams.index[0])
 
     assert not channels.empty
+
+    largest_channel = channels.loc[channels['total_msg_count'].idxmax()]
     assert mattermost_utils.get_channel_info(
-        settings.mm_base_url, settings.mm_token, channels['id'].iloc[0])['name'] == channels['name'].iloc[0]
+        settings.mm_base_url, settings.mm_token, largest_channel['id'])['name'] == largest_channel['name']
 
     # test get documents
     documents = mattermost_utils.get_channel_posts(
-        settings.mm_base_url, settings.mm_token, channels['id'].iloc[0])
-
-    assert not documents.empty
+        settings.mm_base_url, settings.mm_token, largest_channel['id'], filter_system_types=False)
+    assert len(documents) == largest_channel['total_msg_count']
 
 
 def test_get_user_info(mocker):
@@ -40,7 +41,7 @@ def test_get_user_info(mocker):
     user = str(uuid.uuid4())
     mock_data = (dict({'id': user, 'username': user}), pd.DataFrame())
 
-    mocker.patch('ppg.services.mattermost_utils.get_user_info', return_value=mock_data)
+    mocker.patch('app.ppg_common.services.mattermost_utils.get_user_info', return_value=mock_data)
 
     user_info = mattermost_utils.get_user_info("127.0.0.1", "a_token", user)
 
@@ -54,8 +55,8 @@ def test_get_all_user_channels(mocker):
     team = str(uuid.uuid4())
     mock_data = pd.DataFrame()
 
-    mocker.patch('ppg.services.mattermost_utils.get_user_team_channels', return_value=mock_data)
-    mocker.patch('ppg.services.mattermost_utils.get_all_user_team_channels', return_value=mock_data)
+    mocker.patch('app.ppg_common.services.mattermost_utils.get_user_team_channels', return_value=mock_data)
+    mocker.patch('app.ppg_common.services.mattermost_utils.get_all_user_team_channels', return_value=mock_data)
 
     channel_info = mattermost_utils.get_all_user_team_channels("127.0.0.1", "a_token", user, [team])
 

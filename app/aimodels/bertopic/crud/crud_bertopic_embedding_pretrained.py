@@ -2,10 +2,9 @@
 from typing import Union
 from sqlalchemy.orm import Session
 from app.crud.base import CRUDBase
-from ppg.core.config import OriginationEnum
-from ppg.schemas.bertopic.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedCreate, BertopicEmbeddingPretrainedUpdate
-from app.core.config import get_originated_from
+from app.core.config import get_originated_from, OriginationEnum
 from ..models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedModel
+from app.ppg_common.schemas.bertopic.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedCreate, BertopicEmbeddingPretrainedUpdate
 
 # CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType])
 class CRUDBertopicEmbeddingPretrained(CRUDBase[BertopicEmbeddingPretrainedModel, BertopicEmbeddingPretrainedCreate, BertopicEmbeddingPretrainedUpdate]):

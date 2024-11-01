@@ -1,7 +1,7 @@
 from typing import Union
 from sqlalchemy.orm import Session
-from ppg.schemas.bertopic.topic import TopicSummaryCreate
 from app.crud.base import CRUDBase
+from app.ppg_common.schemas.bertopic.topic import TopicSummaryCreate
 from ..models.topic import TopicSummaryModel
 
 

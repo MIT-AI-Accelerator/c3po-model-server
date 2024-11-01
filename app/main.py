@@ -12,9 +12,8 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import text
 from logging.config import dictConfig
-from ppg.core.config import OriginationEnum
 from .dependencies import httpx_client, get_db
-from .core.config import settings, set_acronym_dictionary, get_label_dictionary, set_label_dictionary
+from .core.config import settings, set_acronym_dictionary, get_label_dictionary, set_label_dictionary, OriginationEnum
 from .core.errors import HTTPValidationError
 from .core.logging import logger, LogConfig
 from .db.base import Base

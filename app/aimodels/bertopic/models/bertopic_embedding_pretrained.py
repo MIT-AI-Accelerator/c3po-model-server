@@ -3,10 +3,9 @@ from typing import TYPE_CHECKING
 from sqlalchemy import Column, Enum, Integer, UUID, String, Boolean, Sequence, JSON
 from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy.orm import relationship
-from ppg.core.config import OriginationEnum
-from ppg.schemas.bertopic.bertopic_embedding_pretrained import EmbeddingModelTypeEnum
 from app.db.base_class import Base
-from app.core.config import get_originated_from
+from app.core.config import get_originated_from, OriginationEnum
+from app.ppg_common.schemas.bertopic.bertopic_embedding_pretrained import EmbeddingModelTypeEnum
 
 if TYPE_CHECKING:
     from .document_embedding_computation import DocumentEmbeddingComputationModel  # noqa: F401
