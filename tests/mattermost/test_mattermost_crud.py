@@ -286,15 +286,18 @@ def test_parse_props_notam():
 
     ittl = 'NOTAM'
     imsg = 'House Cat Announces Plans To Just Sit There For 46 Minutes.'
+    aerodrome = 'KCAT'
+    from_to = ['4149/0409Z', '4201/2359Z']
     jobj = {'attachments': [{'id': 0,
                              'author_name': '',
                              'title': ittl,
                              'text': imsg,
                              'fallback': '',
-                             'fields': [{'title': 'Location', 'value': 'KCAT', 'short': True},
-                                        {'title': 'Valid', 'value': '4149/0409Z - 4201/2359Z', 'short': True}]}]}
+                             'fields': [{'title': 'Aerodrome', 'value': aerodrome, 'short': True},
+                                        {'title': 'From', 'value': from_to[0], 'short': True},
+                                        {'title': 'To', 'value': from_to[1], 'short': True}]}]}
     itype, omsg = crud.parse_props(jobj)
-    emsg = '[%s] %s' % (ittl, imsg)
+    emsg = '[%s] %s (Aerodrome: %s, From: %s, To: %s)' % (ittl, imsg, aerodrome, from_to[0], from_to[1])
 
     assert itype == InfoTypeEnum.NOTAM
     assert omsg[0:len(emsg)] == emsg
@@ -305,16 +308,18 @@ def test_parse_props_acars():
 
     ittl = 'ACARS'
     imsg = '8th Cat Acquired In Hopes Of Easing Tension Between First 7 Cats.'
+    tailno = '8675309'
+    csign = 'CAT123'
     jobj = {'attachments': [{'id': 0,
                              'author_name': '',
                              'title': ittl,
                              'text': imsg,
                              'fallback': '',
-                             'fields': [{'title': 'Tail #', 'value': '8675309', 'short': True},
-                                        {'title': 'Mission #', 'value': '8675309', 'short': True},
-                                        {'title': 'Callsign', 'value': 'CAT123', 'short': True}]}]}
+                             'fields': [{'title': 'Tail #', 'value': tailno, 'short': True},
+                                        {'title': 'Mission #', 'value': tailno, 'short': True},
+                                        {'title': 'Callsign', 'value': csign, 'short': True}]}]}
     itype, omsg = crud.parse_props(jobj)
-    emsg = '[%s] %s' % (ittl, imsg)
+    emsg = '[%s] %s (Tail #: %s, Mission #: %s, Callsign: %s)' % (ittl, imsg, tailno, tailno, csign)
 
     assert itype == InfoTypeEnum.ACARS
     assert omsg[0:len(emsg)] == emsg

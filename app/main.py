@@ -16,6 +16,7 @@ from .dependencies import httpx_client, get_db
 from .core.config import settings, set_acronym_dictionary, get_label_dictionary, set_label_dictionary, OriginationEnum
 from .core.errors import HTTPValidationError
 from .core.logging import logger, LogConfig
+from .core.minio import build_client, list_minio_objects
 from .db.base import Base
 from .db.session import SessionLocal
 from .experimental_features_router import router as experimental_router
@@ -121,6 +122,9 @@ async def startup_event():
     if label_dictionary is not None and label_dictionary != get_label_dictionary():
         logger.info(f"label dictionary mismatch, updating: {label_dictionary}")
         set_label_dictionary(label_dictionary)
+
+    # list minio objects during app startup
+    list_minio_objects(build_client())
 
 # close the httpx client when app is shutdown
 # see here: https://stackoverflow.com/questions/73721736/what-is-the-proper-way-to-make-downstream-https-requests-inside-of-uvicorn-fasta
