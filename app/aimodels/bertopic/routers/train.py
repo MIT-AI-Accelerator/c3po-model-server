@@ -4,24 +4,24 @@ from fastapi import Depends, APIRouter, HTTPException
 from sqlalchemy.orm import Session
 import pandas as pd
 from minio import Minio
-from ppg.schemas.bertopic.document_embedding_computation import DocumentEmbeddingComputationCreate
-from ppg.schemas.bertopic.bertopic_trained import BertopicTrained, BertopicTrainedCreate, BertopicTrainedUpdate
-from ppg.schemas.bertopic.bertopic_visualization import BertopicVisualizationCreate
-from ppg.schemas.bertopic.topic import TopicSummaryUpdate
 from app.core.logging import logger
 from app.core.minio import pickle_and_upload_object_to_minio
-from ..ai_services.basic_inference import BasicInference, MIN_BERTOPIC_DOCUMENTS, DEFAULT_TRAIN_PERCENT
-from app.dependencies import get_db, get_minio
-from .. import crud
-from ..models.bertopic_trained import BertopicTrainedModel
-from ..models.bertopic_visualization import BertopicVisualizationTypeEnum
-from ..ai_services.topic_summarization import DEFAULT_TREND_DEPTH_DAYS, DEFAULT_PROMPT_TEMPLATE, DEFAULT_REFINE_TEMPLATE
 from app.core.errors import ValidationError, HTTPValidationError
 from app.core.config import settings
-from ..models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedModel
+from app.dependencies import get_db, get_minio
+from app.ppg_common.schemas.bertopic.document_embedding_computation import DocumentEmbeddingComputationCreate
+from app.ppg_common.schemas.bertopic.bertopic_trained import BertopicTrained, BertopicTrainedCreate, BertopicTrainedUpdate
+from app.ppg_common.schemas.bertopic.bertopic_visualization import BertopicVisualizationCreate
+from app.ppg_common.schemas.bertopic.topic import TopicSummaryUpdate
 from app.aimodels.gpt4all.models import LlmPretrainedModel
 from app.aimodels.gpt4all.crud import crud_llm_pretrained
 import app.mattermost.crud.crud_mattermost as crud_mattermost
+from .. import crud
+from ..ai_services.basic_inference import BasicInference, MIN_BERTOPIC_DOCUMENTS, DEFAULT_TRAIN_PERCENT
+from ..models.bertopic_trained import BertopicTrainedModel
+from ..models.bertopic_visualization import BertopicVisualizationTypeEnum
+from ..ai_services.topic_summarization import DEFAULT_TREND_DEPTH_DAYS, DEFAULT_PROMPT_TEMPLATE, DEFAULT_REFINE_TEMPLATE
+from ..models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedModel
 
 router = APIRouter(
     prefix=""

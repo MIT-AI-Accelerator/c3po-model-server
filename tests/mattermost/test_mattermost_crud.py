@@ -3,12 +3,11 @@ import pandas as pd
 import app.mattermost.crud.crud_mattermost as crud
 from _pytest.monkeypatch import MonkeyPatch
 from sqlalchemy.orm import Session
-from app.core.config import environment_settings, settings
+from app.core.config import environment_settings, settings, OriginationEnum
 from app.mattermost.models.mattermost_documents import MattermostDocumentModel
 from app.aimodels.bertopic.models.document import DocumentModel
 from app.aimodels.bertopic.crud import crud_document
-from ppg.core.config import OriginationEnum
-from ppg.schemas.mattermost.mattermost_documents import InfoTypeEnum, ThreadTypeEnum
+from app.ppg_common.schemas.mattermost.mattermost_documents import InfoTypeEnum, ThreadTypeEnum
 
 
 def test_crud_mattermost(db: Session):
@@ -193,11 +192,11 @@ def test_populate_mm_user_team_info(db: Session, mocker):
                             'email': '%s@nitmre.mil' % user}),
                       pd.DataFrame())
     mocker.patch(
-        'ppg.services.mattermost_utils.get_user_info', return_value=mock_user_data)
+        'app.ppg_common.services.mattermost_utils.get_user_info', return_value=mock_user_data)
 
     mock_team_data = pd.DataFrame()
-    mocker.patch('ppg.services.mattermost_utils.get_user_team_channels', return_value=mock_team_data)
-    mocker.patch('ppg.services.mattermost_utils.get_all_user_team_channels', return_value=mock_team_data)
+    mocker.patch('app.ppg_common.services.mattermost_utils.get_user_team_channels', return_value=mock_team_data)
+    mocker.patch('app.ppg_common.services.mattermost_utils.get_all_user_team_channels', return_value=mock_team_data)
 
     user_obj = crud.populate_mm_user_team_info(db, user_name=user)
 

@@ -9,8 +9,8 @@ import pandas as pd
 from sqlalchemy.orm import Session
 from unittest.mock import MagicMock
 from fastapi.testclient import TestClient
-from ppg.core.config import OriginationEnum
-from ppg.schemas.bertopic.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedCreate
+from app.core.config import OriginationEnum
+from app.ppg_common.schemas.bertopic.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedCreate
 from app.aimodels.bertopic.models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedModel
 from app.aimodels.bertopic.crud.crud_bertopic_embedding_pretrained import CRUDBertopicEmbeddingPretrained, bertopic_embedding_pretrained
 from app.aimodels.bertopic.ai_services.weak_learning import WeakLearner

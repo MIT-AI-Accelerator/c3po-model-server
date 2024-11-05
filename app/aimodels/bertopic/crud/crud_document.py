@@ -2,8 +2,8 @@ import datetime
 from typing import List
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
-from ppg.schemas.bertopic.document import DocumentCreate
 from app.crud.base import CRUDBase
+from app.ppg_common.schemas.bertopic.document import DocumentCreate
 from ..models.document import DocumentModel
 
 

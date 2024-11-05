@@ -2,9 +2,8 @@ import uuid
 from typing import TYPE_CHECKING
 from sqlalchemy import Column, UUID, Float, ARRAY, ForeignKey, Enum
 from sqlalchemy.orm import relationship
-from ppg.core.config import OriginationEnum
 from app.db.base_class import Base
-from app.core.config import get_originated_from
+from app.core.config import get_originated_from, OriginationEnum
 
 if TYPE_CHECKING:
     from .bertopic_embedding_pretrained import BertopicEmbeddingPretrainedModel  # noqa: F401

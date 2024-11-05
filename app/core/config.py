@@ -2,7 +2,10 @@ import os
 import enum
 from typing import Optional, Any
 from pydantic import BaseSettings, PostgresDsn, validator
-from ppg.core.config import OriginationEnum
+
+class OriginationEnum(str, enum.Enum):
+    ORIGINATED_FROM_APP = "app"
+    ORIGINATED_FROM_TEST = "test"
 
 # load the environment name, local, test, staging, or production
 class EnvironmentSettings(BaseSettings):

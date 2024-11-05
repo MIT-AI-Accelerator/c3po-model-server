@@ -7,12 +7,12 @@ from minio import Minio
 from pydantic import UUID4
 from sqlalchemy.orm import Session
 
-from ppg.schemas.gpt4all.llm_pretrained import LlmPretrained, LlmPretrainedCreate, LlmPretrainedUpdate
 from app.core.minio import upload_file_to_minio
 from app.dependencies import get_db, get_minio
+from app.core.errors import HTTPValidationError
+from app.ppg_common.schemas.gpt4all.llm_pretrained import LlmPretrained, LlmPretrainedCreate, LlmPretrainedUpdate
 from .. import crud
 from ..models.llm_pretrained import LlmPretrainedModel, LlmFilenameEnum
-from app.core.errors import HTTPValidationError
 
 
 

@@ -1,7 +1,7 @@
 from unittest.mock import create_autospec
 from sqlalchemy.orm import Session
 
-from ppg.schemas.gpt4all.llm_pretrained import LlmPretrainedCreate
+from app.ppg_common.schemas.gpt4all.llm_pretrained import LlmPretrainedCreate
 from app.aimodels.gpt4all import crud
 from app.aimodels.gpt4all.models.llm_pretrained import LlmPretrainedModel
 

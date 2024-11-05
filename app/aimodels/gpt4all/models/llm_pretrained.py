@@ -2,10 +2,9 @@ import uuid
 from typing import TYPE_CHECKING
 from sqlalchemy import Column, Enum, Integer, UUID, String, Boolean, Sequence
 from sqlalchemy.orm import relationship
-from ppg.core.config import OriginationEnum
-from ppg.schemas.gpt4all.llm_pretrained import LlmFilenameEnum
 from app.db.base_class import Base
-from app.core.config import get_originated_from
+from app.core.config import get_originated_from, OriginationEnum
+from app.ppg_common.schemas.gpt4all.llm_pretrained import LlmFilenameEnum
 
 # add in the TYPE_CHECKING check here if relationships are created
 

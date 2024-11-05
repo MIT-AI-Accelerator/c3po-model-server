@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from app.aimodels.bertopic.crud.crud_bertopic_visualization import bertopic_visualization
-from ppg.schemas.bertopic.bertopic_visualization import  BertopicVisualizationTypeEnum
+from app.ppg_common.schemas.bertopic.bertopic_visualization import  BertopicVisualizationTypeEnum
 
 
 def test_get_bertopic_visualization_no_id(db: Session):

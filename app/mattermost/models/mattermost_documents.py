@@ -2,10 +2,9 @@ import uuid
 from typing import TYPE_CHECKING
 from sqlalchemy import Column, UUID, String, ForeignKey, Enum, JSON, Boolean, UniqueConstraint
 from sqlalchemy.ext.mutable import MutableDict
-from ppg.core.config import OriginationEnum
-from ppg.schemas.mattermost.mattermost_documents import InfoTypeEnum, ThreadTypeEnum
 from app.db.base_class import Base
-from app.core.config import get_originated_from
+from app.core.config import get_originated_from, OriginationEnum
+from app.ppg_common.schemas.mattermost.mattermost_documents import InfoTypeEnum, ThreadTypeEnum
 
 if TYPE_CHECKING:
     from .mattermost_channels import MattermostChannelModel

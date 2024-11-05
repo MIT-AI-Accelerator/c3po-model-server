@@ -13,11 +13,11 @@ from pydantic import UUID4, BaseModel
 from sqlalchemy.orm import Session
 from minio import Minio
 
-from ppg.schemas.bertopic.bertopic_embedding_pretrained import BertopicEmbeddingPretrained, BertopicEmbeddingPretrainedCreate, BertopicEmbeddingPretrainedUpdate, EmbeddingModelTypeEnum
 from app.core.minio import upload_file_to_minio
 from app.core.errors import HTTPValidationError, ValidationError
 from app.core.config import get_label_dictionary, set_label_dictionary
 from app.dependencies import get_db, get_minio
+from app.ppg_common.schemas.bertopic.bertopic_embedding_pretrained import BertopicEmbeddingPretrained, BertopicEmbeddingPretrainedCreate, BertopicEmbeddingPretrainedUpdate, EmbeddingModelTypeEnum
 from .. import crud
 from ..models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedModel
 from ..ai_services.weak_learning import WeakLearner

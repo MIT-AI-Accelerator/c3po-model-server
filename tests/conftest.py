@@ -4,9 +4,9 @@ from unittest.mock import MagicMock
 from .test_files.db.db_test_session import SessionLocal
 import pytest
 from fastapi.testclient import TestClient
-from ppg.core.config import OriginationEnum
 from app.main import app
 from app.core.minio import build_client
+from app.core.config import OriginationEnum
 
 
 # in case you are wondering why we use yield instead of return, check this

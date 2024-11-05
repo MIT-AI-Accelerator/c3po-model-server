@@ -4,19 +4,19 @@ import pandas as pd
 import numpy as np
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
-from ppg.schemas.mattermost.mattermost_channels import MattermostChannelCreate
-from ppg.schemas.mattermost.mattermost_documents import MattermostDocumentCreate, InfoTypeEnum, ThreadTypeEnum
-from ppg.schemas.mattermost.mattermost_users import MattermostUserCreate, MattermostUserUpdate
-from ppg.schemas.bertopic.document import DocumentCreate
-import ppg.services.mattermost_utils as mattermost_utils
 from app.core.config import settings
 from app.core.logging import logger
 from app.crud.base import CRUDBase
+from app.ppg_common.schemas.mattermost.mattermost_channels import MattermostChannelCreate
+from app.ppg_common.schemas.mattermost.mattermost_documents import MattermostDocumentCreate, InfoTypeEnum, ThreadTypeEnum
+from app.ppg_common.schemas.mattermost.mattermost_users import MattermostUserCreate, MattermostUserUpdate
+from app.ppg_common.schemas.bertopic.document import DocumentCreate
+import app.ppg_common.services.mattermost_utils as mattermost_utils
+from app.aimodels.bertopic.models import DocumentModel
+from app.aimodels.bertopic import crud as crud_document
 from ..models.mattermost_channels import MattermostChannelModel
 from ..models.mattermost_users import MattermostUserModel
 from ..models.mattermost_documents import MattermostDocumentModel
-from app.aimodels.bertopic.models import DocumentModel
-from app.aimodels.bertopic import crud as crud_document
 
 
 class CRUDMattermostChannel(CRUDBase[MattermostChannelModel, MattermostChannelCreate, MattermostChannelCreate]):

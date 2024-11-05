@@ -1,9 +1,8 @@
 import uuid
 from sqlalchemy import Column, UUID, Enum, String
-from ppg.core.config import OriginationEnum
-from ppg.schemas.bertopic.bertopic_visualization import BertopicVisualizationTypeEnum
 from app.db.base_class import Base
-from app.core.config import get_originated_from
+from app.core.config import get_originated_from, OriginationEnum
+from app.ppg_common.schemas.bertopic.bertopic_visualization import BertopicVisualizationTypeEnum
 
 
 class BertopicVisualizationModel(Base):
