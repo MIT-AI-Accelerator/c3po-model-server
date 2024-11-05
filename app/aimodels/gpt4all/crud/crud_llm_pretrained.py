@@ -2,10 +2,9 @@
 from typing import Union
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from ppg.core.config import OriginationEnum
-from ppg.schemas.gpt4all.llm_pretrained import LlmPretrainedCreate, LlmPretrainedUpdate
-from app.core.config import get_originated_from
+from app.core.config import get_originated_from, OriginationEnum
 from app.crud.base import CRUDBase
+from app.ppg_common.schemas.gpt4all.llm_pretrained import LlmPretrainedCreate, LlmPretrainedUpdate
 from ..models import LlmPretrainedModel
 from ..models.llm_pretrained import LlmFilenameEnum
 

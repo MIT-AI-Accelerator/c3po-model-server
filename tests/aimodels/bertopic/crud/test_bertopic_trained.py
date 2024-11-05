@@ -1,8 +1,8 @@
 import uuid
 import datetime
 from sqlalchemy.orm import Session
-from ppg.schemas.bertopic.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedCreate
-from ppg.schemas.bertopic.bertopic_trained import BertopicTrainedCreate
+from app.ppg_common.schemas.bertopic.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedCreate
+from app.ppg_common.schemas.bertopic.bertopic_trained import BertopicTrainedCreate
 from app.aimodels.bertopic.crud.crud_bertopic_trained import bertopic_trained, BertopicTrainedModelSummary
 from app.aimodels.bertopic.models.bertopic_trained import BertopicTrainedModel
 from app.aimodels.bertopic.crud.crud_bertopic_embedding_pretrained import bertopic_embedding_pretrained

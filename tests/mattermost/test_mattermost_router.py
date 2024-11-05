@@ -5,15 +5,14 @@ from sqlalchemy.orm import Session
 from fastapi.testclient import TestClient
 from _pytest.monkeypatch import MonkeyPatch
 from pytest_mock import MockerFixture
-from ppg.core.config import OriginationEnum
-from app.core.config import environment_settings, settings
+from app.core.config import environment_settings, settings, OriginationEnum
 from app.mattermost.crud import crud_mattermost
 from app.mattermost.models.mattermost_channels import MattermostChannelModel
 from app.mattermost.models.mattermost_users import MattermostUserModel
 from app.mattermost.models.mattermost_documents import MattermostDocumentModel
 from app.aimodels.bertopic.crud import crud_document
-from ppg.schemas.bertopic.document import DocumentCreate
-from ppg.schemas.mattermost.mattermost_documents import ThreadTypeEnum
+from app.ppg_common.schemas.bertopic.document import DocumentCreate
+from app.ppg_common.schemas.mattermost.mattermost_documents import ThreadTypeEnum
 
 @pytest.fixture(scope='module')
 def channel_db_obj(db: Session):
@@ -228,7 +227,7 @@ def test_upload_mattermost_documents_valid_input(db: Session,
         'datetime': [datetime.datetime.now()]
     }
     mock_data = pd.DataFrame(data)
-    mocker.patch('ppg.services.mattermost_utils.get_channel_posts', return_value=mock_data)
+    mocker.patch('app.ppg_common.services.mattermost_utils.get_channel_posts', return_value=mock_data)
 
     response = client.post(
         '/mattermost/documents/upload',

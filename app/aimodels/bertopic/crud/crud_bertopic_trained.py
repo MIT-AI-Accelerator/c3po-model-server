@@ -7,11 +7,10 @@ from sqlalchemy import desc
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
-from ppg.core.config import OriginationEnum
-from ppg.schemas.bertopic.bertopic_trained import BertopicTrainedCreate, BertopicTrainedUpdate
-
+from app.core.config import OriginationEnum
 from app.crud.base import CRUDBase
 from app.aimodels.bertopic.models.bertopic_trained import BertopicTrainedModel
+from app.ppg_common.schemas.bertopic.bertopic_trained import BertopicTrainedCreate, BertopicTrainedUpdate
 
 class BertopicTrainedModelSummary(BaseModel):
     time: datetime
