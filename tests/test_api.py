@@ -3,10 +3,9 @@ import pandas as pd
 from io import StringIO
 from sqlalchemy.orm import Session
 from fastapi.testclient import TestClient
-from ppg.core.config import OriginationEnum
-from ppg.schemas.bertopic.document import DocumentCreate
 from app.main import versioned_app
-from app.core.config import get_acronym_dictionary
+from app.core.config import get_acronym_dictionary, OriginationEnum
+from app.ppg_common.schemas.bertopic.document import DocumentCreate
 from app.aimodels.bertopic.crud.crud_document import document
 
 client = TestClient(versioned_app)

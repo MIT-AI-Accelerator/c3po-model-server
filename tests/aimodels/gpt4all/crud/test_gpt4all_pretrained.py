@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
-from ppg.schemas.gpt4all.llm_pretrained import LlmPretrainedCreate
 from app.aimodels.gpt4all.crud.crud_llm_pretrained import llm_pretrained
 from app.aimodels.gpt4all.models.llm_pretrained import LlmPretrainedModel
+from app.ppg_common.schemas.gpt4all.llm_pretrained import LlmPretrainedCreate
 
 # assert llm_pretrained was built with correct model
 def test_llm_pretrained():

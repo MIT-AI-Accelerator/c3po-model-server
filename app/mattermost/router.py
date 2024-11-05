@@ -5,15 +5,15 @@ from fastapi import Depends, APIRouter, HTTPException
 from tqdm import tqdm
 import pandas as pd
 from sqlalchemy.orm import Session
-from ppg.schemas.bertopic.document import DocumentUpdate
-from ppg.schemas.mattermost.mattermost_documents import MattermostDocument, MattermostDocumentUpdate, InfoTypeEnum, ThreadTypeEnum
-from ppg.schemas.mattermost.mattermost_users import MattermostUser
-import ppg.services.mattermost_utils as mattermost_utils
 from app.core.config import settings
 from app.core.errors import HTTPValidationError
 from app.dependencies import get_db
 from app.aimodels.bertopic import crud as crud_document
 from app.mattermost.crud import crud_mattermost
+from app.ppg_common.schemas.bertopic.document import DocumentUpdate
+from app.ppg_common.schemas.mattermost.mattermost_documents import MattermostDocument, MattermostDocumentUpdate, InfoTypeEnum, ThreadTypeEnum
+from app.ppg_common.schemas.mattermost.mattermost_users import MattermostUser
+import app.ppg_common.services.mattermost_utils as mattermost_utils
 
 """mattermost section"""
 router = APIRouter(

@@ -165,6 +165,12 @@ def get_all_team_channels(mm_base_url, mm_token, teams):
         cdf = pd.concat([cdf, df])
     return cdf
 
+def get_team_members(mm_base_url, mm_token, team_id):
+    """get a list of channels by team"""
+
+    url = f'{mm_base_url}/api/v4/teams/{team_id}/members'
+    df = get_all_pages(url, mm_token, do_pagination=True)
+    return df
 
 def get_channel_info(mm_base_url, mm_token, channel_id):
     """get info for a single channel"""

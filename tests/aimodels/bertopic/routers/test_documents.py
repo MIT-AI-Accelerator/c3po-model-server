@@ -1,8 +1,8 @@
 from fastapi.testclient import TestClient
 from fastapi.encoders import jsonable_encoder
 
-from ppg.core.config import OriginationEnum
-from ppg.schemas.bertopic.document import DocumentCreate
+from app.core.config import OriginationEnum
+from app.ppg_common.schemas.bertopic.document import DocumentCreate
 
 
 def test_create_document_object_post_valid_request(client: TestClient):

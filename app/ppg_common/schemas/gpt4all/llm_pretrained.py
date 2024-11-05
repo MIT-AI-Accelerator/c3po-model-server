@@ -2,7 +2,7 @@ import re
 import enum
 from typing import Optional
 from pydantic import BaseModel, UUID4, validator
-from ppg.core.config import OriginationEnum
+from app.core.config import OriginationEnum
 
 class LlmFilenameEnum(str, enum.Enum):
     L13B_SNOOZY = "ggml-gpt4all-l13b-snoozy.bin"
