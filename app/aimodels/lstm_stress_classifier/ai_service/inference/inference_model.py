@@ -3,6 +3,7 @@ import math
 import tensorflow as tf
 import pandas as pd
 import os
+from app.core.logging import logger
 from sample_data import CHAT_DATASET_1_PATH
 
 BASE_CKPT_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), "training_checkpoints")
@@ -20,7 +21,7 @@ def initialize():
     word_count_layer = tf.keras.layers.TextVectorization()
     word_count_layer.adapt(train_text)
     num_words = len(word_count_layer.get_vocabulary())
-    print(f'There are {num_words} unique words in this dataset')
+    logger.info(f'There are {num_words} unique words in this dataset')
 
     # tokenizer
     # https://www.analyticsvidhya.com/blog/2020/05/what-is-tokenization-nlp/

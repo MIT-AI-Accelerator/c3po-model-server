@@ -2,6 +2,7 @@
 from datetime import datetime
 import pandas as pd
 import requests
+from app.core.logging import logger
 
 HTTP_REQUEST_TIMEOUT_S = 60
 DEFAULT_HISTORY_DEPTH_DAYS = 45
@@ -32,7 +33,7 @@ def get_all_pages(url, mm_token, is_channel=False, do_pagination=True):
                 break
 
         else:
-            print(f"{resp.url} request failed: {resp.status_code}")
+            logger.error(f"{resp.url} request failed: {resp.status_code}")
             break
 
         page_num += 1
@@ -53,9 +54,9 @@ def get_page_data(resp, rdf, per_page, is_channel):
         rdf = pd.concat([rdf, pd.DataFrame(rdata)], ignore_index=True)
 
     if len(rdata) > per_page:
-        print(f"{resp.url} response length ({len(rdata)}) exceeds requested length ({per_page})")
+        logger.info(f"{resp.url} response length ({len(rdata)}) exceeds requested length ({per_page})")
     # else:
-    #     print(f"{resp.url} response length: {len(rdata)}")
+        # logger.info(f"{resp.url} response length: {len(rdata)}")
 
     return (rdf, len(rdata))
 
@@ -73,7 +74,7 @@ def get_user_info(mm_base_url, mm_token, mm_user, get_teams = False):
     if resp.status_code < 400:
         user = resp.json()
     else:
-        print(f"{resp.url} request failed: {resp.status_code}")
+        logger.error(f"{resp.url} request failed: {resp.status_code}")
 
     # team info
     if user and get_teams:
@@ -98,7 +99,7 @@ def get_user_name(mm_base_url, mm_token, mm_user):
         user = resp.json()
         user_name = user['username']
     else:
-        print(f"{resp.url} request failed: {resp.status_code}")
+        logger.error(f"{resp.url} request failed: {resp.status_code}")
 
     return user_name
 
@@ -122,7 +123,7 @@ def get_user_details(mm_base_url, mm_token, mm_user):
                             'position  ': user['position'],
                             'email': user['email']}])
     else:
-        print(f"{resp.url} request failed: {resp.status_code}")
+        logger.error(f"{resp.url} request failed: {resp.status_code}")
 
     return udf
 
@@ -184,7 +185,7 @@ def get_channel_info(mm_base_url, mm_token, channel_id):
     if resp.status_code < 400:
         channel = resp.json()
     else:
-        print(f"{resp.url} request failed: {resp.status_code}")
+        logger.error(f"{resp.url} request failed: {resp.status_code}")
 
     # team info
     if channel:
@@ -196,7 +197,7 @@ def get_channel_info(mm_base_url, mm_token, channel_id):
             if team:
                 channel['team_name'] = team['name']
         else:
-            print(f"{resp.url} request failed: {resp.status_code}")
+            logger.error(f"{resp.url} request failed: {resp.status_code}")
 
     return channel
 
@@ -221,7 +222,7 @@ def get_channel_posts(mm_base_url, mm_token, channel_id, history_depth=0, filter
             if user:
                 user_ids_to_filter.add(user['id'])
             else:
-                print(f"skipping user filter for channel {channel_id}, unable to find mattermost id for {mm_user}")
+                logger.info(f"skipping user filter for channel {channel_id}, unable to find mattermost id for {mm_user}")
 
         # remove user posts
         user_ids_to_filter = user_ids_to_filter.intersection(posts['user_id'].unique())
@@ -270,6 +271,6 @@ def get_all_team_posts_by_substring(mm_base_url, mm_token, team_id, search_str):
     if resp.status_code < 400:
         ddf = pd.DataFrame(rdata['posts']).transpose()
     else:
-        print(f"{resp.url} request failed: {resp.status_code}")
+        logger.error(f"{resp.url} request failed: {resp.status_code}")
 
     return ddf

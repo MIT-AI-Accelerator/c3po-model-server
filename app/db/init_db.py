@@ -1,4 +1,5 @@
 from app.db.base import Base  # noqa: F401
+from app.core.logging import logger
 from .session import engine
 from sqlalchemy.engine.reflection import Inspector
 from sqlalchemy.exc import InvalidRequestError
@@ -53,6 +54,6 @@ def drop_constraints():
         try:
             con.execute(DropConstraint(fkey))
         except InvalidRequestError as err:
-            print('unable to drop constraint %s: %s' % (fkey, repr(err)))
+            logger.error('unable to drop constraint %s: %s' % (fkey, repr(err)))
 
     trans.commit()
