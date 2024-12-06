@@ -64,6 +64,5 @@ def test_download_db_data_valid(db: Session):
     assert len(df) == limit
 
 def test_shutdown():
-    with client as c:
-        response = c.get('/v1/docs')
-        assert response.status_code == 200
+    response = client.get('/v1/docs')
+    assert response.status_code == 200
