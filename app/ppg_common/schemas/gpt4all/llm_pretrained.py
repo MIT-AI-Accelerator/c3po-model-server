@@ -1,7 +1,7 @@
 import re
 import enum
 from typing import Optional
-from pydantic import BaseModel, UUID4, validator
+from pydantic import BaseModel, UUID4, field_validator, ConfigDict
 from app.core.config import OriginationEnum
 
 class LlmFilenameEnum(str, enum.Enum):
@@ -15,7 +15,7 @@ class LlmPretrainedBase(BaseModel):
     use_base_model: Optional[bool] = None
 
     # ensure valid sha256 format
-    @validator('sha256')
+    @field_validator('sha256')
     def sha256_must_be_valid(cls, v):
         # pylint: disable=no-self-argument
 
@@ -48,8 +48,7 @@ class LlmPretrainedInDBBase(LlmPretrainedBase):
     use_base_model: bool
     originated_from: OriginationEnum
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Properties to return to client
 class LlmPretrained(LlmPretrainedInDBBase):
