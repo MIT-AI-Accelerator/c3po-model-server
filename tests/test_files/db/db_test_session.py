@@ -5,7 +5,7 @@ from .db_test_base import Base  # noqa: F401
 
 def init_db() -> sessionmaker:
     # connect to PostgreSQL
-    engine = create_engine(settings.sqlalchemy_database_uri, pool_pre_ping=True)
+    engine = create_engine(settings.sqlalchemy_database_uri.unicode_string(), pool_pre_ping=True)
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
     # Create tables

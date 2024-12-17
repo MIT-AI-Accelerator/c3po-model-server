@@ -1,7 +1,8 @@
 import os
 import enum
 from typing import Optional, Any
-from pydantic import BaseSettings, PostgresDsn, validator
+from pydantic import PostgresDsn, validator, field_validator, ValidationInfo
+from pydantic_settings import BaseSettings
 
 class OriginationEnum(str, enum.Enum):
     ORIGINATED_FROM_APP = "app"
@@ -17,7 +18,7 @@ class Settings(BaseSettings):
     docs_ui_root_path: str = ""
     log_level: str = "INFO"
     originated_from: OriginationEnum = OriginationEnum.ORIGINATED_FROM_APP
-    acronym_dictionary = {}
+    acronym_dictionary: dict = {}
 
     # minio settings
     minio_bucket_name: str = ""
@@ -45,19 +46,19 @@ class Settings(BaseSettings):
     postgres_db: str
     sqlalchemy_database_uri: Optional[PostgresDsn] = None
 
-    @validator("sqlalchemy_database_uri", pre=True)
-    def assemble_db_connection(cls, v: Optional[str], values: dict[str, Any]) -> Any:
+    @field_validator("sqlalchemy_database_uri", mode="after")
+    def assemble_db_connection(cls, v: Optional[str], values: ValidationInfo) -> Any:
         # pylint: disable=no-self-argument
 
         if isinstance(v, str):
             return v
         return PostgresDsn.build(
             scheme="postgresql",
-            user=values.get("postgres_user"),
-            password=values.get("postgres_password"),
-            host=values.get("postgres_server"),
-            port=values.get("postgres_port"),
-            path=f"/{values.get('postgres_db') or ''}",
+            username=values.data.get("postgres_user"),
+            password=values.data.get("postgres_password"),
+            host=values.data.get("postgres_server"),
+            port=int(values.data.get("postgres_port")),
+            path=values.data.get("postgres_db"),
         )
 
     # Mattermost settings
@@ -71,9 +72,9 @@ class Settings(BaseSettings):
     default_sha256_q4_k_m: str = ""
 
     # Weak learner settings
-    label_dictionary = {'labeling_terms': [['joined the channel', 'added to the channel'],
-                                           ['hello', 'hola', 'good morning', 'good evening', 'good night'],
-                                           ['lunch', 'dinner', 'food']]}
+    label_dictionary: dict = {'labeling_terms': [['joined the channel', 'added to the channel'],
+                                                 ['hello', 'hola', 'good morning', 'good evening', 'good night'],
+                                                 ['lunch', 'dinner', 'food']]}
 
 
 def get_env_file(environment_settings_in):

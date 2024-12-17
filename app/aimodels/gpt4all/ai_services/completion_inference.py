@@ -5,7 +5,7 @@ from time import time
 from uuid import uuid4
 from enum import Enum
 from typing import Optional
-from pydantic import BaseModel, validator, ValidationError
+from pydantic import BaseModel, field_validator, ValidationError, ConfigDict
 from langchain import PromptTemplate, LLMChain
 from langchain_community.llms import GPT4All
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
@@ -28,7 +28,7 @@ class InitInputs(BaseModel):
     s3: Minio
 
     # ensure that model type is defined
-    @validator('llm_pretrained_model_obj')
+    @field_validator('llm_pretrained_model_obj')
     def llm_pretrained_model_obj_must_have_model_type_and_be_uploaded(cls, v):
         # pylint: disable=no-self-argument
         if not v.model_type:
@@ -40,8 +40,7 @@ class InitInputs(BaseModel):
 
         return v
 
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class FinishReasonEnum(str, Enum):
@@ -111,8 +110,7 @@ class CompletionInferenceOutputs(BaseModel):
     choices: list[CompletionInferenceOutputChoices]
     usage: Optional[CompletionInferenceOutputUsage] = None
 
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 class CompletionInferenceInputs(BaseModel):
     """
@@ -175,8 +173,7 @@ class CompletionInferenceInputs(BaseModel):
     """The penalty to apply to repeated tokens.
     NOTE: maps to repeat_penalty on Gpt4All"""
 
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 class CompletionInference:
 

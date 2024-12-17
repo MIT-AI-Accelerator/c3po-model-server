@@ -8,7 +8,7 @@ from snorkel.labeling.model import LabelModel
 from sklearn.svm import SVC
 from sklearn.neural_network import MLPClassifier
 from sklearn.feature_extraction.text import CountVectorizer, ENGLISH_STOP_WORDS
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from app.core.config import get_label_dictionary
 
 class ChatLabel(IntEnum):
@@ -23,8 +23,7 @@ class ValuesNotEmpty(BaseModel):
     svm: SVC
     mlp: MLPClassifier
 
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 def get_vectorizer(stop_word_list):
     all_stop_words = list(ENGLISH_STOP_WORDS.union(stop_word_list))

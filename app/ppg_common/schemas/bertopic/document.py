@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel, UUID4
+from pydantic import BaseModel, UUID4, ConfigDict
 from typing import Optional
 from app.core.config import OriginationEnum
 
@@ -21,8 +21,7 @@ class DocumentInDBBase(DocumentBase):
     id: UUID4
     originated_from: OriginationEnum
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Properties to return to client
 class Document(DocumentInDBBase):

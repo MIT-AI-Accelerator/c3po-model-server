@@ -51,8 +51,7 @@ def test_create_llm_pretrained_object_post_invalid_request_sha256(client: TestCl
     )
 
     assert response.status_code == 422
-    assert response.json() == {'detail': [{'loc': [
-        'body', 'sha256'], 'msg': 'sha256 must be hexademical and 64 characters long', 'type': 'value_error'}]}
+    assert response.json()['detail'][0]['msg'] == 'Value error, sha256 must be hexademical and 64 characters long'
 
 
 def test_create_llm_pretrained_object_post_already_existing_sha256(client: TestClient, valid_sha256: str):
@@ -207,8 +206,7 @@ def test_upload_llm_pretrained_object_post_invalid_id(client: TestClient, mocker
     os.remove(test_file)
 
     assert response.status_code == 422
-    assert response.json() == {'detail': [{'loc': [
-        'path', 'id'], 'msg': 'value is not a valid uuid', 'type': 'type_error.uuid'}]}
+    assert response.json()['detail'][0]['msg'] == 'Input should be a valid UUID, invalid length: expected length 32 for simple format, found 3'
 
 
 def test_upload_llm_pretrained_object_post_id_does_not_exist(client: TestClient):
@@ -237,7 +235,7 @@ def test_get_llm_pretrained_object_invalid_name(client: TestClient):
     )
 
     assert response.status_code == 422
-    assert 'value is not a valid enumeration' in response.json()['detail'][0]['msg']
+    assert response.json()['detail'][0]['msg'] == "Input should be 'ggml-gpt4all-l13b-snoozy.bin' or 'mistrallite.Q4_K_M.gguf'"
 
 
 @pytest.mark.parametrize('model_type', [e for e in LlmFilenameEnum])

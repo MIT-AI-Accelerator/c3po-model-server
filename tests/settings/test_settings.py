@@ -64,9 +64,9 @@ def test_remove_http_or_https_does_nothing_if_no_http_or_https():
         environment_settings), _env_file_encoding='utf-8')
     assert mock_settings.minio_endpoint_url == "//test.com"
 
-@mock.patch.dict(os.environ, {'SQLALCHEMY_DATABASE_URI': 'postgresql://test@localhost:5050/test_db'})
+@mock.patch.dict(os.environ, {"ENVIRONMENT": "test"})
 def test_assemble_db_with_uri():
     environment_settings = EnvironmentSettings()
     mock_settings = Settings(_env_file=get_env_file(
         environment_settings), _env_file_encoding='utf-8')
-    assert mock_settings.sqlalchemy_database_uri == 'postgresql://test@localhost:5050/test_db'
+    assert mock_settings.sqlalchemy_database_uri.unicode_string() == 'postgresql://test:test@localhost:5050/test_db'

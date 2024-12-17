@@ -1,6 +1,6 @@
 from typing import Optional
 from datetime import datetime
-from pydantic import BaseModel, UUID4
+from pydantic import BaseModel, UUID4, ConfigDict
 from app.core.config import OriginationEnum
 from .bertopic_embedding_pretrained import BertopicEmbeddingPretrained
 from .document import Document
@@ -31,8 +31,7 @@ class BertopicTrainedInDBBase(BertopicTrainedBase):
     embedding_pretrained_id: UUID4
     originated_from: OriginationEnum
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Properties to return to client
 class BertopicTrained(BertopicTrainedInDBBase):

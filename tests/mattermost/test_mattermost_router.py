@@ -84,7 +84,7 @@ def test_upload_mattermost_user_info_invalid_format(client: TestClient):
     )
 
     assert response.status_code == 422
-    assert response.json()['detail'][0]['msg'] == 'field required'
+    assert response.json()['detail'][0]['msg'] == 'Field required'
 
 # returns 422
 def test_upload_mattermost_user_info_invalid_input(client: TestClient):
@@ -123,7 +123,7 @@ def test_get_mattermost_user_info_invalid_format(client: TestClient):
     )
 
     assert response.status_code == 422
-    assert response.json()['detail'][0]['msg'] == 'field required'
+    assert response.json()['detail'][0]['msg'] == 'Field required'
 
 # returns 422
 def test_get_mattermost_user_info_invalid_input(client: TestClient):
@@ -247,7 +247,7 @@ def test_get_mattermost_documents_invalid_format(client: TestClient):
     )
 
     assert response.status_code == 422
-    assert response.json()['detail'][0]['msg'] == 'field required'
+    assert response.json()['detail'][0]['msg'] == 'Field required'
 
 # returns 422
 def test_get_mattermost_documents_invalid_input(client: TestClient):
@@ -313,7 +313,7 @@ def test_mattermost_conversation_thread_invalid_format(client: TestClient):
     )
 
     assert response.status_code == 422
-    assert 'value is not a valid list' in response.json()['detail'][0]['msg']
+    assert 'Input should be a valid list' in response.json()['detail'][0]['msg']
 
 # returns 422
 def test_mattermost_conversation_thread_invalid_input(client: TestClient):
@@ -327,27 +327,39 @@ def test_mattermost_conversation_thread_invalid_input(client: TestClient):
     assert 'Mattermost' in response.json()['detail']
 
 def test_mattermost_conversation_thread_no_thread(mm_db_obj: MattermostDocumentModel,
-                                                 client: TestClient):
+                                                  db: Session,
+                                                  client: TestClient):
     response = client.post('mattermost/conversation_threads',
                            headers={},
                            json={'mattermost_document_ids': [str(mm_db_obj.id)]})
 
     mm_docs = response.json()
-
     assert response.status_code == 200
-    assert str(mm_db_obj.message_id) in [mm_doc['message_id'] for mm_doc in mm_docs['threads']]
-    assert str(mm_db_obj.message_id) in [mm_doc['message_id'] for mm_doc in mm_docs['threads_speaker']]
-    assert str(mm_db_obj.message_id) in [mm_doc['message_id'] for mm_doc in mm_docs['threads_speaker_persona']]
+
+    thread_df = crud_mattermost.mattermost_documents.get_document_dataframe(db, document_uuids = mm_docs['threads'])
+    assert str(mm_db_obj.message_id) in [row['message_id'] for key, row in thread_df.iterrows()]
+
+    thread_df = crud_mattermost.mattermost_documents.get_document_dataframe(db, document_uuids = mm_docs['threads_speaker'])
+    assert str(mm_db_obj.message_id) in [row['message_id'] for key, row in thread_df.iterrows()]
+
+    thread_df = crud_mattermost.mattermost_documents.get_document_dataframe(db, document_uuids = mm_docs['threads_speaker_persona'])
+    assert str(mm_db_obj.message_id) in [row['message_id'] for key, row in thread_df.iterrows()]
 
 def test_mattermost_conversation_thread_thread(mm_db_obj_thread: MattermostDocumentModel,
-                                               client: TestClient):
+                                                  db: Session,
+                                                  client: TestClient):
     response = client.post('mattermost/conversation_threads',
                            headers={},
                            json={'mattermost_document_ids': [str(mm_db_obj_thread.id)]})
 
     mm_docs = response.json()
-
     assert response.status_code == 200
-    assert str(mm_db_obj_thread.message_id) in [mm_doc['message_id'] for mm_doc in mm_docs['threads']]
-    assert str(mm_db_obj_thread.message_id) in [mm_doc['message_id'] for mm_doc in mm_docs['threads_speaker']]
-    assert str(mm_db_obj_thread.message_id) in [mm_doc['message_id'] for mm_doc in mm_docs['threads_speaker_persona']]
+
+    thread_df = crud_mattermost.mattermost_documents.get_document_dataframe(db, document_uuids = mm_docs['threads'])
+    assert str(mm_db_obj_thread.message_id) in [row['message_id'] for key, row in thread_df.iterrows()]
+
+    thread_df = crud_mattermost.mattermost_documents.get_document_dataframe(db, document_uuids = mm_docs['threads_speaker'])
+    assert str(mm_db_obj_thread.message_id) in [row['message_id'] for key, row in thread_df.iterrows()]
+
+    thread_df = crud_mattermost.mattermost_documents.get_document_dataframe(db, document_uuids = mm_docs['threads_speaker_persona'])
+    assert str(mm_db_obj_thread.message_id) in [row['message_id'] for key, row in thread_df.iterrows()]
