@@ -1,6 +1,6 @@
 # this is a basic schema file for "EmptyTest" entity
 from typing import Optional
-from pydantic import BaseModel, UUID4
+from pydantic import BaseModel, UUID4, ConfigDict
 
 
 # Shared properties
@@ -22,8 +22,7 @@ class EmptyTestInDBBase(EmptyTestBase):
     bool_field: bool
     title: str
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Properties to return to client
 class EmptyTest(EmptyTestInDBBase):
