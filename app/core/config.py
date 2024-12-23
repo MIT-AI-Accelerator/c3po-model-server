@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     minio_secure: bool = True
 
     # validator to remove http:// or https:// from the minio_undpoint_url
-    @validator("minio_endpoint_url", pre=True)
+    @field_validator("minio_endpoint_url", mode="before")
     def remove_http_or_https(cls, v: str) -> str:
         # pylint: disable=no-self-argument
         if v.startswith("http://"):
