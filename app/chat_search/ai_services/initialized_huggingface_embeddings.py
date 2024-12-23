@@ -1,5 +1,5 @@
 from typing import AnyStr, Any
-from langchain.embeddings.huggingface import HuggingFaceEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings
 
 class InitializedHuggingFaceEmbeddings(HuggingFaceEmbeddings):
 

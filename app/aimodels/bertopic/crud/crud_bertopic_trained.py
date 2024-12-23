@@ -1,5 +1,5 @@
 from typing import Union
-from pydantic import UUID4, BaseModel
+from pydantic import UUID4, BaseModel, ConfigDict
 from datetime import datetime
 
 from fastapi.encoders import jsonable_encoder
@@ -19,8 +19,7 @@ class BertopicTrainedModelSummary(BaseModel):
     weak_learner_id: Union[UUID4, None]
     summarization_model_id: Union[UUID4, None]
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
     def __init__(self, trained_model: BertopicTrainedModel):
         super().__init__(time = trained_model.time,
