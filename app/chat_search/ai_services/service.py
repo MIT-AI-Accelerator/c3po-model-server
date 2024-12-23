@@ -1,8 +1,7 @@
 import re
 from typing import Any
 from .initialized_huggingface_embeddings import InitializedHuggingFaceEmbeddings
-from langchain.embeddings.huggingface import HuggingFaceEmbeddings
-from langchain.document_loaders.csv_loader import CSVLoader
+from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain.docstore.document import Document
 from langchain_community.retrievers import BM25Retriever
 from langchain.retrievers import EnsembleRetriever
