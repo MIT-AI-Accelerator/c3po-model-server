@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Optional
 from pydantic import BaseModel, UUID4
 from fastapi import Depends, APIRouter, HTTPException
 from sqlalchemy.orm import Session
@@ -30,18 +30,18 @@ router = APIRouter(
 
 class TrainModelRequest(BaseModel):
     sentence_transformer_id: UUID4
-    weak_learner_id: UUID4 | None
-    summarization_model_id: UUID4 | None
+    weak_learner_id: Optional[UUID4 | None] = None
+    summarization_model_id: Optional[UUID4 | None] = None
     document_ids: list[UUID4] = []
-    summarization_document_ids: list[UUID4] = []
-    num_topics: int = 2
-    seed_topics: list[list] = []
-    stop_words: list[str] = []
-    trends_only: bool = False
-    trend_depth: int = DEFAULT_TREND_DEPTH_DAYS
-    train_percent: float = DEFAULT_TRAIN_PERCENT
-    prompt_template: str = DEFAULT_PROMPT_TEMPLATE
-    refine_template: str = DEFAULT_REFINE_TEMPLATE
+    summarization_document_ids: Optional[list[UUID4]] = []
+    num_topics: Optional[int] = 2
+    seed_topics: Optional[list[list]] = []
+    stop_words: Optional[list[str]] = []
+    trends_only: Optional[bool] = False
+    trend_depth: Optional[int] = DEFAULT_TREND_DEPTH_DAYS
+    train_percent: Optional[float] = DEFAULT_TRAIN_PERCENT
+    prompt_template: Optional[str] = DEFAULT_PROMPT_TEMPLATE
+    refine_template: Optional[str] = DEFAULT_REFINE_TEMPLATE
 
 
 @router.post(
@@ -84,6 +84,9 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
 
         validate_obj(bertopic_weak_learner_obj)
 
+    # disabling summarization due to issue with pydantic v2 validation of langchain_community.llms.CTransformers
+    # https://github.com/orgs/MIT-AI-Accelerator/projects/3/views/2?pane=issue&itemId=91139209
+    request.summarization_model_id = None
     llm_pretrained_obj = None
     if request.summarization_model_id:
         # check to make sure id exists

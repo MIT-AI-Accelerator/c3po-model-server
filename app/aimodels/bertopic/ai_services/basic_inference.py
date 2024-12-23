@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from bertopic import BERTopic
 import hdbscan
-from pydantic import BaseModel, StrictFloat, StrictInt, StrictBool, validator
+from pydantic import BaseModel, StrictFloat, StrictInt, StrictBool, field_validator, ConfigDict
 from minio import Minio
 from umap import UMAP
 from fastapi import HTTPException
@@ -51,7 +51,7 @@ class InitInputs(BaseModel):
     s3: Minio
 
     # ensure that model type is defined
-    @validator('embedding_pretrained_model_obj')
+    @field_validator('embedding_pretrained_model_obj')
     def embedding_pretrained_model_obj_must_have_model_type_and_be_uploaded(cls, v):
         # pylint: disable=no-self-argument
         if not v.model_type:
@@ -63,8 +63,7 @@ class InitInputs(BaseModel):
 
         return v
 
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class BasicInferenceOutputs(BaseModel):
@@ -79,32 +78,31 @@ class BasicInferenceOutputs(BaseModel):
     topic_timeline_visualization: list[Figure]
 
     # ensure that documents is same length as embeddings
-    @validator('embeddings')
+    @field_validator('embeddings')
     def embeddings_must_be_same_length_as_documents(cls, v, values):
         # pylint: disable=no-self-argument
-        if len(v) != len(values['documents']):
+        if len(v) != len(values.data['documents']):
             raise ValueError(
                 'embeddings must be same length as documents')
         return v
 
     # ensure that updated_document_indicies is same length as documents if given
-    @validator('updated_document_indicies')
+    @field_validator('updated_document_indicies')
     def updated_document_indicies_must_be_same_length_as_documents(cls, v, values):
         # pylint: disable=no-self-argument
-        if len(v) != len(values['documents']):
+        if len(v) != len(values.data['documents']):
             raise ValueError(
                 'updated_document_indicies must be same length as documents')
         return v
 
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class CalculateDocumentEmbeddingsInputs(BaseModel):
     documents_text_list: list[str]
     precalculated_embeddings: Union[list[Union[list[StrictFloat], None]], None] = None
 
-    @validator('documents_text_list')
+    @field_validator('documents_text_list')
     def documents_text_list_must_be_non_empty(cls, v):
         # pylint: disable=no-self-argument
         if len(v) == 0:
@@ -113,16 +111,15 @@ class CalculateDocumentEmbeddingsInputs(BaseModel):
         return v
 
     # if given, ensure precalculated_embeddings is same length as documents_text_list
-    @validator('precalculated_embeddings')
+    @field_validator('precalculated_embeddings')
     def precalculated_embeddings_must_be_same_length_as_documents_text_list(cls, v, values):
         # pylint: disable=no-self-argument
-        if v and len(v) != len(values['documents_text_list']):
+        if v and len(v) != len(values.data['documents_text_list']):
             raise ValueError(
                 'precalculated_embeddings must be same length as documents_text_list if given')
         return v
 
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class TrainBertopicOnDocumentsInput(BaseModel):
@@ -136,12 +133,12 @@ class TrainBertopicOnDocumentsInput(BaseModel):
 
 class BuildTopicModelInputs(BaseModel):
     documents_text_list: list[str]
-    document_timestamps: list[datetime]
+    document_timestamps: list[np.datetime64]
     embeddings: np.ndarray
     num_topics: StrictInt
     seed_topic_list: list[list]
 
-    @validator('documents_text_list')
+    @field_validator('documents_text_list')
     def documents_text_list_must_be_large_enough_for_inference(cls, v):
         # pylint: disable=no-self-argument
         if len(v) < 7:
@@ -150,15 +147,15 @@ class BuildTopicModelInputs(BaseModel):
         return v
 
     # ensure embeddings is same length as documents_text_list
-    @validator('embeddings')
+    @field_validator('embeddings')
     def embeddings_must_be_same_length_as_documents_text_list(cls, v, values):
         # pylint: disable=no-self-argument
-        if values.get('documents_text_list') and v.shape[0] != len(values['documents_text_list']):
+        if values.data.get('documents_text_list') and v.shape[0] != len(values.data['documents_text_list']):
             raise ValueError(
                 'embeddings must be same length as documents_text_list')
         return v
 
-    @validator('num_topics')
+    @field_validator('num_topics')
     def num_topics_at_least_two(cls, v):
         # pylint: disable=no-self-argument
         if v < 2:
@@ -166,14 +163,13 @@ class BuildTopicModelInputs(BaseModel):
                 'num_topics must be at least 2')
         return v
 
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class TopicDocumentData(BaseModel):
     document_text_list: list[str]
     document_messages: list[str]
-    document_timestamps: list[datetime]
+    document_timestamps: list[np.datetime64]
     document_users: list[str]
     document_nicknames: list[str]
     document_channels: list[str]
@@ -182,8 +178,8 @@ class TopicDocumentData(BaseModel):
     document_summarization_messages: list[str]
     embeddings: np.ndarray
 
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
 
 class BasicInference:
 
@@ -418,7 +414,7 @@ class BasicInference:
 
         topic_document_data_train = TopicDocumentData(document_text_list = list(data_train['document']),
                                                       document_messages = list(data_train['message']),
-                                                      document_timestamps = list(data_train['timestamp']),
+                                                      document_timestamps = list(data_train['timestamp'].values),
                                                       document_users = list(data_train['user']),
                                                       document_nicknames = list(data_train['nickname']),
                                                       document_channels = list(data_train['channel']),
@@ -429,7 +425,7 @@ class BasicInference:
         if len(data_test):
             topic_document_data_test = TopicDocumentData(document_text_list = list(data_test['document']),
                                                         document_messages = list(data_test['message']),
-                                                        document_timestamps = list(data_test['timestamp']),
+                                                        document_timestamps = list(data_test['timestamp'].values),
                                                         document_users = list(data_test['user']),
                                                         document_nicknames = list(data_test['nickname']),
                                                         document_channels= list(data_test['channel']),
