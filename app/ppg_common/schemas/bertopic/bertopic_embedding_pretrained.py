@@ -17,6 +17,8 @@ class BertopicEmbeddingPretrainedBase(BaseModel):
     model_name: Optional[str] = ''
     reference: Optional[dict] = {}
 
+    model_config = ConfigDict(from_attributes=True, protected_namespaces=())
+
     # ensure valid sha256 format
     @field_validator('sha256')
     def sha256_must_be_valid(cls, v):
@@ -52,8 +54,6 @@ class BertopicEmbeddingPretrainedInDBBase(BertopicEmbeddingPretrainedBase):
     version: int
     sha256: str
     originated_from: OriginationEnum
-
-    model_config = ConfigDict(from_attributes=True)
 
 # Properties to return to client
 class BertopicEmbeddingPretrained(BertopicEmbeddingPretrainedInDBBase):

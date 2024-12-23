@@ -16,6 +16,7 @@ class BertopicVisualizationBase(BaseModel):
     html_string: str
     json_string: str
 
+    model_config = ConfigDict(from_attributes=True, protected_namespaces=())
 
 # Properties to receive on BertopicVisualization creation
 class BertopicVisualizationCreate(BertopicVisualizationBase):
@@ -25,8 +26,6 @@ class BertopicVisualizationCreate(BertopicVisualizationBase):
 class BertopicVisualizationInDBBase(BertopicVisualizationBase):
     id: UUID4
     originated_from: OriginationEnum
-
-    model_config = ConfigDict(from_attributes=True)
 
 # Properties to return to client
 class BertopicVisualization(BertopicVisualizationInDBBase):

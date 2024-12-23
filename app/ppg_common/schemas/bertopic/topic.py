@@ -11,6 +11,8 @@ class TopicSummaryBase(BaseModel):
     summary: Optional[str] = None
     is_trending: bool = False
 
+    model_config = ConfigDict(from_attributes=True, protected_namespaces=())
+
 # Properties to receive on TopicSummary creation
 class TopicSummaryCreate(TopicSummaryBase):
     pass
@@ -23,8 +25,6 @@ class TopicSummaryUpdate(TopicSummaryBase):
 class TopicSummaryInDBBase(TopicSummaryBase):
     id: UUID4
     originated_from: OriginationEnum
-
-    model_config = ConfigDict(from_attributes=True)
 
 # Properties to return to client
 class TopicSummary(TopicSummaryInDBBase):

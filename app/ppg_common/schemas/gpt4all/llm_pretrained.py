@@ -14,6 +14,8 @@ class LlmPretrainedBase(BaseModel):
     model_type: Optional[LlmFilenameEnum] = None
     use_base_model: Optional[bool] = None
 
+    model_config = ConfigDict(from_attributes=True, protected_namespaces=())
+
     # ensure valid sha256 format
     @field_validator('sha256')
     def sha256_must_be_valid(cls, v):
@@ -47,8 +49,6 @@ class LlmPretrainedInDBBase(LlmPretrainedBase):
     sha256: str
     use_base_model: bool
     originated_from: OriginationEnum
-
-    model_config = ConfigDict(from_attributes=True)
 
 # Properties to return to client
 class LlmPretrained(LlmPretrainedInDBBase):
