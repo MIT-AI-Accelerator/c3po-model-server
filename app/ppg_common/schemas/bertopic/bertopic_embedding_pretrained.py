@@ -1,7 +1,7 @@
 import re
 import enum
 from typing import Optional
-from pydantic import BaseModel, UUID4, validator
+from pydantic import BaseModel, UUID4, field_validator, ConfigDict
 from app.core.config import OriginationEnum
 
 class EmbeddingModelTypeEnum(str, enum.Enum):
@@ -17,8 +17,10 @@ class BertopicEmbeddingPretrainedBase(BaseModel):
     model_name: Optional[str] = ''
     reference: Optional[dict] = {}
 
+    model_config = ConfigDict(from_attributes=True, protected_namespaces=())
+
     # ensure valid sha256 format
-    @validator('sha256')
+    @field_validator('sha256')
     def sha256_must_be_valid(cls, v):
         # pylint: disable=no-self-argument
 
@@ -52,9 +54,6 @@ class BertopicEmbeddingPretrainedInDBBase(BertopicEmbeddingPretrainedBase):
     version: int
     sha256: str
     originated_from: OriginationEnum
-
-    class Config:
-        orm_mode = True
 
 # Properties to return to client
 class BertopicEmbeddingPretrained(BertopicEmbeddingPretrainedInDBBase):

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, UUID4
+from pydantic import BaseModel, UUID4, ConfigDict
 from app.core.config import OriginationEnum
 
 
@@ -27,8 +27,7 @@ class MattermostChannelInDBBase(MattermostChannelBase):
     id: UUID4
     originated_from: OriginationEnum
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class MattermostChannel(MattermostChannelInDBBase):

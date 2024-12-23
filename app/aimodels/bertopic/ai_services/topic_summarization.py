@@ -81,9 +81,9 @@ class TopicSummarizer:
                   'context_length': DEFAULT_CONTEXT_LENGTH}
         self.llm = CTransformers(
             model = llm_path,
-            model_type='mistral',
-            config=config,
-            threads=os.cpu_count(),
+            model_type = 'mistral',
+            config = config,
+            threads = os.cpu_count()
         )
         self.prompt_template = prompt_template
         self.refine_template = refine_template

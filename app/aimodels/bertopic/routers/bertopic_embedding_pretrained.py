@@ -9,7 +9,7 @@ from fastapi import HTTPException
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, StreamingResponse
 
-from pydantic import UUID4, BaseModel
+from pydantic import UUID4, BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 from minio import Minio
 
@@ -192,6 +192,8 @@ def get_latest_weak_label_dictionary(model_name: str, db: Session = Depends(get_
 class LabelDictionaryRequest(BaseModel):
     model_name: str = ""
     labeling_terms: list = []
+
+    model_config = ConfigDict(protected_namespaces=())
 
 @router.post(
     "/label-dictionary/append",

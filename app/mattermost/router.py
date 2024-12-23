@@ -76,8 +76,8 @@ async def get_mm_user_info(user_name: str, db: Session = Depends(get_db)) -> (
 class UploadDocumentRequest(BaseModel):
     channel_ids: list[str] = []
     history_depth: int = mattermost_utils.DEFAULT_HISTORY_DEPTH_DAYS
-    filter_bot_posts = False
-    filter_system_posts = True
+    filter_bot_posts: bool = False
+    filter_system_posts: bool = True
     filter_post_content: list[str] = []
 
 @router.post(
@@ -185,9 +185,9 @@ class ConversationThreadRequest(BaseModel):
     mattermost_document_ids: list[UUID4] = []
 
 class ConversationThreadResponse(BaseModel):
-    threads: list[MattermostDocument] = []
-    threads_speaker: list[MattermostDocument] = []
-    threads_speaker_persona: list[MattermostDocument] = []
+    threads: list[UUID4] = []
+    threads_speaker: list[UUID4] = []
+    threads_speaker_persona: list[UUID4] = []
 
 @router.post(
     "/mattermost/conversation_threads",
@@ -223,19 +223,21 @@ async def convert_conversation_threads(request: ConversationThreadRequest,
     if not other_df.empty and (len(other_mm_doc_objs) != len(other_df)):
         raise HTTPException(status_code=422, detail="Unable to find non chat documents")
 
-    thread_document_objs = ConversationThreadResponse()
-    thread_document_objs.threads = create_conversation_objects(db=db,
-                                                               thread_type=ThreadTypeEnum.THREAD,
-                                                               conversation_df=conversation_df) + other_mm_doc_objs
+    threads = create_conversation_objects(db=db,
+                                          thread_type=ThreadTypeEnum.THREAD,
+                                          conversation_df=conversation_df) + other_mm_doc_objs
 
-    thread_document_objs.threads_speaker = create_conversation_objects(db=db,
-                                                               thread_type=ThreadTypeEnum.THREAD_USER,
-                                                               conversation_df=conversation_df) + other_mm_doc_objs
-    thread_document_objs.threads_speaker_persona = create_conversation_objects(db=db,
-                                                               thread_type=ThreadTypeEnum.THREAD_USER_PERSONA,
-                                                               conversation_df=conversation_df) + other_mm_doc_objs
+    threads_speaker = create_conversation_objects(db=db,
+                                                  thread_type=ThreadTypeEnum.THREAD_USER,
+                                                  conversation_df=conversation_df) + other_mm_doc_objs
+    threads_speaker_persona = create_conversation_objects(db=db,
+                                                          thread_type=ThreadTypeEnum.THREAD_USER_PERSONA,
+                                                          conversation_df=conversation_df) + other_mm_doc_objs
+    thread_document_ids = ConversationThreadResponse(threads = [obj.document for obj in threads],
+                                                     threads_speaker = [obj.document for obj in threads_speaker],
+                                                     threads_speaker_persona = [obj.document for obj in threads_speaker_persona])
 
-    return thread_document_objs
+    return thread_document_ids
 
 def create_conversation_objects(db: Session, thread_type: ThreadTypeEnum, conversation_df: pd.DataFrame) -> list[MattermostDocument]:
 

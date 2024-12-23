@@ -16,13 +16,13 @@ def test_get_bertopic_visualize_topic_clusters_invalid_request(client: TestClien
         "/aimodels/bertopic/model/%d/visualize_topic_clusters" % 0, headers = {}
     )
     assert response.status_code == 422
-    assert "value is not a valid uuid" in response.json()["detail"][0]["msg"]
+    assert response.json()["detail"][0]["msg"] == "Input should be a valid UUID, invalid length: expected length 32 for simple format, found 1"
 
     response = client.get(
         "/aimodels/bertopic/model/%d/visualize_topic_clusters/json" % 0, headers = {}
     )
     assert response.status_code == 422
-    assert "value is not a valid uuid" in response.json()["detail"][0]["msg"]
+    assert response.json()["detail"][0]["msg"] == "Input should be a valid UUID, invalid length: expected length 32 for simple format, found 1"
 
 
 # test visualize_topic_clusters endpoint with invalid model id
@@ -48,13 +48,13 @@ def test_get_bertopic_visualize_topic_words_invalid_request(client: TestClient):
         "/aimodels/bertopic/model/%d/visualize_topic_words" % 0, headers = {}
     )
     assert response.status_code == 422
-    assert "value is not a valid uuid" in response.json()["detail"][0]["msg"]
+    assert response.json()["detail"][0]["msg"] == "Input should be a valid UUID, invalid length: expected length 32 for simple format, found 1"
 
     response = client.get(
         "/aimodels/bertopic/model/%d/visualize_topic_words/json" % 0, headers = {}
     )
     assert response.status_code == 422
-    assert "value is not a valid uuid" in response.json()["detail"][0]["msg"]
+    assert response.json()["detail"][0]["msg"] == "Input should be a valid UUID, invalid length: expected length 32 for simple format, found 1"
 
 
 # test visualize_topic_words endpoint with invalid model id
@@ -79,7 +79,7 @@ def test_get_bertopic_trained_topics_invalid_request(client: TestClient):
     response = client.get("/aimodels/bertopic/model/%d/topics" % 0, headers = {})
 
     assert response.status_code == 422
-    assert "value is not a valid uuid" in response.json()["detail"][0]["msg"]
+    assert response.json()["detail"][0]["msg"] == "Input should be a valid UUID, invalid length: expected length 32 for simple format, found 1"
 
 
 # test trained topic endpoint with invalid model id
@@ -98,13 +98,13 @@ def test_get_bertopic_visualize_topic_timeline_invalid_request(client: TestClien
         "/aimodels/bertopic/topic/%d/visualize_topic_timeline" % 0, headers = {}
     )
     assert response.status_code == 422
-    assert "value is not a valid uuid" in response.json()["detail"][0]["msg"]
+    assert response.json()["detail"][0]["msg"] == "Input should be a valid UUID, invalid length: expected length 32 for simple format, found 1"
 
     response = client.get(
         "/aimodels/bertopic/topic/%d/visualize_topic_timeline/json" % 0, headers = {}
     )
     assert response.status_code == 422
-    assert "value is not a valid uuid" in response.json()["detail"][0]["msg"]
+    assert response.json()["detail"][0]["msg"] == "Input should be a valid UUID, invalid length: expected length 32 for simple format, found 1"
 
 
 # test visualize_topic_timeline endpoint with invalid model id
@@ -298,7 +298,7 @@ def test_get_bertopic_summarization_invalid_request(client: TestClient):
     response = client.get("/aimodels/bertopic/topic/%d" % 0, headers = {})
 
     assert response.status_code == 422
-    assert "value is not a valid uuid" in response.json()["detail"][0]["msg"]
+    assert response.json()["detail"][0]["msg"] == "Input should be a valid UUID, invalid length: expected length 32 for simple format, found 1"
 
 
 # test topic summarization endpoint with invalid model id
