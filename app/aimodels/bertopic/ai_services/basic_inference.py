@@ -253,10 +253,10 @@ class BasicInference:
         (embeddings, updated_document_indicies) = self.calculate_document_embeddings(
             document_text_list, precalculated_embeddings)
 
-        document_df.user_name.fillna(value='', inplace=True)
-        document_df.nickname.fillna(value='', inplace=True)
-        document_df.channel_name.fillna(value='', inplace=True)
-        document_df.mm_link.fillna(value='', inplace=True)
+        document_df.fillna({'user_name': ''}, inplace=True)
+        document_df.fillna({'nickname': ''}, inplace=True)
+        document_df.fillna({'channel_name': ''}, inplace=True)
+        document_df.fillna({'mm_link': ''}, inplace=True)
         topic_document_data = TopicDocumentData(document_text_list = document_text_list,
                                                 document_messages = document_text_list,
                                                 document_timestamps = list(document_df['create_at'].values),
