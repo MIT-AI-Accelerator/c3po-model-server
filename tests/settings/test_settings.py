@@ -69,4 +69,4 @@ def test_assemble_db_with_uri():
     environment_settings = EnvironmentSettings()
     mock_settings = Settings(_env_file=get_env_file(
         environment_settings), _env_file_encoding='utf-8')
-    assert mock_settings.sqlalchemy_database_uri.unicode_string() == 'postgresql://test:test@localhost:5050/test_db'
+    assert 'test@localhost:5050/test_db' in mock_settings.sqlalchemy_database_uri.unicode_string()

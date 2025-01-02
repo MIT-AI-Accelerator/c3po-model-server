@@ -5,7 +5,7 @@ from app.aimodels.gpt4all.models.llm_pretrained import LlmPretrainedModel
 from minio import Minio
 from pydantic import ValidationError
 
-from langchain.llms.fake import FakeListLLM
+from langchain_community.llms import FakeListLLM
 
 
 @patch('app.aimodels.gpt4all.ai_services.completion_inference.os.path.isfile', return_value=False)
