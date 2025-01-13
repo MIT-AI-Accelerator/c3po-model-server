@@ -10,7 +10,7 @@ conda activate transformers-api
 3. Run `which pip` and `which python` to verify path to make sure that your `python` and `pip` binaries are coming from your `conda` virtual environment.  Note that the order in which you install conda vs. pip matters to set virtual env priorities.
 
 # Getting Started Locally (Start here if not using conda, just make sure you have the right version of python and pip installed)
-1. Install `poetry`: `pip install poetry` (or use `pipx` [on link here](https://python-poetry.org/docs/1.4#installing-with-pipx) if you prefer isolated envs and you don't have `conda` managing your env)
+1. Install `poetry` version 1.8.5: `pip install poetry==1.8.5` (or use `pipx` [on link here](https://python-poetry.org/docs/1.4#installing-with-pipx) if you prefer isolated envs and you don't have `conda` managing your env)
 
 2. Create and enter the virtual environment: `poetry shell`. Note: if you use conda, this step may not be necessary.
 
