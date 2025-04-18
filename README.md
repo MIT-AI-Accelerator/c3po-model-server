@@ -132,6 +132,8 @@ In general, tensorflow and pytorch use the underlying `unittest` framework that 
 
 ### K8s configs
 - [IL4 mission bootstrap](https://code.il4.dso.mil/platform-one/devops/mission-bootstrap/il4-mission-bootstrap/-/tree/master/integrations/ai-accel/transformers)
+- [Deployment manifests](https://code.il4.dso.mil/platform-one/products/ai-accel/transformers/transformers-manifests)
+- [IRSA for S3 instructions](https://p1docs.dso.mil/docs/party-bus/mission-devops-mdo/how-tos/s3/#python)
 
 ## Twistlock
 - [Twistlock link for repo](https://twistlock-il4.admin.dso.mil/api/v1/platform-one/products/ai-accel/transformers/c3po-model-server)
