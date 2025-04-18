@@ -28,15 +28,15 @@ class Settings(BaseSettings):
     minio_region: str = ""
     minio_secure: bool = True
 
-    # validator to remove http:// or https:// from the minio_undpoint_url
-    @field_validator("minio_endpoint_url", mode="before")
-    def remove_http_or_https(cls, v: str) -> str:
-        # pylint: disable=no-self-argument
-        if v.startswith("http://"):
-            return v[len("http://"):]
-        if v.startswith("https://"):
-            return v[len("https://"):]
-        return v
+    # # validator to remove http:// or https:// from the minio_endpoint_url
+    # @field_validator("minio_endpoint_url", mode="before")
+    # def remove_http_or_https(cls, v: str) -> str:
+    #     # pylint: disable=no-self-argument
+    #     if v.startswith("http://"):
+    #         return v[len("http://"):]
+    #     if v.startswith("https://"):
+    #         return v[len("https://"):]
+    #     return v
 
     # postgreSQL settings
     postgres_user: str = ""

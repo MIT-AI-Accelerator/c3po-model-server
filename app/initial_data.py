@@ -6,6 +6,7 @@ import pickle
 import logging
 import requests
 import time
+import boto3
 from pathlib import Path
 from tqdm import tqdm
 from typing import Union
@@ -79,11 +80,9 @@ def get_db(environment: str, migration_toggle: bool) -> Union[Session, None]:
 
 def init_minio_bucket(s3: Minio) -> None:
     bucket_name = settings.minio_bucket_name
-    try:
-        if not s3.bucket_exists(bucket_name):
-            s3.make_bucket(bucket_name)
-    except InvalidResponseError as err:
-        logger.error(err)
+    bucket_exists = s3.get_waiter('bucket_exists').wait(Bucket=bucket_name)
+    if bucket_exists is not None:
+        s3.create_bucket(Bucket=bucket_name)
 
 
 def get_s3(environment: str, db: Session) -> Union[Minio, None]:

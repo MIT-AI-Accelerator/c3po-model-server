@@ -64,6 +64,7 @@ keras = "3.8.0"
 tensorboard = "2.16.0"
 langchain-community = "^0.3.13"
 virtualenv = "20.28.1"
+boto3 = "^1.37.37"
 
 [tool.poetry.group.test.dependencies]
 pylint = "^2.17.4"
