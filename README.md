@@ -92,6 +92,13 @@ to the requirements.txt in place of the previous `transformers` installation.
 2. Sync with pip: $ ./hooks/output-requirements-txt.sh
 3. Manually edit ppg-common entry in requirements.txt to `./ppg-common ; ...`
 
+## Logs
+Logs for the deployed application can be viewed on [ArgoCD](https://argocd-il4.admin.dso.mil/applications?showFavorites=false&proj=&sync=&autoSync=&health=&namespace=&cluster=&labels=)
+- click the application
+- view in tree, network, or list modes (see icons next to "Log out" at the top right)
+- click the ellipsis to the right of the desired pod
+- click Logs
+
 ## Testing
 In general, tensorflow and pytorch use the underlying `unittest` framework that comes stock with Python.  However, FastAPI has a ton of great features through `pytest` that make testing HTTP much, much easier.  Good news is that, for the most part, pytest as the runner will also handle unittest, so we can use the TF or pytorch frameworks with unittest and FastAPI with pytest.  Some articles on this:
 - [FastAPI testing](https://fastapi.tiangolo.com/tutorial/testing/)
