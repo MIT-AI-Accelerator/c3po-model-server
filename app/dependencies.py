@@ -2,7 +2,7 @@ from collections.abc import Generator
 import httpx
 from .db.session import SessionLocal
 from .aimodels.lstm_stress_classifier.ai_service.inference.inference_model import LstmStressClassifierModel
-from .core.minio import build_client
+from .core.s3 import build_client
 
 
 

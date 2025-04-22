@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 import pandas as pd
 from minio import Minio
 from app.core.logging import logger
-from app.core.minio import pickle_and_upload_object_to_minio
+from app.core.s3 import pickle_and_upload_object_to_minio
 from app.core.errors import ValidationError, HTTPValidationError
 from app.core.config import settings
 from app.dependencies import get_db, get_minio

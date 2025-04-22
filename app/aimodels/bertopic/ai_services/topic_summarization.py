@@ -11,7 +11,7 @@ from langchain.text_splitter import CharacterTextSplitter
 from scipy.stats import shapiro
 from app.core.logging import logger
 from app.core.model_cache import MODEL_CACHE_BASEDIR
-from app.core.minio import download_file_from_minio
+from app.core.s3 import download_file_from_minio
 from app.core.config import get_acronym_dictionary
 
 # default templates for topic summarization

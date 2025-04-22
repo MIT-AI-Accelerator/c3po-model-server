@@ -15,7 +15,7 @@ from app.aimodels.gpt4all.ai_services.completion_inference import (
 )
 from app.chat_search.ai_services.marco_rerank_retriever import MarcoRerankRetriever
 from app.core.errors import ValidationError
-from app.core.minio import download_pickled_object_from_minio
+from app.core.s3 import download_pickled_object_from_minio
 from app.core.model_cache import MODEL_CACHE_BASEDIR
 from app.core.config import settings
 

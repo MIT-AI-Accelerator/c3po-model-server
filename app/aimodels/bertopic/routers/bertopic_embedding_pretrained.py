@@ -13,7 +13,7 @@ from pydantic import UUID4, BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 from minio import Minio
 
-from app.core.minio import upload_file_to_minio
+from app.core.s3 import upload_file_to_minio
 from app.core.errors import HTTPValidationError, ValidationError
 from app.core.config import get_label_dictionary, set_label_dictionary
 from app.dependencies import get_db, get_minio

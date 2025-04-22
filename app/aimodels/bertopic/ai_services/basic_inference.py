@@ -12,7 +12,7 @@ from umap import UMAP
 from fastapi import HTTPException
 from plotly.graph_objs import Figure
 from app.core.logging import logger
-from app.core.minio import download_pickled_object_from_minio
+from app.core.s3 import download_pickled_object_from_minio
 from app.core.config import get_label_dictionary
 from app.ppg_common.schemas.bertopic.topic import TopicSummaryCreate
 from ..models.document import DocumentModel
