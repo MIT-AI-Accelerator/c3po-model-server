@@ -48,7 +48,7 @@ DEFAULT_UMAP_RANDOM_STATE = 577
 
 class InitInputs(BaseModel):
     embedding_pretrained_model_obj: BertopicEmbeddingPretrainedModel
-    s3: S3Client
+    # s3: S3Client  # TODO this validation is failing for some reason
 
     # ensure that model type is defined
     @field_validator('embedding_pretrained_model_obj')
