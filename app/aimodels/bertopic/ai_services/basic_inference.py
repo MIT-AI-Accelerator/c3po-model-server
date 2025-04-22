@@ -12,7 +12,7 @@ from umap import UMAP
 from fastapi import HTTPException
 from plotly.graph_objs import Figure
 from app.core.logging import logger
-from app.core.s3 import download_pickled_object_from_minio
+from app.core.s3 import download_pickled_object_from_s3
 from app.core.config import get_label_dictionary
 from app.ppg_common.schemas.bertopic.topic import TopicSummaryCreate
 from ..models.document import DocumentModel
@@ -192,7 +192,7 @@ class BasicInference:
 
         # TODO: load from minio--HTTPException gets thrown if not there
         # would be a server error since the db object should say if it's uploaded or not
-        self.sentence_model = download_pickled_object_from_minio(
+        self.sentence_model = download_pickled_object_from_s3(
             id=sentence_transformer_obj.id, s3=s3)
 
         self.sentence_transformer_obj = sentence_transformer_obj
@@ -202,7 +202,7 @@ class BasicInference:
         self.weak_learner_obj = weak_learner_obj
         self.label_model = None
         if weak_learner_obj:
-            weak_models = download_pickled_object_from_minio(
+            weak_models = download_pickled_object_from_s3(
                 id=weak_learner_obj.id, s3=s3)
             self.vectorizer = weak_models[0]
             self.svm = weak_models[1]

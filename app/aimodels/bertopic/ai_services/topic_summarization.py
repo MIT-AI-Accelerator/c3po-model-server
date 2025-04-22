@@ -11,7 +11,7 @@ from langchain.text_splitter import CharacterTextSplitter
 from scipy.stats import shapiro
 from app.core.logging import logger
 from app.core.model_cache import MODEL_CACHE_BASEDIR
-from app.core.s3 import download_file_from_minio
+from app.core.s3 import download_file_from_s3
 from app.core.config import get_acronym_dictionary
 
 # default templates for topic summarization
@@ -69,7 +69,7 @@ class TopicSummarizer:
 
             # Download the file from Minio
             logger.info(f"Downloading model from Minio to {llm_path}")
-            download_file_from_minio(model_obj.id, s3, filename=llm_path)
+            download_file_from_s3(model_obj.id, s3, filename=llm_path)
 
             if not os.path.isfile(llm_path):
                 logger.error(f"Error downloading model from Minio to {llm_path}")

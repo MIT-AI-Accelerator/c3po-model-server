@@ -11,25 +11,25 @@ from pydantic import UUID4
 
 def build_client():
 
-    if not settings.minio_region:
+    if not settings.s3_region:
         return boto3.client(
             's3',
-            endpoint_url=settings.minio_endpoint_url,
-            aws_access_key_id=settings.minio_access_key,
-            aws_secret_access_key=settings.minio_secret_key,
-            use_ssl=settings.minio_secure
+            endpoint_url=settings.s3_endpoint_url,
+            aws_access_key_id=settings.s3_access_key,
+            aws_secret_access_key=settings.s3_secret_key,
+            use_ssl=settings.s3_secure
         )
 
     return boto3.client(
         's3',
-        endpoint_url=settings.minio_endpoint_url,
-        aws_access_key_id=settings.minio_access_key,
-        aws_secret_access_key=settings.minio_secret_key,
-        use_ssl=settings.minio_secure,
-        region_name=settings.minio_region
+        endpoint_url=settings.s3_endpoint_url,
+        aws_access_key_id=settings.s3_access_key,
+        aws_secret_access_key=settings.s3_secret_key,
+        use_ssl=settings.s3_secure,
+        region_name=settings.s3_region
     )
 
-def upload_file_to_minio(file: UploadFile, id: UUID4, s3: Minio) -> bool:
+def upload_file_to_s3(file: UploadFile, id: UUID4, s3) -> bool:
     output_filename = f"{id}"
 
     # calculate the size of the file
@@ -39,19 +39,19 @@ def upload_file_to_minio(file: UploadFile, id: UUID4, s3: Minio) -> bool:
 
     try:
         s3.put_object(
-            bucket_name=settings.minio_bucket_name,
-            object_name=output_filename,
-            data=file.file,
-            length=file_size,
-            content_type='application/octet-stream'
+            Bucket=settings.s3_bucket_name,
+            Key=output_filename,
+            Body=file.file,
+            ContentLength=file_size,
+            ContentType='application/octet-stream'
         )
-    except InvalidResponseError as e:
-        logger.error(f"Failed to upload file to Minio: {e}")
+    except Exception as e:
+        logger.error(f"Failed to upload file to S3: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error") from e
 
     return True
 
-def pickle_and_upload_object_to_minio(object: Any, id: UUID4, s3: Minio) -> bool:
+def pickle_and_upload_object_to_s3(object: Any, id: UUID4, s3) -> bool:
 
     # Create an in-memory file object
     file_obj = io.BytesIO()
@@ -62,19 +62,19 @@ def pickle_and_upload_object_to_minio(object: Any, id: UUID4, s3: Minio) -> bool
     # Move the file cursor to the beginning of the file
     file_obj.seek(0)
 
-    # utilize id from above to upload file to minio
-    upload_file_to_minio(UploadFile(file_obj),
-                            id, s3)
+    # utilize id from above to upload file to s3
+    upload_file_to_s3(UploadFile(file_obj),
+                      id, s3)
 
     return True
 
-def download_file_from_minio(id: Union[UUID4, str], s3: Minio, filename: Optional[str] = None) -> io.BytesIO:
+def download_file_from_s3(id: Union[UUID4, str], s3, filename: Optional[str] = None) -> io.BytesIO:
     output_filename = f"{str(id)}"
 
     try:
         data = s3.get_object(
-            bucket_name=settings.minio_bucket_name,
-            object_name=output_filename
+            Bucket=settings.s3_bucket_name,
+            Key=output_filename
         )
 
         file_obj = None
@@ -93,27 +93,27 @@ def download_file_from_minio(id: Union[UUID4, str], s3: Minio, filename: Optiona
             file_obj.close()
 
         return file_obj
-    except InvalidResponseError as e:
-        logger.error(f"Failed to download file from Minio: {e}")
+    except Exception as e:
+        logger.error(f"Failed to download file from S3: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error") from e
     finally:
         data.close()
         data.release_conn()
 
-def download_pickled_object_from_minio(id: UUID4, s3: Minio) -> Any:
-    file_obj = download_file_from_minio(id, s3)
+def download_pickled_object_from_s3(id: UUID4, s3) -> Any:
+    file_obj = download_file_from_s3(id, s3)
     output = pickle.load(file_obj)
 
     file_obj.close()
     return output
 
-def list_minio_objects(s3: Minio) -> Any:
+def list_s3_objects(s3) -> Any:
     """Lists all objects in the specified bucket."""
 
     try:
-        objects = s3.list_objects(settings.minio_bucket_name, recursive=True)
-        logger.info("Minio objects:")
+        objects = s3.list_objects_v2(Bucket=settings.s3_bucket_name)
+        logger.info("S3 objects:")
         for obj in objects:
             logger.info(f"{obj.bucket_name} {obj.object_name} {obj.last_modified} {obj.size}")
     except: # pylint: disable=bare-except
-        logger.warning(f"unable to list minio objects for {settings.minio_bucket_name}")
+        logger.warning(f"unable to list s3 objects for {settings.s3_bucket_name}")

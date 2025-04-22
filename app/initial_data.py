@@ -6,7 +6,7 @@ import pickle
 import logging
 import requests
 import time
-import boto3
+from botocore.exceptions import WaiterError
 from pathlib import Path
 from tqdm import tqdm
 from typing import Union
@@ -26,7 +26,7 @@ from app.aimodels.gpt4all.models.llm_pretrained import LlmPretrainedModel, LlmFi
 
 from app.db.init_db import init_db, wipe_db, drop_constraints
 from app.db.session import SessionLocal
-from app.core.s3 import build_client, download_file_from_minio, upload_file_to_minio, list_minio_objects
+from app.core.s3 import build_client, download_file_from_s3, upload_file_to_s3, list_s3_objects
 
 from app.core.config import settings, environment_settings, get_label_dictionary
 from app.aimodels.bertopic import crud as bertopic_crud
@@ -78,26 +78,29 @@ def get_db(environment: str, migration_toggle: bool) -> Union[Session, None]:
     return db
 
 
-def init_minio_bucket(s3: Minio) -> None:
-    bucket_name = settings.minio_bucket_name
-    bucket_exists = s3.get_waiter('bucket_exists').wait(Bucket=bucket_name)
-    if bucket_exists is not None:
+def init_s3_bucket(s3) -> None:
+    bucket_name = settings.s3_bucket_name
+    try:
+        s3.get_waiter('bucket_exists').wait(Bucket=bucket_name)
+    except WaiterError as e:
+        logger.error(e)
+        logger.info(f"Creating bucket: {bucket_name}")
         s3.create_bucket(Bucket=bucket_name)
 
 
-def get_s3(environment: str, db: Session) -> Union[Minio, None]:
+def get_s3(environment: str, db: Session):
     s3 = None
 
-    # setup minio client if available (i.e., not in unit tests)
+    # setup s3 client if available (i.e., not in unit tests)
     if (environment in ['local', 'development', 'staging', 'production']):
-        logger.info("Connecting MinIO client")
+        logger.info("Connecting S3 client")
         s3 = build_client()
-        logger.info("MinIO client connected")
+        logger.info("S3 client connected")
 
     if (environment in ['local', 'development']):
-        logger.info("Setting up MinIO bucket")
-        init_minio_bucket(s3)
-        logger.info("MinIO bucket set up.")
+        logger.info("Setting up S3 bucket")
+        init_s3_bucket(s3)
+        logger.info("S3 bucket set up.")
 
     if (environment != 'production'):
         logger.info("Creating documents from chats")
@@ -108,7 +111,7 @@ def get_s3(environment: str, db: Session) -> Union[Minio, None]:
     return s3
 
 
-def init_sentence_embedding_object(s3: Minio, db: Session, model_path: str) -> BertopicEmbeddingPretrainedModel:
+def init_sentence_embedding_object(s3, db: Session, model_path: str) -> BertopicEmbeddingPretrainedModel:
     # Create the SentenceTransformer object
     model_name = model_path.split('/')[-1]
 
@@ -152,9 +155,9 @@ def init_sentence_embedding_object(s3: Minio, db: Session, model_path: str) -> B
         new_bertopic_embedding_pretrained_obj: BertopicEmbeddingPretrainedModel = bertopic_crud.bertopic_embedding_pretrained.create(
             db, obj_in=bertopic_embedding_pretrained_obj)
 
-        # utilize id from above to upload file to minio
-        upload_file_to_minio(UploadFile(file_obj),
-                             new_bertopic_embedding_pretrained_obj.id, s3)
+        # utilize id from above to upload file to s3
+        upload_file_to_s3(UploadFile(file_obj),
+                          new_bertopic_embedding_pretrained_obj.id, s3)
 
         # update the object to reflect uploaded status
         updated_object = BertopicEmbeddingPretrainedUpdate(uploaded=True)
@@ -166,7 +169,7 @@ def init_sentence_embedding_object(s3: Minio, db: Session, model_path: str) -> B
     return obj_by_sha
 
 
-def init_mistrallite_pretrained_model(s3: Minio, db: Session) -> LlmPretrainedModel:
+def init_mistrallite_pretrained_model(s3, db: Session) -> LlmPretrainedModel:
 
     model_name = "mistrallite.Q4_K_M.gguf"
     local_path = os.path.join(
@@ -213,10 +216,10 @@ def init_mistrallite_pretrained_model(s3: Minio, db: Session) -> LlmPretrainedMo
         new_llm_pretrained_obj: LlmPretrainedModel = gpt4all_crud.llm_pretrained.create(
             db, obj_in=llm_pretrained_obj)
 
-        # utilize id from above to upload file to minio
+        # utilize id from above to upload file to s3
         with open(local_path, 'rb') as file_obj:
-            upload_file_to_minio(UploadFile(file_obj),
-                                 new_llm_pretrained_obj.id, s3)
+            upload_file_to_s3(UploadFile(file_obj),
+                              new_llm_pretrained_obj.id, s3)
 
         # update the object to reflect uploaded status
         updated_object = LlmPretrainedUpdate(uploaded=True)
@@ -228,7 +231,7 @@ def init_mistrallite_pretrained_model(s3: Minio, db: Session) -> LlmPretrainedMo
     return obj_by_sha
 
 
-def init_llm_pretrained_model(s3: Minio, db: Session) -> LlmPretrainedModel:
+def init_llm_pretrained_model(s3, db: Session) -> LlmPretrainedModel:
 
     model_name = "ggml-gpt4all-l13b-snoozy.bin"
     local_path = os.path.join(
@@ -275,10 +278,10 @@ def init_llm_pretrained_model(s3: Minio, db: Session) -> LlmPretrainedModel:
         new_llm_pretrained_obj: LlmPretrainedModel = gpt4all_crud.llm_pretrained.create(
             db, obj_in=llm_pretrained_obj)
 
-        # utilize id from above to upload file to minio
+        # utilize id from above to upload file to s3
         with open(local_path, 'rb') as file_obj:
-            upload_file_to_minio(UploadFile(file_obj),
-                                 new_llm_pretrained_obj.id, s3)
+            upload_file_to_s3(UploadFile(file_obj),
+                              new_llm_pretrained_obj.id, s3)
 
         # update the object to reflect uploaded status
         updated_object = LlmPretrainedUpdate(uploaded=True)
@@ -290,7 +293,7 @@ def init_llm_pretrained_model(s3: Minio, db: Session) -> LlmPretrainedModel:
     return obj_by_sha
 
 
-def init_llm_db_obj_staging_prod(s3: Minio, db: Session, model_enum: LlmFilenameEnum) -> LlmPretrainedModel:
+def init_llm_db_obj_staging_prod(s3, db: Session, model_enum: LlmFilenameEnum) -> LlmPretrainedModel:
 
     default_sha256 = settings.default_sha256_l13b_snoozy \
         if model_enum == LlmFilenameEnum.L13B_SNOOZY \
@@ -303,10 +306,10 @@ def init_llm_db_obj_staging_prod(s3: Minio, db: Session, model_enum: LlmFilename
         # Create the directory if it doesn't exist
         Path(local_path).parent.mkdir(parents=True, exist_ok=True)
 
-        # Download the file from Minio
-        logger.info(f"Downloading base model from Minio to {local_path}")
-        download_file_from_minio(model_name, s3, filename=local_path)
-        logger.info(f"Downloaded model from Minio to {local_path}")
+        # Download the file from s3
+        logger.info(f"Downloading base model from S3 to {local_path}")
+        download_file_from_s3(model_name, s3, filename=local_path)
+        logger.info(f"Downloaded model from S3 to {local_path}")
 
     # check to make sure sha256 doesn't already exist
     obj_by_sha: LlmPretrainedModel = gpt4all_crud.llm_pretrained.get_by_sha256(
@@ -330,7 +333,7 @@ def init_llm_db_obj_staging_prod(s3: Minio, db: Session, model_enum: LlmFilename
     return obj_by_sha
 
 
-def init_weak_learning_object(s3: Minio, db: Session) -> BertopicEmbeddingPretrainedModel:
+def init_weak_learning_object(s3, db: Session) -> BertopicEmbeddingPretrainedModel:
     # Create the weak learner object
     model_name = CHAT_DATASET_4_PATH.split('/')[-1]
     df_train = pd.read_csv(CHAT_DATASET_4_PATH)
@@ -363,9 +366,9 @@ def init_weak_learning_object(s3: Minio, db: Session) -> BertopicEmbeddingPretra
         new_bertopic_embedding_pretrained_obj: BertopicEmbeddingPretrainedModel = bertopic_crud.bertopic_embedding_pretrained.create(
             db, obj_in=bertopic_embedding_pretrained_obj)
 
-        # utilize id from above to upload file to minio
-        upload_file_to_minio(UploadFile(file_obj),
-                             new_bertopic_embedding_pretrained_obj.id, s3)
+        # utilize id from above to upload file to s3
+        upload_file_to_s3(UploadFile(file_obj),
+                          new_bertopic_embedding_pretrained_obj.id, s3)
 
         # update the object to reflect uploaded status
         updated_object = BertopicEmbeddingPretrainedUpdate(uploaded=True)
@@ -463,63 +466,63 @@ def init_large_objects(db: Session) -> None:
         logger.info("Unable to load Mattermost documents")
 
 
-def init_large_objects_local(s3: Minio, db: Session) -> None:
+def init_large_objects_local(s3, db: Session) -> None:
 
     # Sentence Transformer
-    logger.info("Uploading all-MiniLM-L6-v2 object to MinIO")
+    logger.info("Uploading all-MiniLM-L6-v2 object to S3")
     embedding_pretrained_obj1 = init_sentence_embedding_object(
         s3, db, "all-MiniLM-L6-v2")
-    logger.info("all-MiniLM-L6-v2 object uploaded to MinIO.")
+    logger.info("all-MiniLM-L6-v2 object uploaded to S3.")
     logger.info(
         f"all-MiniLM-L6-v2 Embedding Pretrained Object ID: {embedding_pretrained_obj1.id}, SHA256: {embedding_pretrained_obj1.sha256}")
     embedding_pretrained_obj2 = init_sentence_embedding_object(
         s3, db, "sentence-transformers/all-mpnet-base-v2")
-    logger.info("all-mpnet-base-v2 object uploaded to MinIO.")
+    logger.info("all-mpnet-base-v2 object uploaded to S3.")
     logger.info(
         f"all-mpnet-base-v2 Embedding Pretrained Object ID: {embedding_pretrained_obj2.id}, SHA256: {embedding_pretrained_obj2.sha256}")
 
     # Weak learner
-    logger.info("Uploading WeakLearner object to MinIO")
+    logger.info("Uploading WeakLearner object to S3")
     embedding_pretrained_obj = init_weak_learning_object(s3, db)
-    logger.info("WeakLearner object uploaded to MinIO.")
+    logger.info("WeakLearner object uploaded to S3.")
     logger.info(
         f"Weak learner Pretrained Object ID: {embedding_pretrained_obj.id}, SHA256: {embedding_pretrained_obj.sha256}")
 
     # MARCO reranker
-    logger.info("Uploading MARCO cross-encoder object to MinIO")
+    logger.info("Uploading MARCO cross-encoder object to S3")
     marco_pretrained_obj = init_sentence_embedding_object(
         s3, db, "cross-encoder/ms-marco-TinyBERT-L-6")
-    logger.info("MARCO cross-encoder object uploaded to MinIO.")
+    logger.info("MARCO cross-encoder object uploaded to S3.")
     logger.info(
         f"MARCO cross-encoder Pretrained Object ID: {marco_pretrained_obj.id}, SHA256: {marco_pretrained_obj.sha256}")
 
     # Mistral
-    logger.info("Uploading Mistral object to MinIO")
+    logger.info("Uploading Mistral object to S3")
     llm_pretrained_obj = init_mistrallite_pretrained_model(s3, db)
-    logger.info("Mistral object uploaded to MinIO.")
+    logger.info("Mistral object uploaded to S3.")
     logger.info(
         f"Mistral Object ID: {llm_pretrained_obj.id}, SHA256: {llm_pretrained_obj.sha256}")
 
     # Gpt4All
-    logger.info("Uploading Gpt4All object to MinIO")
+    logger.info("Uploading Gpt4All object to S3")
     llm_pretrained_obj = init_llm_pretrained_model(s3, db)
-    logger.info("Gpt4All object uploaded to MinIO.")
+    logger.info("Gpt4All object uploaded to S3.")
     logger.info(
         f"Gpt4All Object ID: {llm_pretrained_obj.id}, SHA256: {llm_pretrained_obj.sha256}")
 
-def init_large_objects_p1(s3: Minio, db: Session) -> None:
+def init_large_objects_p1(s3, db: Session) -> None:
 
     # Mistral
-    logger.info("Verifying Mistral object in MinIO")
+    logger.info("Verifying Mistral object in S3")
     llm_pretrained_obj = init_llm_db_obj_staging_prod(s3, db, LlmFilenameEnum.Q4_K_M)
-    logger.info("Verified Mistral object in MinIO.")
+    logger.info("Verified Mistral object in S3.")
     logger.info(
         f"Mistral Object ID: {llm_pretrained_obj.id}, SHA256: {llm_pretrained_obj.sha256}")
 
     # Gpt4All
-    logger.info("Verifying Gpt4All object in MinIO")
+    logger.info("Verifying Gpt4All object in S3")
     llm_pretrained_obj = init_llm_db_obj_staging_prod(s3, db, LlmFilenameEnum.L13B_SNOOZY)
-    logger.info("Verified Gpt4All object in MinIO.")
+    logger.info("Verified Gpt4All object in S3.")
     logger.info(
         f"Gpt4All Object ID: {llm_pretrained_obj.id}, SHA256: {llm_pretrained_obj.sha256}")
 
@@ -553,7 +556,7 @@ def main() -> None:
     elif (environment == 'staging' or (environment == 'production' and migration_toggle is True)):
         init_large_objects_p1(s3, db)
 
-    list_minio_objects(s3)
+    list_s3_objects(s3)
 
     end = time.time()
     logger.info("Initialization complete in %fs" % (end - start))

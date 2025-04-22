@@ -13,7 +13,7 @@ from pydantic import UUID4, BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 from minio import Minio
 
-from app.core.s3 import upload_file_to_minio
+from app.core.s3 import upload_file_to_s3
 from app.core.errors import HTTPValidationError, ValidationError
 from app.core.config import get_label_dictionary, set_label_dictionary
 from app.dependencies import get_db, get_minio
@@ -133,7 +133,7 @@ async def upload_bertopic_embedding_post(new_file: UploadFile, id: UUID4, db: Se
         raise HTTPException(status_code=422, detail="SHA256 hash mismatch")
 
     # upload to minio
-    upload_file_to_minio(file=new_file, id=id, s3=s3)
+    upload_file_to_s3(file=new_file, id=id, s3=s3)
 
     # update the object in db and return
     new_bertopic_embedding_pretrained_obj: BertopicEmbeddingPretrainedModel = crud.bertopic_embedding_pretrained.update(

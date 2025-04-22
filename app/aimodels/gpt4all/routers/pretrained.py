@@ -7,7 +7,7 @@ from minio import Minio
 from pydantic import UUID4
 from sqlalchemy.orm import Session
 
-from app.core.s3 import upload_file_to_minio
+from app.core.s3 import upload_file_to_s3
 from app.dependencies import get_db, get_minio
 from app.core.errors import HTTPValidationError
 from app.ppg_common.schemas.gpt4all.llm_pretrained import LlmPretrained, LlmPretrainedCreate, LlmPretrainedUpdate
@@ -82,7 +82,7 @@ async def upload_gpt4all_post(new_file: UploadFile, id: UUID4, db: Session = Dep
         raise HTTPException(status_code=422, detail="SHA256 hash mismatch")
 
     # upload to minio
-    upload_file_to_minio(file=new_file, id=id, s3=s3)
+    upload_file_to_s3(file=new_file, id=id, s3=s3)
 
     # update the object in db and return
     new_llm_pretrained_obj: LlmPretrainedModel = crud.llm_pretrained.update(

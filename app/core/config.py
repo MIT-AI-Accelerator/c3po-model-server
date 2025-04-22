@@ -20,23 +20,13 @@ class Settings(BaseSettings):
     originated_from: OriginationEnum = OriginationEnum.ORIGINATED_FROM_APP
     acronym_dictionary: dict = {}
 
-    # minio settings
-    minio_bucket_name: str = ""
-    minio_endpoint_url: str = ""
-    minio_access_key: str | None = None
-    minio_secret_key: str | None = None
-    minio_region: str = ""
-    minio_secure: bool = True
-
-    # # validator to remove http:// or https:// from the minio_endpoint_url
-    # @field_validator("minio_endpoint_url", mode="before")
-    # def remove_http_or_https(cls, v: str) -> str:
-    #     # pylint: disable=no-self-argument
-    #     if v.startswith("http://"):
-    #         return v[len("http://"):]
-    #     if v.startswith("https://"):
-    #         return v[len("https://"):]
-    #     return v
+    # s3 settings
+    s3_bucket_name: str = ""
+    s3_endpoint_url: str = ""
+    s3_access_key: str | None = None
+    s3_secret_key: str | None = None
+    s3_region: str = ""
+    s3_secure: bool = True
 
     # postgreSQL settings
     postgres_user: str = ""

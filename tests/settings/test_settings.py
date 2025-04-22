@@ -48,21 +48,21 @@ def test_remove_http_or_https_removes_http():
     environment_settings = EnvironmentSettings()
     mock_settings = Settings(_env_file=get_env_file(
         environment_settings), _env_file_encoding='utf-8')
-    assert mock_settings.minio_endpoint_url == "test.com"
+    assert mock_settings.s3_endpoint_url == "test.com"
 
 @mock.patch.dict(os.environ, {"MINIO_ENDPOINT_URL": "https://test.com"})
 def test_remove_http_or_https_removes_https():
     environment_settings = EnvironmentSettings()
     mock_settings = Settings(_env_file=get_env_file(
         environment_settings), _env_file_encoding='utf-8')
-    assert mock_settings.minio_endpoint_url == "test.com"
+    assert mock_settings.s3_endpoint_url == "test.com"
 
 @mock.patch.dict(os.environ, {"MINIO_ENDPOINT_URL": "//test.com"})
 def test_remove_http_or_https_does_nothing_if_no_http_or_https():
     environment_settings = EnvironmentSettings()
     mock_settings = Settings(_env_file=get_env_file(
         environment_settings), _env_file_encoding='utf-8')
-    assert mock_settings.minio_endpoint_url == "//test.com"
+    assert mock_settings.s3_endpoint_url == "//test.com"
 
 @mock.patch.dict(os.environ, {"ENVIRONMENT": "test"})
 def test_assemble_db_with_uri():

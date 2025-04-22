@@ -15,7 +15,7 @@ from app.aimodels.gpt4all.ai_services.completion_inference import (
 )
 from app.chat_search.ai_services.marco_rerank_retriever import MarcoRerankRetriever
 from app.core.errors import ValidationError
-from app.core.s3 import download_pickled_object_from_minio
+from app.core.s3 import download_pickled_object_from_s3
 from app.core.model_cache import MODEL_CACHE_BASEDIR
 from app.core.config import settings
 
@@ -72,7 +72,7 @@ class RetrievalService(BaseModel):
                     )
                 )
 
-                self.sentence_model = download_pickled_object_from_minio(
+                self.sentence_model = download_pickled_object_from_s3(
                     id=sentence_model_db_obj.id, s3=self.s3
                 )
 
@@ -139,7 +139,7 @@ class RetrievalService(BaseModel):
             db=self.db, model_name="ms-marco-TinyBERT-L-6"
         )
 
-        cross_model = download_pickled_object_from_minio(
+        cross_model = download_pickled_object_from_s3(
             id=marco_pretrained_obj.id, s3=self.s3
         )
 

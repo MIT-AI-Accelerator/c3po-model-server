@@ -11,7 +11,7 @@ from langchain_community.llms import GPT4All
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from pathlib import Path
 from app.aimodels.gpt4all.models.llm_pretrained import LlmFilenameEnum
-from app.core.s3 import download_file_from_minio
+from app.core.s3 import download_file_from_s3
 from minio import Minio
 from app.core.model_cache import MODEL_CACHE_BASEDIR
 from app.core.logging import logger, LogConfig
@@ -196,7 +196,7 @@ class CompletionInference:
 
             # Download the file from Minio
             logger.info(f"Downloading model from Minio to {self.llm_path}")
-            download_file_from_minio(minio_filename, s3, filename=self.llm_path)
+            download_file_from_s3(minio_filename, s3, filename=self.llm_path)
             logger.info(f"Downloaded model from Minio to {self.llm_path}")
 
 
