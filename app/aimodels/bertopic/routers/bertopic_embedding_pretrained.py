@@ -16,7 +16,7 @@ from minio import Minio
 from app.core.s3 import upload_file_to_s3
 from app.core.errors import HTTPValidationError, ValidationError
 from app.core.config import get_label_dictionary, set_label_dictionary
-from app.dependencies import get_db, get_minio
+from app.dependencies import get_db, get_s3
 from app.ppg_common.schemas.bertopic.bertopic_embedding_pretrained import BertopicEmbeddingPretrained, BertopicEmbeddingPretrainedCreate, BertopicEmbeddingPretrainedUpdate, EmbeddingModelTypeEnum
 from .. import crud
 from ..models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedModel
@@ -71,7 +71,7 @@ def create_bertopic_embedding_pretrained_object_post(bertopic_embedding_pretrain
     summary="Train a Weak Learner Model for upload",
     response_description="Trained the Weak Learner Model"
 )
-async def upload_bertopic_embedding_post(new_file: UploadFile, db: Session = Depends(get_db), s3: Minio = Depends(get_minio)) -> (
+async def upload_bertopic_embedding_post(new_file: UploadFile, db: Session = Depends(get_db), s3 = Depends(get_s3)) -> (
     Union[list, HTTPValidationError]
 ):
     """
@@ -106,7 +106,7 @@ async def upload_bertopic_embedding_post(new_file: UploadFile, db: Session = Dep
     summary="Upload BERTopic Embedding Pretrained Model Binary",
     response_description="Uploaded Embedding Pretrained Model Binary"
 )
-async def upload_bertopic_embedding_post(new_file: UploadFile, id: UUID4, db: Session = Depends(get_db), s3: Minio = Depends(get_minio)) -> (
+async def upload_bertopic_embedding_post(new_file: UploadFile, id: UUID4, db: Session = Depends(get_db), s3 = Depends(get_s3)) -> (
     Union[BertopicEmbeddingPretrained, HTTPValidationError]
 ):
     """
@@ -132,7 +132,7 @@ async def upload_bertopic_embedding_post(new_file: UploadFile, id: UUID4, db: Se
     if sha256_hash.hexdigest() != bertopic_embedding_pretrained_obj.sha256:
         raise HTTPException(status_code=422, detail="SHA256 hash mismatch")
 
-    # upload to minio
+    # upload to s3
     upload_file_to_s3(file=new_file, id=id, s3=s3)
 
     # update the object in db and return

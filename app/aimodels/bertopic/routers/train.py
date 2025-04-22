@@ -5,10 +5,10 @@ from sqlalchemy.orm import Session
 import pandas as pd
 from minio import Minio
 from app.core.logging import logger
-from app.core.s3 import pickle_and_upload_object_to_minio
+from app.core.s3 import pickle_and_upload_object_to_s3
 from app.core.errors import ValidationError, HTTPValidationError
 from app.core.config import settings
-from app.dependencies import get_db, get_minio
+from app.dependencies import get_db, get_s3
 from app.ppg_common.schemas.bertopic.document_embedding_computation import DocumentEmbeddingComputationCreate
 from app.ppg_common.schemas.bertopic.bertopic_trained import BertopicTrained, BertopicTrainedCreate, BertopicTrainedUpdate
 from app.ppg_common.schemas.bertopic.bertopic_visualization import BertopicVisualizationCreate
@@ -51,7 +51,7 @@ class TrainModelRequest(BaseModel):
     summary="Train BERTopic on text",
     response_description="Trained Model and Plotly Visualization config"
 )
-def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db), s3: Minio = Depends(get_minio)) -> (
+def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db), s3: Minio = Depends(get_s3)) -> (
     Union[BertopicTrained, HTTPValidationError]
 ):
     """
@@ -163,7 +163,7 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
         db, obj_in=bertopic_trained_obj, embedding_pretrained_id=request.sentence_transformer_id)
 
     # upload the trained model to minio
-    upload_success = pickle_and_upload_object_to_minio(
+    upload_success = pickle_and_upload_object_to_s3(
         object=inference_output.topic_model, id=new_bertopic_trained_obj.id, s3=s3)
 
     # if upload was successful, set the uploaded flag to true in the database using crud.bertopic_trained.update

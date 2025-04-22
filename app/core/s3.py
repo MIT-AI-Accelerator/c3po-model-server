@@ -5,9 +5,9 @@ from typing import Any, Optional, Union
 from .config import settings
 from .logging import logger
 from fastapi import UploadFile, HTTPException
-from minio.error import InvalidResponseError
-from minio import Minio
 from pydantic import UUID4
+
+# logger = logging.getLogger(__name__)
 
 def build_client():
 
@@ -111,9 +111,10 @@ def list_s3_objects(s3) -> Any:
     """Lists all objects in the specified bucket."""
 
     try:
-        objects = s3.list_objects_v2(Bucket=settings.s3_bucket_name)
+        logger.info(f'Listing objects in bucket {settings.s3_bucket_name}')
+        response = s3.list_objects_v2(Bucket=settings.s3_bucket_name)
         logger.info("S3 objects:")
-        for obj in objects:
-            logger.info(f"{obj.bucket_name} {obj.object_name} {obj.last_modified} {obj.size}")
+        for obj in response['Contents']:
+            logger.info(f"Key: {obj['Key']}, Last modified: {obj['LastModified']}, Size (B): {obj['Size']}")
     except: # pylint: disable=bare-except
         logger.warning(f"unable to list s3 objects for {settings.s3_bucket_name}")

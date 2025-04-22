@@ -8,7 +8,7 @@ from app.ppg_common.schemas.gpt4all.llm_pretrained import LlmPretrainedCreate
 from app.aimodels.gpt4all import crud
 from app.aimodels.gpt4all.ai_services.completion_inference import CompletionInferenceInputs, CompletionInferenceOutputChoices, CompletionInferenceOutputs, FinishReasonEnum
 from app.aimodels.gpt4all.models.llm_pretrained import LlmFilenameEnum, LlmPretrainedModel
-from app.aimodels.bertopic.routers.bertopic_embedding_pretrained import get_db, get_minio
+from app.aimodels.bertopic.routers.bertopic_embedding_pretrained import get_db, get_s3
 
 def setup(db, mock_s3):
     def replace_db():
@@ -17,7 +17,7 @@ def setup(db, mock_s3):
     def mock_get_minio():
         return mock_s3
 
-    app.dependency_overrides = {get_db: replace_db, get_minio: mock_get_minio}
+    app.dependency_overrides = {get_db: replace_db, get_s3: mock_get_minio}
 
 
 def teardown():

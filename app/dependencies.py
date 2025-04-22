@@ -25,5 +25,5 @@ def get_db() -> Generator:
         db.close()
 
 # ********use for minio initialization*****
-def get_minio():
-    return  build_client()
+def get_s3():
+    return build_client()

@@ -11,7 +11,7 @@ from app.aimodels.gpt4all.models.llm_pretrained import (
 from app.aimodels.gpt4all.routers.completions import (
     validate_inputs_and_generate_service,
 )
-from app.dependencies import get_db, get_minio
+from app.dependencies import get_db, get_s3
 from app.core.config import settings
 from sqlalchemy.orm import Session
 from ... import crud
@@ -36,7 +36,7 @@ async def chat_query_retrieval_get(
     summarize: bool = False,
     max_docs: int = 1000,
     db: Session = Depends(get_db),
-    s3: Minio = Depends(get_minio),
+    s3: Minio = Depends(get_s3),
 ) -> (HTMLResponse):
     """
     Query retrieval endpoint.

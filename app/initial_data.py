@@ -3,7 +3,8 @@ import sys
 import hashlib
 import io
 import pickle
-import logging
+# import logging
+from .core.logging import logger
 import requests
 import time
 from botocore.exceptions import WaiterError
@@ -12,7 +13,6 @@ from tqdm import tqdm
 from typing import Union
 from fastapi import UploadFile
 from fastapi.encoders import jsonable_encoder
-from minio.error import InvalidResponseError
 
 import app.ppg_common.services.mattermost_utils as mattermost_utils
 from app.ppg_common.schemas.bertopic.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedCreate, BertopicEmbeddingPretrainedUpdate
@@ -38,7 +38,6 @@ from app.mattermost.models.mattermost_users import MattermostUserModel
 from sentence_transformers import SentenceTransformer, CrossEncoder
 
 from sqlalchemy.orm import Session
-from minio import Minio
 import pandas as pd
 from sample_data import CHAT_DATASET_1_PATH
 from app.core.model_cache import MODEL_CACHE_BASEDIR
@@ -46,8 +45,8 @@ from app.core.model_cache import MODEL_CACHE_BASEDIR
 from app.aimodels.bertopic.ai_services.weak_learning import WeakLearner
 from sample_data import CHAT_DATASET_4_PATH
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# logging.basicConfig(level=logging.INFO)
+# logger = logging.getLogger(__name__)
 
 
 def init() -> None:
@@ -548,13 +547,13 @@ def main() -> None:
 
     s3 = get_s3(environment, db)
 
-    if (environment != 'test'):
-        init_large_objects(db)
-
-    if (environment == 'local'):
-        init_large_objects_local(s3, db)
-    elif (environment == 'staging' or (environment == 'production' and migration_toggle is True)):
-        init_large_objects_p1(s3, db)
+    # if (environment != 'test'):
+    #     init_large_objects(db)
+    #
+    # if (environment == 'local'):
+    #     init_large_objects_local(s3, db)
+    # elif (environment == 'staging' or (environment == 'production' and migration_toggle is True)):
+    #     init_large_objects_p1(s3, db)
 
     list_s3_objects(s3)
 
