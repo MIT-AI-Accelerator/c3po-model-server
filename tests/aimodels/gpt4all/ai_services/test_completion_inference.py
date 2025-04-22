@@ -5,6 +5,7 @@ from app.aimodels.gpt4all.models.llm_pretrained import LlmPretrainedModel
 from pydantic import ValidationError
 
 from langchain_community.llms import FakeListLLM
+from mypy_boto3_s3.client import S3Client
 
 
 @patch('app.aimodels.gpt4all.ai_services.completion_inference.os.path.isfile', return_value=False)
@@ -13,7 +14,7 @@ def test_create_completion_inference_object(mock_download_file_from_s3, mock_os_
 
     completion_inference_obj = CompletionInference(
         llm_pretrained_model_obj=mock_llm_pretrained_obj,
-        s3=create_autospec(Minio)
+        s3=create_autospec(S3Client)
     )
 
     mock_download_file_from_s3.assert_called_once()
@@ -27,7 +28,7 @@ def test_create_completion_inference_object_fails_when_uploaded_false(mock_downl
 
         completion_inference_obj = CompletionInference(
             llm_pretrained_model_obj=mock_llm_pretrained_obj,
-            s3=create_autospec(Minio)  # TODO figure out how to type this correctly
+            s3=create_autospec(S3Client)
         )
 
         assert False
@@ -42,7 +43,7 @@ def test_create_completion_inference_object_fails_when_model_type_none(mock_down
 
         completion_inference_obj=CompletionInference(
             llm_pretrained_model_obj=mock_llm_pretrained_obj,
-            s3=create_autospec(Minio)  # TODO figure out how to type this correctly
+            s3=create_autospec(S3Client)
         )
 
         assert False
@@ -55,7 +56,7 @@ def test_basic_response_lang_chain_works_with_fake_llm(mock_os_path, mock_gpt4al
 
     completion_inference_obj = CompletionInference(
         llm_pretrained_model_obj=mock_llm_pretrained_obj,
-        s3=create_autospec(Minio)  # TODO figure out how to type this correctly
+        s3=create_autospec(S3Client)
     )
 
     inputs = CompletionInferenceInputs(prompt="test")
@@ -70,7 +71,7 @@ def test_question_response_lang_chain_works_with_fake_llm(mock_os_path, mock_gpt
 
     completion_inference_obj = CompletionInference(
         llm_pretrained_model_obj=mock_llm_pretrained_obj,
-        s3=create_autospec(Minio)  # TODO figure out how to type this correctly
+        s3=create_autospec(S3Client)
     )
 
     inputs = CompletionInferenceInputs(prompt="test",n=2)
@@ -84,7 +85,7 @@ def test_question_response_lang_chain_works_with_fake_llm(mock_os_path, mock_gpt
 def test_type_validation_basic_and_question_response(mock_os_path, mock_llm_pretrained_obj: LlmPretrainedModel):
     completion_inference_obj=CompletionInference(
         llm_pretrained_model_obj=mock_llm_pretrained_obj,
-        s3=create_autospec(Minio)  # TODO figure out how to type this correctly
+        s3=create_autospec(S3Client)
     )
 
     try:

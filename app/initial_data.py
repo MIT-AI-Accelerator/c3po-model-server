@@ -44,6 +44,8 @@ from app.core.model_cache import MODEL_CACHE_BASEDIR
 from app.aimodels.bertopic.ai_services.weak_learning import WeakLearner
 from sample_data import CHAT_DATASET_4_PATH
 
+from mypy_boto3_s3.client import S3Client
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -76,7 +78,7 @@ def get_db(environment: str, migration_toggle: bool) -> Union[Session, None]:
     return db
 
 
-def init_s3_bucket(s3) -> None:
+def init_s3_bucket(s3: S3Client) -> None:
     bucket_name = settings.s3_bucket_name
     try:
         s3.get_waiter('bucket_exists').wait(Bucket=bucket_name)
@@ -109,7 +111,7 @@ def get_s3(environment: str, db: Session):
     return s3
 
 
-def init_sentence_embedding_object(s3, db: Session, model_path: str) -> BertopicEmbeddingPretrainedModel:
+def init_sentence_embedding_object(s3: S3Client, db: Session, model_path: str) -> BertopicEmbeddingPretrainedModel:
     # Create the SentenceTransformer object
     model_name = model_path.split('/')[-1]
 
@@ -167,7 +169,7 @@ def init_sentence_embedding_object(s3, db: Session, model_path: str) -> Bertopic
     return obj_by_sha
 
 
-def init_mistrallite_pretrained_model(s3, db: Session) -> LlmPretrainedModel:
+def init_mistrallite_pretrained_model(s3: S3Client, db: Session) -> LlmPretrainedModel:
 
     model_name = "mistrallite.Q4_K_M.gguf"
     local_path = os.path.join(
@@ -229,7 +231,7 @@ def init_mistrallite_pretrained_model(s3, db: Session) -> LlmPretrainedModel:
     return obj_by_sha
 
 
-def init_llm_pretrained_model(s3, db: Session) -> LlmPretrainedModel:
+def init_llm_pretrained_model(s3: S3Client, db: Session) -> LlmPretrainedModel:
 
     model_name = "ggml-gpt4all-l13b-snoozy.bin"
     local_path = os.path.join(
@@ -291,7 +293,7 @@ def init_llm_pretrained_model(s3, db: Session) -> LlmPretrainedModel:
     return obj_by_sha
 
 
-def init_llm_db_obj_staging_prod(s3, db: Session, model_enum: LlmFilenameEnum) -> LlmPretrainedModel:
+def init_llm_db_obj_staging_prod(s3: S3Client, db: Session, model_enum: LlmFilenameEnum) -> LlmPretrainedModel:
 
     default_sha256 = settings.default_sha256_l13b_snoozy \
         if model_enum == LlmFilenameEnum.L13B_SNOOZY \
@@ -331,7 +333,7 @@ def init_llm_db_obj_staging_prod(s3, db: Session, model_enum: LlmFilenameEnum) -
     return obj_by_sha
 
 
-def init_weak_learning_object(s3, db: Session) -> BertopicEmbeddingPretrainedModel:
+def init_weak_learning_object(s3: S3Client, db: Session) -> BertopicEmbeddingPretrainedModel:
     # Create the weak learner object
     model_name = CHAT_DATASET_4_PATH.split('/')[-1]
     df_train = pd.read_csv(CHAT_DATASET_4_PATH)
@@ -464,7 +466,7 @@ def init_large_objects(db: Session) -> None:
         logger.info("Unable to load Mattermost documents")
 
 
-def init_large_objects_local(s3, db: Session) -> None:
+def init_large_objects_local(s3: S3Client, db: Session) -> None:
 
     # Sentence Transformer
     logger.info("Uploading all-MiniLM-L6-v2 object to S3")
@@ -508,7 +510,7 @@ def init_large_objects_local(s3, db: Session) -> None:
     logger.info(
         f"Gpt4All Object ID: {llm_pretrained_obj.id}, SHA256: {llm_pretrained_obj.sha256}")
 
-def init_large_objects_p1(s3, db: Session) -> None:
+def init_large_objects_p1(s3: S3Client, db: Session) -> None:
 
     # Mistral
     logger.info("Verifying Mistral object in S3")

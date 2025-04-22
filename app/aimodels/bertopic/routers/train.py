@@ -21,6 +21,7 @@ from ..models.bertopic_trained import BertopicTrainedModel
 from ..models.bertopic_visualization import BertopicVisualizationTypeEnum
 from ..ai_services.topic_summarization import DEFAULT_TREND_DEPTH_DAYS, DEFAULT_PROMPT_TEMPLATE, DEFAULT_REFINE_TEMPLATE
 from ..models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedModel
+from mypy_boto3_s3.client import S3Client
 
 router = APIRouter(
     prefix=""
@@ -50,7 +51,7 @@ class TrainModelRequest(BaseModel):
     summary="Train BERTopic on text",
     response_description="Trained Model and Plotly Visualization config"
 )
-def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db), s3 = Depends(get_s3)) -> (
+def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db), s3: S3Client = Depends(get_s3)) -> (
     Union[BertopicTrained, HTTPValidationError]
 ):
     """

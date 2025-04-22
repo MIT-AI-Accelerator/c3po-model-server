@@ -16,6 +16,7 @@ from app.core.model_cache import MODEL_CACHE_BASEDIR
 from app.core.logging import logger, LogConfig
 from logging.config import dictConfig
 from ..models import LlmPretrainedModel
+from mypy_boto3_s3.client import S3Client
 
 dictConfig(LogConfig().dict())
 
@@ -24,7 +25,7 @@ BASE_CKPT_DIR = os.path.join(os.path.abspath(
 
 class InitInputs(BaseModel):
     llm_pretrained_model_obj: LlmPretrainedModel
-    s3: Any  # TODO use botocore stubs to type this correctly
+    s3: S3Client
 
     # ensure that model type is defined
     @field_validator('llm_pretrained_model_obj')

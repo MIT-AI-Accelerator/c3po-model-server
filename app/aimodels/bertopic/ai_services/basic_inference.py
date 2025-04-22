@@ -20,6 +20,7 @@ from ..models.topic import TopicSummaryModel
 from ..crud import crud_topic
 from .weak_learning import WeakLearner, get_vectorizer
 from .topic_summarization import topic_summarizer, detect_trending_topics, DEFAULT_N_REPR_DOCS, DEFAULT_TREND_DEPTH_DAYS
+from mypy_boto3_s3.client import S3Client
 
 BASE_CKPT_DIR = os.path.join(os.path.abspath(
     os.path.dirname(__file__)), "./data")
@@ -47,7 +48,7 @@ DEFAULT_UMAP_RANDOM_STATE = 577
 
 class InitInputs(BaseModel):
     embedding_pretrained_model_obj: BertopicEmbeddingPretrainedModel
-    s3 # TODO use botocore stubs to type this correctly
+    s3: S3Client
 
     # ensure that model type is defined
     @field_validator('embedding_pretrained_model_obj')

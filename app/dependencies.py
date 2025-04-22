@@ -3,6 +3,7 @@ import httpx
 from .db.session import SessionLocal
 from .aimodels.lstm_stress_classifier.ai_service.inference.inference_model import LstmStressClassifierModel
 from .core.s3 import build_client
+from mypy_boto3_s3.client import S3Client
 
 
 
@@ -18,12 +19,14 @@ def get_lstm_stress_classifier_model():
 
 # ********use for DB initialization*****
 def get_db() -> Generator:
+    db = None
     try:
         db = SessionLocal()
         yield db
     finally:
-        db.close()
+        if db is not None:
+            db.close()
 
 # ********use for s3 initialization*****
-def get_s3():
+def get_s3() -> S3Client:
     return build_client()

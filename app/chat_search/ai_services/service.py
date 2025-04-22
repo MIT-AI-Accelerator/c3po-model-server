@@ -25,13 +25,15 @@ from app.aimodels.bertopic.crud import (
     document as document_crud,
 )
 
+from mypy_boto3_s3.client import S3Client
+
 from sample_data import CHAT_DATASET_1_PATH
 
 
 class RetrievalService(BaseModel):
     completion_inference: CompletionInference
     db: Session | None = None
-    s3 = None
+    s3: S3Client | None = None
     sentence_model: Any | None = None  #: :meta private:
 
     model_config = ConfigDict(arbitrary_types_allowed=True)

@@ -20,6 +20,7 @@ from app.aimodels.gpt4all.ai_services.completion_inference import (
     CompletionInferenceOutputs,
 )
 from ..ai_services.service import RetrievalService
+from mypy_boto3_s3.client import S3Client
 
 router = APIRouter(prefix="", tags=["Query Retrieval - Experimental"])
 
@@ -35,7 +36,7 @@ async def chat_query_retrieval_get(
     summarize: bool = False,
     max_docs: int = 1000,
     db: Session = Depends(get_db),
-    s3 = Depends(get_s3),
+    s3: S3Client = Depends(get_s3),
 ) -> (HTMLResponse):
     """
     Query retrieval endpoint.

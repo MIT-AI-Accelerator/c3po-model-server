@@ -6,9 +6,11 @@ from .config import settings
 from .logging import logger
 from fastapi import UploadFile, HTTPException
 from pydantic import UUID4
+from mypy_boto3_s3.client import S3Client
+from botocore.response import StreamingBody
 
 
-def build_client():
+def build_client() -> S3Client:
 
     if not settings.s3_region:
         return boto3.client(
@@ -28,7 +30,7 @@ def build_client():
         region_name=settings.s3_region
     )
 
-def upload_file_to_s3(file: UploadFile, id: UUID4, s3) -> bool:
+def upload_file_to_s3(file: UploadFile, id: UUID4, s3: S3Client) -> bool:
     output_filename = f"{id}"
 
     # calculate the size of the file
@@ -50,7 +52,7 @@ def upload_file_to_s3(file: UploadFile, id: UUID4, s3) -> bool:
 
     return True
 
-def pickle_and_upload_object_to_s3(object: Any, id: UUID4, s3) -> bool:
+def pickle_and_upload_object_to_s3(object: Any, id: UUID4, s3: S3Client) -> bool:
 
     # Create an in-memory file object
     file_obj = io.BytesIO()
@@ -67,14 +69,16 @@ def pickle_and_upload_object_to_s3(object: Any, id: UUID4, s3) -> bool:
 
     return True
 
-def download_file_from_s3(id: Union[UUID4, str], s3, filename: Optional[str] = None) -> io.BytesIO:
+def download_file_from_s3(id: Union[UUID4, str], s3: S3Client, filename: Optional[str] = None) -> io.BytesIO:
     output_filename = f"{str(id)}"
+    data = None
 
     try:
-        data = s3.get_object(
+        response = s3.get_object(
             Bucket=settings.s3_bucket_name,
             Key=output_filename
         )
+        data: StreamingBody = response['Body']
 
         file_obj = None
         write_to_memory = not filename
@@ -83,7 +87,7 @@ def download_file_from_s3(id: Union[UUID4, str], s3, filename: Optional[str] = N
         else:
             file_obj = open(filename, 'wb')
 
-        for d in data.stream(32*1024):
+        for d in data.iter_chunks(chunk_size=32*1024):
             file_obj.write(d)
 
         file_obj.seek(0)
@@ -96,17 +100,17 @@ def download_file_from_s3(id: Union[UUID4, str], s3, filename: Optional[str] = N
         logger.error(f"Failed to download file from S3: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error") from e
     finally:
-        data.close()
-        data.release_conn()
+        if data is not None:
+            data.close()
 
-def download_pickled_object_from_s3(id: UUID4, s3) -> Any:
+def download_pickled_object_from_s3(id: UUID4, s3: S3Client) -> Any:
     file_obj = download_file_from_s3(id, s3)
     output = pickle.load(file_obj)
 
     file_obj.close()
     return output
 
-def list_s3_objects(s3) -> Any:
+def list_s3_objects(s3: S3Client) -> Any:
     """Lists all objects in the specified bucket."""
 
     try:
