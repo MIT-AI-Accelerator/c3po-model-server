@@ -1,5 +1,4 @@
 from fastapi import Depends, APIRouter, HTTPException
-from minio import Minio
 from app.aimodels.gpt4all.models.llm_pretrained import LlmFilenameEnum
 from app.dependencies import get_db, get_s3
 from app.core.config import settings
@@ -16,7 +15,7 @@ router = APIRouter()
     summary="GPT completion endpoint",
     response_description="Completed GPT response"
 )
-async def gpt_completion_post(request: CompletionInferenceInputs, db: Session = Depends(get_db), s3: Minio = Depends(get_s3)) -> (
+async def gpt_completion_post(request: CompletionInferenceInputs, db: Session = Depends(get_db), s3 = Depends(get_s3)) -> (
     CompletionInferenceOutputs
 ):
     """
@@ -32,7 +31,7 @@ async def gpt_completion_post(request: CompletionInferenceInputs, db: Session = 
     summary="Chat completion endpoint",
     response_description="Completed Chat response"
 )
-async def chat_completion_post(request: CompletionInferenceInputs, db: Session = Depends(get_db), s3: Minio = Depends(get_s3)) -> (
+async def chat_completion_post(request: CompletionInferenceInputs, db: Session = Depends(get_db), s3 = Depends(get_s3)) -> (
     CompletionInferenceOutputs
 ):
     """
@@ -42,7 +41,7 @@ async def chat_completion_post(request: CompletionInferenceInputs, db: Session =
     completion_inference_service = validate_inputs_and_generate_service(request, db, s3)
     return completion_inference_service.chat_response(request)
 
-def validate_inputs_and_generate_service(request: CompletionInferenceInputs, db: Session, s3: Minio):
+def validate_inputs_and_generate_service(request: CompletionInferenceInputs, db: Session, s3):
     # default model to pull
     sha256 = settings.default_sha256_l13b_snoozy
 

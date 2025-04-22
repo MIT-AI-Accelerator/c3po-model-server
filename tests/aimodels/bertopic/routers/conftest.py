@@ -7,10 +7,10 @@ def setup(db, mock_s3):
     def replace_db():
         return db
 
-    def mock_get_minio():
+    def mock_get_s3():
         return mock_s3
 
-    app.dependency_overrides = {get_db: replace_db, get_s3: mock_get_minio}
+    app.dependency_overrides = {get_db: replace_db, get_s3: mock_get_s3}
 
 
 def teardown():

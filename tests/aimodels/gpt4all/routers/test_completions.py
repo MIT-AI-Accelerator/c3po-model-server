@@ -6,7 +6,6 @@ from sqlalchemy.orm import Session
 from unittest.mock import create_autospec
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
-from minio import Minio
 from app.aimodels.gpt4all.ai_services.completion_inference import CompletionInference, CompletionInferenceInputs, CompletionInferenceOutputs
 from app.aimodels.gpt4all import crud as crud_gpt4all
 from app.aimodels.gpt4all.routers.completions import validate_inputs_and_generate_service
@@ -106,7 +105,7 @@ def test_chat_completion_post_valid_input(client: TestClient,
     assert response.json()["choices"][0]["text"] == "This is a test response"
 
 def test_validate_inputs_and_generate_service(db: Session,
-                                              mock_s3: Minio,
+                                              mock_s3,
                                               mocker: MockerFixture):
     with pytest.raises(HTTPException) as e_info:
         test_request = CompletionInferenceInputs(prompt='test')

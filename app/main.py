@@ -123,7 +123,7 @@ async def startup_event():
         logger.info(f"label dictionary mismatch, updating: {label_dictionary}")
         set_label_dictionary(label_dictionary)
 
-    # list minio objects during app startup
+    # list s3 objects during app startup
     list_s3_objects(build_client())
 
 # close the httpx client when app is shutdown

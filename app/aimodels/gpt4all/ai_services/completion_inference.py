@@ -12,7 +12,6 @@ from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from pathlib import Path
 from app.aimodels.gpt4all.models.llm_pretrained import LlmFilenameEnum
 from app.core.s3 import download_file_from_s3
-from minio import Minio
 from app.core.model_cache import MODEL_CACHE_BASEDIR
 from app.core.logging import logger, LogConfig
 from logging.config import dictConfig
@@ -25,7 +24,7 @@ BASE_CKPT_DIR = os.path.join(os.path.abspath(
 
 class InitInputs(BaseModel):
     llm_pretrained_model_obj: LlmPretrainedModel
-    s3: Minio
+    s3: Any  # TODO use botocore stubs to type this correctly
 
     # ensure that model type is defined
     @field_validator('llm_pretrained_model_obj')
@@ -192,12 +191,12 @@ class CompletionInference:
             Path(self.llm_path).parent.mkdir(parents=True, exist_ok=True)
 
             # filename or id
-            minio_filename = llm_pretrained_model_obj.model_type if llm_pretrained_model_obj.use_base_model else llm_pretrained_model_obj.id
+            s3_filename = llm_pretrained_model_obj.model_type if llm_pretrained_model_obj.use_base_model else llm_pretrained_model_obj.id
 
-            # Download the file from Minio
-            logger.info(f"Downloading model from Minio to {self.llm_path}")
-            download_file_from_s3(minio_filename, s3, filename=self.llm_path)
-            logger.info(f"Downloaded model from Minio to {self.llm_path}")
+            # Download the file from S3
+            logger.info(f"Downloading model from S3 to {self.llm_path}")
+            download_file_from_s3(s3_filename, s3, filename=self.llm_path)
+            logger.info(f"Downloaded model from S3 to {self.llm_path}")
 
 
     def basic_response(self, api_inputs: CompletionInferenceInputs):

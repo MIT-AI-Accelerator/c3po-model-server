@@ -67,14 +67,14 @@ class TopicSummarizer:
             # Create the directory if it doesn't exist
             Path(llm_path).parent.mkdir(parents=True, exist_ok=True)
 
-            # Download the file from Minio
-            logger.info(f"Downloading model from Minio to {llm_path}")
+            # Download the file from S3
+            logger.info(f"Downloading model from S3 to {llm_path}")
             download_file_from_s3(model_obj.id, s3, filename=llm_path)
 
             if not os.path.isfile(llm_path):
-                logger.error(f"Error downloading model from Minio to {llm_path}")
+                logger.error(f"Error downloading model from S3 to {llm_path}")
             else:
-                logger.info(f"Downloaded model from Minio to {llm_path}")
+                logger.info(f"Downloaded model from S3 to {llm_path}")
 
         config = {'max_new_tokens': DEFAULT_MAX_NEW_TOKENS,
                   'temperature': DEFAULT_LLM_TEMP,

@@ -3,8 +3,7 @@ import sys
 import hashlib
 import io
 import pickle
-# import logging
-from .core.logging import logger
+import logging
 import requests
 import time
 from botocore.exceptions import WaiterError
@@ -45,8 +44,8 @@ from app.core.model_cache import MODEL_CACHE_BASEDIR
 from app.aimodels.bertopic.ai_services.weak_learning import WeakLearner
 from sample_data import CHAT_DATASET_4_PATH
 
-# logging.basicConfig(level=logging.INFO)
-# logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 def init() -> None:
@@ -547,13 +546,13 @@ def main() -> None:
 
     s3 = get_s3(environment, db)
 
-    # if (environment != 'test'):
-    #     init_large_objects(db)
-    #
-    # if (environment == 'local'):
-    #     init_large_objects_local(s3, db)
-    # elif (environment == 'staging' or (environment == 'production' and migration_toggle is True)):
-    #     init_large_objects_p1(s3, db)
+    if (environment != 'test'):
+        init_large_objects(db)
+
+    if (environment == 'local'):
+        init_large_objects_local(s3, db)
+    elif (environment == 'staging' or (environment == 'production' and migration_toggle is True)):
+        init_large_objects_p1(s3, db)
 
     list_s3_objects(s3)
 

@@ -7,7 +7,6 @@ import pandas as pd
 from bertopic import BERTopic
 import hdbscan
 from pydantic import BaseModel, StrictFloat, StrictInt, StrictBool, field_validator, ConfigDict
-from minio import Minio
 from umap import UMAP
 from fastapi import HTTPException
 from plotly.graph_objs import Figure
@@ -48,7 +47,7 @@ DEFAULT_UMAP_RANDOM_STATE = 577
 
 class InitInputs(BaseModel):
     embedding_pretrained_model_obj: BertopicEmbeddingPretrainedModel
-    s3: Minio
+    s3 # TODO use botocore stubs to type this correctly
 
     # ensure that model type is defined
     @field_validator('embedding_pretrained_model_obj')

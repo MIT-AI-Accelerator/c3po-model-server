@@ -24,6 +24,6 @@ def get_db() -> Generator:
     finally:
         db.close()
 
-# ********use for minio initialization*****
+# ********use for s3 initialization*****
 def get_s3():
     return build_client()

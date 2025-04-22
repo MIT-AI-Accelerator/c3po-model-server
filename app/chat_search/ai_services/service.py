@@ -20,7 +20,6 @@ from app.core.model_cache import MODEL_CACHE_BASEDIR
 from app.core.config import settings
 
 from sqlalchemy.orm import Session
-from minio import Minio
 from app.aimodels.bertopic.crud import (
     bertopic_embedding_pretrained as bertopic_embedding_pretrained_crud,
     document as document_crud,
@@ -32,7 +31,7 @@ from sample_data import CHAT_DATASET_1_PATH
 class RetrievalService(BaseModel):
     completion_inference: CompletionInference
     db: Session | None = None
-    s3: Minio | None = None
+    s3 = None
     sentence_model: Any | None = None  #: :meta private:
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -80,7 +79,7 @@ class RetrievalService(BaseModel):
                     loaded_model=self.sentence_model
                 )
             except Exception as _:
-                # failed to load from db or minio, so load from huggingface if possible
+                # failed to load from db or s3, so load from huggingface if possible
 
                 model_name = "sentence-transformers/all-MiniLM-L6-v2"
                 local_embeddings = HuggingFaceEmbeddings(model_name=model_name)

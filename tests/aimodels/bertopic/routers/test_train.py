@@ -94,7 +94,7 @@ def test_train_valid_input_request(
         mock_inference_outputs
     )
 
-    # mock minio upload
+    # mock s3 upload
     mocker.patch(
         "app.aimodels.bertopic.routers.train.pickle_and_upload_object_to_s3",
         return_value = True,

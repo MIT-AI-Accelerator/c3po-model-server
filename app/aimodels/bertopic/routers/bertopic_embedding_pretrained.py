@@ -11,7 +11,6 @@ from fastapi.responses import JSONResponse, StreamingResponse
 
 from pydantic import UUID4, BaseModel, ConfigDict
 from sqlalchemy.orm import Session
-from minio import Minio
 
 from app.core.s3 import upload_file_to_s3
 from app.core.errors import HTTPValidationError, ValidationError

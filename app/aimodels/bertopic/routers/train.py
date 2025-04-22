@@ -3,7 +3,6 @@ from pydantic import BaseModel, UUID4
 from fastapi import Depends, APIRouter, HTTPException
 from sqlalchemy.orm import Session
 import pandas as pd
-from minio import Minio
 from app.core.logging import logger
 from app.core.s3 import pickle_and_upload_object_to_s3
 from app.core.errors import ValidationError, HTTPValidationError
@@ -51,7 +50,7 @@ class TrainModelRequest(BaseModel):
     summary="Train BERTopic on text",
     response_description="Trained Model and Plotly Visualization config"
 )
-def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db), s3: Minio = Depends(get_s3)) -> (
+def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db), s3 = Depends(get_s3)) -> (
     Union[BertopicTrained, HTTPValidationError]
 ):
     """
@@ -162,7 +161,7 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
     new_bertopic_trained_obj: BertopicTrainedModel = crud.bertopic_trained.create_with_embedding_pretrained_id(
         db, obj_in=bertopic_trained_obj, embedding_pretrained_id=request.sentence_transformer_id)
 
-    # upload the trained model to minio
+    # upload the trained model to s3
     upload_success = pickle_and_upload_object_to_s3(
         object=inference_output.topic_model, id=new_bertopic_trained_obj.id, s3=s3)
 

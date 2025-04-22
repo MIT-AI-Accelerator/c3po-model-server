@@ -7,7 +7,6 @@ from .logging import logger
 from fastapi import UploadFile, HTTPException
 from pydantic import UUID4
 
-# logger = logging.getLogger(__name__)
 
 def build_client():
 

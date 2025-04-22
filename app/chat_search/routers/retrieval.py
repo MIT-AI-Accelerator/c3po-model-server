@@ -2,7 +2,6 @@ import os
 from fastapi import Depends, APIRouter, HTTPException
 from fastapi.responses import HTMLResponse
 from jinja2 import Environment, FileSystemLoader
-from minio import Minio
 from pydantic import BaseModel
 from app.aimodels.gpt4all.models.llm_pretrained import (
     LlmFilenameEnum,
@@ -36,7 +35,7 @@ async def chat_query_retrieval_get(
     summarize: bool = False,
     max_docs: int = 1000,
     db: Session = Depends(get_db),
-    s3: Minio = Depends(get_s3),
+    s3 = Depends(get_s3),
 ) -> (HTMLResponse):
     """
     Query retrieval endpoint.
