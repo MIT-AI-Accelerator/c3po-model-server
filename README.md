@@ -90,7 +90,6 @@ to the requirements.txt in place of the previous `transformers` installation.
 - Process for environment updates:
 1. Update poetry: $ poetry add package==version
 2. Sync with pip: $ ./hooks/output-requirements-txt.sh
-3. Manually edit ppg-common entry in requirements.txt to `./ppg-common ; ...`
 
 ## Logs
 Logs for the deployed application can be viewed on [ArgoCD](https://argocd-il4.admin.dso.mil/applications?showFavorites=false&proj=&sync=&autoSync=&health=&namespace=&cluster=&labels=)
