@@ -19,12 +19,6 @@ def build_client():
             aws_secret_access_key=settings.minio_secret_key,
             use_ssl=settings.minio_secure
         )
-        # return Minio(
-        #         settings.minio_endpoint_url,
-        #         access_key=settings.minio_access_key,
-        #         secret_key=settings.minio_secret_key,
-        #         secure=settings.minio_secure
-        #     )
 
     return boto3.client(
         's3',
@@ -34,13 +28,6 @@ def build_client():
         use_ssl=settings.minio_secure,
         region_name=settings.minio_region
     )
-    # return Minio(
-    #         settings.minio_endpoint_url,
-    #         access_key=settings.minio_access_key,
-    #         secret_key=settings.minio_secret_key,
-    #         secure=settings.minio_secure,
-    #         region=settings.minio_region
-    #     )
 
 def upload_file_to_minio(file: UploadFile, id: UUID4, s3: Minio) -> bool:
     output_filename = f"{id}"
