@@ -22,6 +22,7 @@ from .db.session import SessionLocal
 from .experimental_features_router import router as experimental_router
 from .aimodels.router import router as aimodels_router
 from .aimodels.bertopic import crud
+from contextlib import asynccontextmanager
 
 dictConfig(LogConfig().dict())
 logger.info("Dummy Info")
@@ -32,10 +33,36 @@ logger.info("UI Root: %s", settings.docs_ui_root_path)
 logger.info("log_level: %s", settings.log_level)
 logger.warning("Test filtering this_should_be_filtered_out")
 
+
+# check for latest label_dictionary in database during startup
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    db = SessionLocal()
+    label_dictionary = crud.bertopic_embedding_pretrained.get_latest_label_dictionary(db)
+
+    if label_dictionary is not None and label_dictionary != get_label_dictionary():
+        logger.info(f"label dictionary mismatch, updating: {label_dictionary}")
+        set_label_dictionary(label_dictionary)
+
+    # list s3 objects during app startup
+    list_s3_objects(build_client())
+
+    yield
+
+    # Shutdown
+
+    # close the httpx client when app is shutdown
+    # see here: https://stackoverflow.com/questions/73721736/what-is-the-proper-way-to-make-downstream-https-requests-inside-of-uvicorn-fasta
+    await httpx_client.aclose()
+
+
 # initiate the app and tell it that there is a proxy prefix of /api that gets stripped
 # (only effects the loading of the swagger and redoc UIs)
-app = FastAPI(title="Transformers API", root_path=settings.docs_ui_root_path,
-              responses={404: {"description": "Not found"}})
+app = FastAPI(title="Transformers API",
+              root_path=settings.docs_ui_root_path,
+              responses={404: {"description": "Not found"}},
+              lifespan=lifespan)
 
 origins = [
     "http://localhost",
@@ -111,23 +138,3 @@ versioned_app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# check for latest label_dictionary in database during startup
-@versioned_app.on_event('startup')
-async def startup_event():
-
-    db = SessionLocal()
-    label_dictionary = crud.bertopic_embedding_pretrained.get_latest_label_dictionary(db)
-
-    if label_dictionary is not None and label_dictionary != get_label_dictionary():
-        logger.info(f"label dictionary mismatch, updating: {label_dictionary}")
-        set_label_dictionary(label_dictionary)
-
-    # list s3 objects during app startup
-    list_s3_objects(build_client())
-
-# close the httpx client when app is shutdown
-# see here: https://stackoverflow.com/questions/73721736/what-is-the-proper-way-to-make-downstream-https-requests-inside-of-uvicorn-fasta
-@versioned_app.on_event('shutdown')
-async def shutdown_event():
-    await httpx_client.aclose()

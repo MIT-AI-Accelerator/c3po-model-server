@@ -78,7 +78,7 @@ def download_file_from_s3(id: Union[UUID4, str], s3: S3Client, filename: Optiona
             Bucket=settings.s3_bucket_name,
             Key=output_filename
         )
-        data: StreamingBody = response['Body']
+        data: StreamingBody | None = response['Body']
 
         file_obj = None
         write_to_memory = not filename

@@ -156,7 +156,7 @@ class RetrievalService(BaseModel):
 
     def _retrieve_only(self, query=None, retriever=None):
         result = {"input": query, "result": "No LLM used to summarize"}
-        result["source_documents"] = retriever.get_relevant_documents(query)
+        result["source_documents"] = retriever._get_relevant_documents(query)
         return result
 
     def _retrieve_and_summarize(self, llm, query=None, retriever=None):
