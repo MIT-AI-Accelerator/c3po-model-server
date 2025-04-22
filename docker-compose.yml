@@ -1,4 +1,3 @@
-version: '3.8'
 # Settings and configurations that are common for all minio containers
 x-minio-common: &minio-common
   image: quay.io/minio/minio:RELEASE.2023-04-20T17-56-55Z
@@ -7,8 +6,8 @@ x-minio-common: &minio-common
     - "9000"
     - "9001"
   environment:
-    S3_ROOT_USER: miniouser
-    S3_ROOT_PASSWORD: minioadmin
+    MINIO_ROOT_USER: miniouser
+    MINIO_ROOT_PASSWORD: minioadmin
   healthcheck:
     test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
     interval: 30s
