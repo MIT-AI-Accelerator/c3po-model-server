@@ -128,7 +128,8 @@ async def get_items_from_db(table_name: str, limit: int = 0, db: Session = Depen
 # ensure to copy over all the non-title args to the original FastAPI call...read docs here: https://pypi.org/project/fastapi-versioning/
 versioned_app = VersionedFastAPI(app,
                                  version_format='{major}',
-                                 prefix_format='/v{major}', default_api_version=1, root_path=settings.docs_ui_root_path)
+                                 prefix_format='/v{major}', default_api_version=1, root_path=settings.docs_ui_root_path,
+                                 lifespan=lifespan)
 
 # add middleware here since this is the app that deploys
 versioned_app.add_middleware(
