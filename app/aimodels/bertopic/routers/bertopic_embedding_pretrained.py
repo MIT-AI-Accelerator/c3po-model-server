@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 
 from pydantic import UUID4, BaseModel, ConfigDict
 from sqlalchemy.orm import Session
+from mypy_boto3_s3.client import S3Client
 
 from app.core.s3 import upload_file_to_s3
 from app.core.errors import HTTPValidationError, ValidationError
@@ -70,7 +71,7 @@ def create_bertopic_embedding_pretrained_object_post(bertopic_embedding_pretrain
     summary="Train a Weak Learner Model for upload",
     response_description="Trained the Weak Learner Model"
 )
-async def upload_bertopic_embedding_post(new_file: UploadFile, db: Session = Depends(get_db), s3 = Depends(get_s3)) -> (
+async def upload_bertopic_embedding_post(new_file: UploadFile, db: Session = Depends(get_db), s3: S3Client = Depends(get_s3)) -> (
     Union[list, HTTPValidationError]
 ):
     """
@@ -105,7 +106,7 @@ async def upload_bertopic_embedding_post(new_file: UploadFile, db: Session = Dep
     summary="Upload BERTopic Embedding Pretrained Model Binary",
     response_description="Uploaded Embedding Pretrained Model Binary"
 )
-async def upload_bertopic_embedding_post(new_file: UploadFile, id: UUID4, db: Session = Depends(get_db), s3 = Depends(get_s3)) -> (
+async def upload_bertopic_embedding_post(new_file: UploadFile, id: UUID4, db: Session = Depends(get_db), s3: S3Client = Depends(get_s3)) -> (
     Union[BertopicEmbeddingPretrained, HTTPValidationError]
 ):
     """

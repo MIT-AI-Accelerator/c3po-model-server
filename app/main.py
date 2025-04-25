@@ -9,6 +9,7 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_versioning import VersionedFastAPI
 from fastapi.responses import StreamingResponse
+from contextlib import asynccontextmanager
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import text
 from logging.config import dictConfig
@@ -22,7 +23,6 @@ from .db.session import SessionLocal
 from .experimental_features_router import router as experimental_router
 from .aimodels.router import router as aimodels_router
 from .aimodels.bertopic import crud
-from contextlib import asynccontextmanager
 
 dictConfig(LogConfig().dict())
 logger.info("Dummy Info")
@@ -61,8 +61,7 @@ async def lifespan(app: FastAPI):
 # (only effects the loading of the swagger and redoc UIs)
 app = FastAPI(title="Transformers API",
               root_path=settings.docs_ui_root_path,
-              responses={404: {"description": "Not found"}},
-              lifespan=lifespan)
+              responses={404: {"description": "Not found"}})
 
 origins = [
     "http://localhost",

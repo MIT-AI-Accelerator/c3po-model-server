@@ -8,6 +8,8 @@ from langchain.retrievers import EnsembleRetriever
 from langchain_community.vectorstores import FAISS
 from langchain.chains import RetrievalQA
 from pydantic import BaseModel, ConfigDict
+from sqlalchemy.orm import Session
+from mypy_boto3_s3.client import S3Client
 
 from app.aimodels.gpt4all.ai_services.completion_inference import (
     CompletionInference,
@@ -18,14 +20,10 @@ from app.core.errors import ValidationError
 from app.core.s3 import download_pickled_object_from_s3
 from app.core.model_cache import MODEL_CACHE_BASEDIR
 from app.core.config import settings
-
-from sqlalchemy.orm import Session
 from app.aimodels.bertopic.crud import (
     bertopic_embedding_pretrained as bertopic_embedding_pretrained_crud,
     document as document_crud,
 )
-
-from mypy_boto3_s3.client import S3Client
 
 from sample_data import CHAT_DATASET_1_PATH
 

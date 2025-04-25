@@ -12,6 +12,7 @@ from tqdm import tqdm
 from typing import Union
 from fastapi import UploadFile
 from fastapi.encoders import jsonable_encoder
+from mypy_boto3_s3.client import S3Client
 
 import app.ppg_common.services.mattermost_utils as mattermost_utils
 from app.ppg_common.schemas.bertopic.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedCreate, BertopicEmbeddingPretrainedUpdate
@@ -43,8 +44,6 @@ from app.core.model_cache import MODEL_CACHE_BASEDIR
 
 from app.aimodels.bertopic.ai_services.weak_learning import WeakLearner
 from sample_data import CHAT_DATASET_4_PATH
-
-from mypy_boto3_s3.client import S3Client
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -88,7 +87,7 @@ def init_s3_bucket(s3: S3Client) -> None:
         s3.create_bucket(Bucket=bucket_name)
 
 
-def get_s3(environment: str, db: Session):
+def get_s3(environment: str, db: Session) -> Union[S3Client, None]:
     s3 = None
 
     # setup s3 client if available (i.e., not in unit tests)

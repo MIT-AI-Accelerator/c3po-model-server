@@ -1,9 +1,9 @@
 from fastapi import Depends, APIRouter, HTTPException
+from sqlalchemy.orm import Session
+from mypy_boto3_s3.client import S3Client
 from app.aimodels.gpt4all.models.llm_pretrained import LlmFilenameEnum
 from app.dependencies import get_db, get_s3
 from app.core.config import settings
-from sqlalchemy.orm import Session
-from mypy_boto3_s3.client import S3Client
 from .. import crud
 from ..models import LlmPretrainedModel
 from ..ai_services.completion_inference import CompletionInference, CompletionInferenceInputs, CompletionInferenceOutputs

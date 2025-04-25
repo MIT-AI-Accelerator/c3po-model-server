@@ -3,6 +3,9 @@ from fastapi import Depends, APIRouter, HTTPException
 from fastapi.responses import HTMLResponse
 from jinja2 import Environment, FileSystemLoader
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
+from mypy_boto3_s3.client import S3Client
+
 from app.aimodels.gpt4all.models.llm_pretrained import (
     LlmFilenameEnum,
     LlmPretrainedModel,
@@ -12,7 +15,6 @@ from app.aimodels.gpt4all.routers.completions import (
 )
 from app.dependencies import get_db, get_s3
 from app.core.config import settings
-from sqlalchemy.orm import Session
 from ... import crud
 from app.aimodels.gpt4all.ai_services.completion_inference import (
     CompletionInference,
@@ -20,7 +22,6 @@ from app.aimodels.gpt4all.ai_services.completion_inference import (
     CompletionInferenceOutputs,
 )
 from ..ai_services.service import RetrievalService
-from mypy_boto3_s3.client import S3Client
 
 router = APIRouter(prefix="", tags=["Query Retrieval - Experimental"])
 

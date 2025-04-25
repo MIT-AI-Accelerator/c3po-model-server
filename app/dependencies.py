@@ -1,10 +1,9 @@
 from collections.abc import Generator
 import httpx
+from mypy_boto3_s3.client import S3Client
 from .db.session import SessionLocal
 from .aimodels.lstm_stress_classifier.ai_service.inference.inference_model import LstmStressClassifierModel
 from .core.s3 import build_client
-from mypy_boto3_s3.client import S3Client
-
 
 
 # see here for config suggestions: https://stackoverflow.com/questions/74184899/is-having-a-concurrent-futures-threadpoolexecutor-call-dangerous-in-a-fastapi-en/74239367#74239367

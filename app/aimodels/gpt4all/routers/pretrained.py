@@ -5,6 +5,7 @@ from aiofiles import open as open_aio
 from fastapi import Depends, APIRouter, UploadFile, HTTPException
 from pydantic import UUID4
 from sqlalchemy.orm import Session
+from mypy_boto3_s3.client import S3Client
 
 from app.core.s3 import upload_file_to_s3
 from app.dependencies import get_db, get_s3
@@ -54,7 +55,7 @@ def create_llm_pretrained_object_post(llm_pretrained_obj: LlmPretrainedCreate, d
     summary="Upload gpt4all Pretrained Model Binary",
     response_description="Uploaded Pretrained Model Binary"
 )
-async def upload_gpt4all_post(new_file: UploadFile, id: UUID4, db: Session = Depends(get_db), s3 = Depends(get_s3)) -> (
+async def upload_gpt4all_post(new_file: UploadFile, id: UUID4, db: Session = Depends(get_db), s3: S3Client = Depends(get_s3)) -> (
     Union[LlmPretrained, HTTPValidationError]
 ):
     """

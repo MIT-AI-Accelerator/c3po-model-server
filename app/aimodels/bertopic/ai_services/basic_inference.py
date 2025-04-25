@@ -1,15 +1,15 @@
 import os
 from tqdm import tqdm
-from typing import Union
-from datetime import datetime
+from typing import Union, Any
 import numpy as np
 import pandas as pd
 from bertopic import BERTopic
 import hdbscan
-from pydantic import BaseModel, StrictFloat, StrictInt, StrictBool, field_validator, ConfigDict
+from pydantic import BaseModel, StrictFloat, StrictInt, StrictBool, field_validator, model_validator, ConfigDict
 from umap import UMAP
 from fastapi import HTTPException
 from plotly.graph_objs import Figure
+from botocore.client import BaseClient
 from app.core.logging import logger
 from app.core.s3 import download_pickled_object_from_s3
 from app.core.config import get_label_dictionary
@@ -20,7 +20,6 @@ from ..models.topic import TopicSummaryModel
 from ..crud import crud_topic
 from .weak_learning import WeakLearner, get_vectorizer
 from .topic_summarization import topic_summarizer, detect_trending_topics, DEFAULT_N_REPR_DOCS, DEFAULT_TREND_DEPTH_DAYS
-from mypy_boto3_s3.client import S3Client
 
 BASE_CKPT_DIR = os.path.join(os.path.abspath(
     os.path.dirname(__file__)), "./data")
@@ -48,7 +47,12 @@ DEFAULT_UMAP_RANDOM_STATE = 577
 
 class InitInputs(BaseModel):
     embedding_pretrained_model_obj: BertopicEmbeddingPretrainedModel
-    # s3: S3Client  # TODO this validation is failing for some reason
+    s3: Any
+    prompt_template: str
+    refine_template: str
+    weak_learner_obj: BertopicEmbeddingPretrainedModel | None
+    topic_summarizer_obj: TopicSummaryModel | None
+    stop_word_list: list
 
     # ensure that model type is defined
     @field_validator('embedding_pretrained_model_obj')
@@ -60,8 +64,15 @@ class InitInputs(BaseModel):
         if not v.uploaded:
             raise ValueError(
                 'embedding_pretrained_model_obj must be uploaded')
-
         return v
+
+    @model_validator(mode='before')
+    def check_s3_type(cls, values):
+        s3 = values.get('s3')
+        if not isinstance(s3, BaseClient):
+            raise ValueError(
+                's3 must be an instance of botocore.client.BaseClient')
+        return values
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -187,7 +198,13 @@ class BasicInference:
 
         # validate input
         InitInputs(
-            embedding_pretrained_model_obj=sentence_transformer_obj, s3=s3
+            embedding_pretrained_model_obj=sentence_transformer_obj,
+            s3=s3,
+            prompt_template=prompt_template,
+            refine_template=refine_template,
+            weak_learner_obj=weak_learner_obj,
+            topic_summarizer_obj=topic_summarizer_obj,
+            stop_word_list=stop_word_list
         )
 
         # TODO: load from minio--HTTPException gets thrown if not there
