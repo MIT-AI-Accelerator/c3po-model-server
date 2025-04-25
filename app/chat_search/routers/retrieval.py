@@ -2,8 +2,10 @@ import os
 from fastapi import Depends, APIRouter, HTTPException
 from fastapi.responses import HTMLResponse
 from jinja2 import Environment, FileSystemLoader
-from minio import Minio
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
+from mypy_boto3_s3.client import S3Client
+
 from app.aimodels.gpt4all.models.llm_pretrained import (
     LlmFilenameEnum,
     LlmPretrainedModel,
@@ -11,9 +13,8 @@ from app.aimodels.gpt4all.models.llm_pretrained import (
 from app.aimodels.gpt4all.routers.completions import (
     validate_inputs_and_generate_service,
 )
-from app.dependencies import get_db, get_minio
+from app.dependencies import get_db, get_s3
 from app.core.config import settings
-from sqlalchemy.orm import Session
 from ... import crud
 from app.aimodels.gpt4all.ai_services.completion_inference import (
     CompletionInference,
@@ -36,7 +37,7 @@ async def chat_query_retrieval_get(
     summarize: bool = False,
     max_docs: int = 1000,
     db: Session = Depends(get_db),
-    s3: Minio = Depends(get_minio),
+    s3: S3Client = Depends(get_s3),
 ) -> (HTMLResponse):
     """
     Query retrieval endpoint.

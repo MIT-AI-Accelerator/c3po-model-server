@@ -3,12 +3,12 @@ import hashlib
 from typing import Union
 from aiofiles import open as open_aio
 from fastapi import Depends, APIRouter, UploadFile, HTTPException
-from minio import Minio
 from pydantic import UUID4
 from sqlalchemy.orm import Session
+from mypy_boto3_s3.client import S3Client
 
-from app.core.minio import upload_file_to_minio
-from app.dependencies import get_db, get_minio
+from app.core.s3 import upload_file_to_s3
+from app.dependencies import get_db, get_s3
 from app.core.errors import HTTPValidationError
 from app.ppg_common.schemas.gpt4all.llm_pretrained import LlmPretrained, LlmPretrainedCreate, LlmPretrainedUpdate
 from .. import crud
@@ -55,7 +55,7 @@ def create_llm_pretrained_object_post(llm_pretrained_obj: LlmPretrainedCreate, d
     summary="Upload gpt4all Pretrained Model Binary",
     response_description="Uploaded Pretrained Model Binary"
 )
-async def upload_gpt4all_post(new_file: UploadFile, id: UUID4, db: Session = Depends(get_db), s3: Minio = Depends(get_minio)) -> (
+async def upload_gpt4all_post(new_file: UploadFile, id: UUID4, db: Session = Depends(get_db), s3: S3Client = Depends(get_s3)) -> (
     Union[LlmPretrained, HTTPValidationError]
 ):
     """
@@ -81,8 +81,8 @@ async def upload_gpt4all_post(new_file: UploadFile, id: UUID4, db: Session = Dep
     if sha256_hash.hexdigest() != llm_pretrained_obj.sha256:
         raise HTTPException(status_code=422, detail="SHA256 hash mismatch")
 
-    # upload to minio
-    upload_file_to_minio(file=new_file, id=id, s3=s3)
+    # upload to s3
+    upload_file_to_s3(file=new_file, id=id, s3=s3)
 
     # update the object in db and return
     new_llm_pretrained_obj: LlmPretrainedModel = crud.llm_pretrained.update(

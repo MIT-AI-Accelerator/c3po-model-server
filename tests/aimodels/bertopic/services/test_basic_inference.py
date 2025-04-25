@@ -14,6 +14,7 @@ from app.aimodels.bertopic.ai_services.basic_inference import (
     CalculateDocumentEmbeddingsInputs,
     InitInputs,
 )
+from app.aimodels.bertopic.routers.bertopic_embedding_pretrained import get_s3
 
 
 def test_embedding_pretrained_model_obj_type_and_uploaded():
@@ -22,7 +23,7 @@ def test_embedding_pretrained_model_obj_type_and_uploaded():
             embedding_pretrained_model_obj=BertopicEmbeddingPretrainedModel(
                 model_type=None, uploaded=False
             ),
-            s3=None,
+            s3=get_s3(),
         )
     assert "embedding_pretrained_model_obj must have model_type" in str(excinfo.value)
 
@@ -31,7 +32,7 @@ def test_embedding_pretrained_model_obj_type_and_uploaded():
             embedding_pretrained_model_obj=BertopicEmbeddingPretrainedModel(
                 model_type="bert", uploaded=False
             ),
-            s3=None,
+            s3=get_s3(),
         )
     assert "embedding_pretrained_model_obj must be uploaded" in str(excinfo.value)
 

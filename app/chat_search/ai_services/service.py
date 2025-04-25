@@ -8,6 +8,8 @@ from langchain.retrievers import EnsembleRetriever
 from langchain_community.vectorstores import FAISS
 from langchain.chains import RetrievalQA
 from pydantic import BaseModel, ConfigDict
+from sqlalchemy.orm import Session
+from mypy_boto3_s3.client import S3Client
 
 from app.aimodels.gpt4all.ai_services.completion_inference import (
     CompletionInference,
@@ -15,12 +17,9 @@ from app.aimodels.gpt4all.ai_services.completion_inference import (
 )
 from app.chat_search.ai_services.marco_rerank_retriever import MarcoRerankRetriever
 from app.core.errors import ValidationError
-from app.core.minio import download_pickled_object_from_minio
+from app.core.s3 import download_pickled_object_from_s3
 from app.core.model_cache import MODEL_CACHE_BASEDIR
 from app.core.config import settings
-
-from sqlalchemy.orm import Session
-from minio import Minio
 from app.aimodels.bertopic.crud import (
     bertopic_embedding_pretrained as bertopic_embedding_pretrained_crud,
     document as document_crud,
@@ -32,7 +31,7 @@ from sample_data import CHAT_DATASET_1_PATH
 class RetrievalService(BaseModel):
     completion_inference: CompletionInference
     db: Session | None = None
-    s3: Minio | None = None
+    s3: S3Client | None = None
     sentence_model: Any | None = None  #: :meta private:
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -72,7 +71,7 @@ class RetrievalService(BaseModel):
                     )
                 )
 
-                self.sentence_model = download_pickled_object_from_minio(
+                self.sentence_model = download_pickled_object_from_s3(
                     id=sentence_model_db_obj.id, s3=self.s3
                 )
 
@@ -80,7 +79,7 @@ class RetrievalService(BaseModel):
                     loaded_model=self.sentence_model
                 )
             except Exception as _:
-                # failed to load from db or minio, so load from huggingface if possible
+                # failed to load from db or s3, so load from huggingface if possible
 
                 model_name = "sentence-transformers/all-MiniLM-L6-v2"
                 local_embeddings = HuggingFaceEmbeddings(model_name=model_name)
@@ -139,7 +138,7 @@ class RetrievalService(BaseModel):
             db=self.db, model_name="ms-marco-TinyBERT-L-6"
         )
 
-        cross_model = download_pickled_object_from_minio(
+        cross_model = download_pickled_object_from_s3(
             id=marco_pretrained_obj.id, s3=self.s3
         )
 
@@ -155,7 +154,7 @@ class RetrievalService(BaseModel):
 
     def _retrieve_only(self, query=None, retriever=None):
         result = {"input": query, "result": "No LLM used to summarize"}
-        result["source_documents"] = retriever.get_relevant_documents(query)
+        result["source_documents"] = retriever._get_relevant_documents(query)
         return result
 
     def _retrieve_and_summarize(self, llm, query=None, retriever=None):

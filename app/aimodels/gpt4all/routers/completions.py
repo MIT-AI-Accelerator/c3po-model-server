@@ -1,9 +1,9 @@
 from fastapi import Depends, APIRouter, HTTPException
-from minio import Minio
-from app.aimodels.gpt4all.models.llm_pretrained import LlmFilenameEnum
-from app.dependencies import get_db, get_minio
-from app.core.config import settings
 from sqlalchemy.orm import Session
+from mypy_boto3_s3.client import S3Client
+from app.aimodels.gpt4all.models.llm_pretrained import LlmFilenameEnum
+from app.dependencies import get_db, get_s3
+from app.core.config import settings
 from .. import crud
 from ..models import LlmPretrainedModel
 from ..ai_services.completion_inference import CompletionInference, CompletionInferenceInputs, CompletionInferenceOutputs
@@ -16,7 +16,7 @@ router = APIRouter()
     summary="GPT completion endpoint",
     response_description="Completed GPT response"
 )
-async def gpt_completion_post(request: CompletionInferenceInputs, db: Session = Depends(get_db), s3: Minio = Depends(get_minio)) -> (
+async def gpt_completion_post(request: CompletionInferenceInputs, db: Session = Depends(get_db), s3: S3Client = Depends(get_s3)) -> (
     CompletionInferenceOutputs
 ):
     """
@@ -32,7 +32,7 @@ async def gpt_completion_post(request: CompletionInferenceInputs, db: Session = 
     summary="Chat completion endpoint",
     response_description="Completed Chat response"
 )
-async def chat_completion_post(request: CompletionInferenceInputs, db: Session = Depends(get_db), s3: Minio = Depends(get_minio)) -> (
+async def chat_completion_post(request: CompletionInferenceInputs, db: Session = Depends(get_db), s3: S3Client = Depends(get_s3)) -> (
     CompletionInferenceOutputs
 ):
     """
@@ -42,7 +42,7 @@ async def chat_completion_post(request: CompletionInferenceInputs, db: Session =
     completion_inference_service = validate_inputs_and_generate_service(request, db, s3)
     return completion_inference_service.chat_response(request)
 
-def validate_inputs_and_generate_service(request: CompletionInferenceInputs, db: Session, s3: Minio):
+def validate_inputs_and_generate_service(request: CompletionInferenceInputs, db: Session, s3: S3Client):
     # default model to pull
     sha256 = settings.default_sha256_l13b_snoozy
 

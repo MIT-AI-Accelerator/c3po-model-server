@@ -1,18 +1,17 @@
 import os
 from tqdm import tqdm
-from typing import Union
-from datetime import datetime
+from typing import Union, Any
 import numpy as np
 import pandas as pd
 from bertopic import BERTopic
 import hdbscan
-from pydantic import BaseModel, StrictFloat, StrictInt, StrictBool, field_validator, ConfigDict
-from minio import Minio
+from pydantic import BaseModel, StrictFloat, StrictInt, StrictBool, field_validator, model_validator, ConfigDict
 from umap import UMAP
 from fastapi import HTTPException
 from plotly.graph_objs import Figure
+from botocore.client import BaseClient
 from app.core.logging import logger
-from app.core.minio import download_pickled_object_from_minio
+from app.core.s3 import download_pickled_object_from_s3
 from app.core.config import get_label_dictionary
 from app.ppg_common.schemas.bertopic.topic import TopicSummaryCreate
 from ..models.document import DocumentModel
@@ -48,7 +47,12 @@ DEFAULT_UMAP_RANDOM_STATE = 577
 
 class InitInputs(BaseModel):
     embedding_pretrained_model_obj: BertopicEmbeddingPretrainedModel
-    s3: Minio
+    s3: Any
+    prompt_template: str
+    refine_template: str
+    weak_learner_obj: BertopicEmbeddingPretrainedModel | None
+    topic_summarizer_obj: TopicSummaryModel | None
+    stop_word_list: list
 
     # ensure that model type is defined
     @field_validator('embedding_pretrained_model_obj')
@@ -60,8 +64,15 @@ class InitInputs(BaseModel):
         if not v.uploaded:
             raise ValueError(
                 'embedding_pretrained_model_obj must be uploaded')
-
         return v
+
+    @model_validator(mode='before')
+    def check_s3_type(cls, values):
+        s3 = values.get('s3')
+        if not isinstance(s3, BaseClient):
+            raise ValueError(
+                's3 must be an instance of botocore.client.BaseClient')
+        return values
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -187,12 +198,18 @@ class BasicInference:
 
         # validate input
         InitInputs(
-            embedding_pretrained_model_obj=sentence_transformer_obj, s3=s3
+            embedding_pretrained_model_obj=sentence_transformer_obj,
+            s3=s3,
+            prompt_template=prompt_template,
+            refine_template=refine_template,
+            weak_learner_obj=weak_learner_obj,
+            topic_summarizer_obj=topic_summarizer_obj,
+            stop_word_list=stop_word_list
         )
 
         # TODO: load from minio--HTTPException gets thrown if not there
         # would be a server error since the db object should say if it's uploaded or not
-        self.sentence_model = download_pickled_object_from_minio(
+        self.sentence_model = download_pickled_object_from_s3(
             id=sentence_transformer_obj.id, s3=s3)
 
         self.sentence_transformer_obj = sentence_transformer_obj
@@ -202,7 +219,7 @@ class BasicInference:
         self.weak_learner_obj = weak_learner_obj
         self.label_model = None
         if weak_learner_obj:
-            weak_models = download_pickled_object_from_minio(
+            weak_models = download_pickled_object_from_s3(
                 id=weak_learner_obj.id, s3=s3)
             self.vectorizer = weak_models[0]
             self.svm = weak_models[1]
