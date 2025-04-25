@@ -9,6 +9,7 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_versioning import VersionedFastAPI
 from fastapi.responses import StreamingResponse
+from contextlib import asynccontextmanager
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import text
 from logging.config import dictConfig
@@ -16,7 +17,7 @@ from .dependencies import httpx_client, get_db
 from .core.config import settings, set_acronym_dictionary, get_label_dictionary, set_label_dictionary, OriginationEnum
 from .core.errors import HTTPValidationError
 from .core.logging import logger, LogConfig
-from .core.minio import build_client, list_minio_objects
+from .core.s3 import build_client, list_s3_objects
 from .db.base import Base
 from .db.session import SessionLocal
 from .experimental_features_router import router as experimental_router
@@ -32,9 +33,34 @@ logger.info("UI Root: %s", settings.docs_ui_root_path)
 logger.info("log_level: %s", settings.log_level)
 logger.warning("Test filtering this_should_be_filtered_out")
 
+
+# check for latest label_dictionary in database during startup
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    db = SessionLocal()
+    label_dictionary = crud.bertopic_embedding_pretrained.get_latest_label_dictionary(db)
+
+    if label_dictionary is not None and label_dictionary != get_label_dictionary():
+        logger.info(f"label dictionary mismatch, updating: {label_dictionary}")
+        set_label_dictionary(label_dictionary)
+
+    # list s3 objects during app startup
+    list_s3_objects(build_client())
+
+    yield
+
+    # Shutdown
+
+    # close the httpx client when app is shutdown
+    # see here: https://stackoverflow.com/questions/73721736/what-is-the-proper-way-to-make-downstream-https-requests-inside-of-uvicorn-fasta
+    await httpx_client.aclose()
+
+
 # initiate the app and tell it that there is a proxy prefix of /api that gets stripped
 # (only effects the loading of the swagger and redoc UIs)
-app = FastAPI(title="Transformers API", root_path=settings.docs_ui_root_path,
+app = FastAPI(title="Transformers API",
+              root_path=settings.docs_ui_root_path,
               responses={404: {"description": "Not found"}})
 
 origins = [
@@ -101,7 +127,8 @@ async def get_items_from_db(table_name: str, limit: int = 0, db: Session = Depen
 # ensure to copy over all the non-title args to the original FastAPI call...read docs here: https://pypi.org/project/fastapi-versioning/
 versioned_app = VersionedFastAPI(app,
                                  version_format='{major}',
-                                 prefix_format='/v{major}', default_api_version=1, root_path=settings.docs_ui_root_path)
+                                 prefix_format='/v{major}', default_api_version=1, root_path=settings.docs_ui_root_path,
+                                 lifespan=lifespan)
 
 # add middleware here since this is the app that deploys
 versioned_app.add_middleware(
@@ -111,23 +138,3 @@ versioned_app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# check for latest label_dictionary in database during startup
-@versioned_app.on_event('startup')
-async def startup_event():
-
-    db = SessionLocal()
-    label_dictionary = crud.bertopic_embedding_pretrained.get_latest_label_dictionary(db)
-
-    if label_dictionary is not None and label_dictionary != get_label_dictionary():
-        logger.info(f"label dictionary mismatch, updating: {label_dictionary}")
-        set_label_dictionary(label_dictionary)
-
-    # list minio objects during app startup
-    list_minio_objects(build_client())
-
-# close the httpx client when app is shutdown
-# see here: https://stackoverflow.com/questions/73721736/what-is-the-proper-way-to-make-downstream-https-requests-inside-of-uvicorn-fasta
-@versioned_app.on_event('shutdown')
-async def shutdown_event():
-    await httpx_client.aclose()

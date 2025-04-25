@@ -5,8 +5,9 @@ from .test_files.db.db_test_session import SessionLocal
 import pytest
 from fastapi.testclient import TestClient
 from app.main import app
-from app.core.minio import build_client
+from app.core.s3 import build_client
 from app.core.config import OriginationEnum
+from mypy_boto3_s3.client import S3Client
 
 
 # in case you are wondering why we use yield instead of return, check this
@@ -16,7 +17,7 @@ def db() -> Generator:
     yield SessionLocal()
 
 @pytest.fixture(scope="session")
-def s3():
+def s3() -> S3Client:
     # return not yield...we only want a single client, not a new one each time
     return build_client()
 

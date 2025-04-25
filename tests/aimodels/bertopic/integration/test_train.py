@@ -32,6 +32,7 @@ def test_train_valid_request(client: TestClient, db: Session):
         "sentence_transformer_id": sentence_transformer_id,
         "document_ids": [str(d.id) for d in documents_db]
     }
+    print(body)
 
     response = client.post(
         "/aimodels/bertopic/model/train",

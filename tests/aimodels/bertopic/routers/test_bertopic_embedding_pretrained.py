@@ -130,14 +130,14 @@ def test_upload_bertopic_embedding_pretrained_object_post_valid_request(client: 
 
     # Upload the file to the BERTopic Embedding Pretrained Model object
     with open(test_file, "rb") as f:
-        mock_upload_file_to_minio = MagicMock(return_value=True)
-        mocker.patch("app.aimodels.bertopic.routers.bertopic_embedding_pretrained.upload_file_to_minio",
-                     new=mock_upload_file_to_minio)
+        mock_upload_file_to_s3 = MagicMock(return_value=True)
+        mocker.patch("app.aimodels.bertopic.routers.bertopic_embedding_pretrained.upload_file_to_s3",
+                     new=mock_upload_file_to_s3)
 
         response2 = client.post(
             f"/aimodels/bertopic/bertopic-embedding-pretrained/{embedding_pretrained_id}/upload/", files={"new_file": f})
 
-        mock_upload_file_to_minio.assert_called_once()
+        mock_upload_file_to_s3.assert_called_once()
 
     os.remove(test_file)
 
@@ -167,14 +167,14 @@ def test_upload_bertopic_embedding_pretrained_object_post_invalid_sha256(client:
 
     # Upload the file to the BERTopic Embedding Pretrained Model object
     with open(test_file, "rb") as f:
-        mock_upload_file_to_minio = MagicMock(return_value=True)
-        mocker.patch("app.aimodels.bertopic.routers.bertopic_embedding_pretrained.upload_file_to_minio",
-                     new=mock_upload_file_to_minio)
+        mock_upload_file_to_s3 = MagicMock(return_value=True)
+        mocker.patch("app.aimodels.bertopic.routers.bertopic_embedding_pretrained.upload_file_to_s3",
+                     new=mock_upload_file_to_s3)
 
         response2 = client.post(
             f"/aimodels/bertopic/bertopic-embedding-pretrained/{embedding_pretrained_id}/upload/", files={"new_file": f})
 
-        mock_upload_file_to_minio.assert_not_called()
+        mock_upload_file_to_s3.assert_not_called()
 
     os.remove(test_file)
 
@@ -208,14 +208,14 @@ def test_upload_bertopic_embedding_pretrained_object_post_invalid_request(client
         f.write(b"test data")
 
     with open(test_file, "rb") as f:
-        mock_upload_file_to_minio = MagicMock(return_value=True)
-        mocker.patch("app.aimodels.bertopic.routers.bertopic_embedding_pretrained.upload_file_to_minio",
-                     new=mock_upload_file_to_minio)
+        mock_upload_file_to_s3 = MagicMock(return_value=True)
+        mocker.patch("app.aimodels.bertopic.routers.bertopic_embedding_pretrained.upload_file_to_s3",
+                     new=mock_upload_file_to_s3)
 
         response = client.post(
             f"/aimodels/bertopic/bertopic-embedding-pretrained/999/upload/", files={"new_file": f})
 
-        mock_upload_file_to_minio.assert_not_called()
+        mock_upload_file_to_s3.assert_not_called()
 
     os.remove(test_file)
 
