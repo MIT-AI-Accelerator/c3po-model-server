@@ -20,7 +20,7 @@ class MarcoRerankRetriever(BaseRetriever):
 
         arbitrary_types_allowed = True
 
-    def get_relevant_documents(
+    def _get_relevant_documents(
         self, query: str, *, callbacks: Callbacks = None, **kwargs: Any
     ) -> List[Document]:
         """Retrieve documents relevant to a query.
@@ -43,7 +43,7 @@ class MarcoRerankRetriever(BaseRetriever):
 
         return reranked_docs
 
-    async def aget_relevant_documents(
+    async def _aget_relevant_documents(
         self, query: str, *, callbacks: Callbacks = None, **kwargs: Any
     ) -> List[Document]:
         """Asynchronously get documents relevant to a query.

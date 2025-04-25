@@ -42,7 +42,7 @@ def test_train_valid_input_request(
     - a list of valid document ids in the database
     - a working BasicInference class instantiation
     - a working BasicInferenceOutputs class and output object for the train_bertopic_on_documents function
-    - a working pickle_and_upload_object_to_minio function
+    - a working pickle_and_upload_object_to_s3 function
 
     When:
     - the train endpoint is called with the valid sentence transformer id and list of document ids
@@ -94,9 +94,9 @@ def test_train_valid_input_request(
         mock_inference_outputs
     )
 
-    # mock minio upload
+    # mock s3 upload
     mocker.patch(
-        "app.aimodels.bertopic.routers.train.pickle_and_upload_object_to_minio",
+        "app.aimodels.bertopic.routers.train.pickle_and_upload_object_to_s3",
         return_value = True,
     )
 

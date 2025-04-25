@@ -2,13 +2,13 @@ from typing import Union, Optional
 from pydantic import BaseModel, UUID4
 from fastapi import Depends, APIRouter, HTTPException
 from sqlalchemy.orm import Session
+from mypy_boto3_s3.client import S3Client
 import pandas as pd
-from minio import Minio
 from app.core.logging import logger
-from app.core.minio import pickle_and_upload_object_to_minio
+from app.core.s3 import pickle_and_upload_object_to_s3
 from app.core.errors import ValidationError, HTTPValidationError
 from app.core.config import settings
-from app.dependencies import get_db, get_minio
+from app.dependencies import get_db, get_s3
 from app.ppg_common.schemas.bertopic.document_embedding_computation import DocumentEmbeddingComputationCreate
 from app.ppg_common.schemas.bertopic.bertopic_trained import BertopicTrained, BertopicTrainedCreate, BertopicTrainedUpdate
 from app.ppg_common.schemas.bertopic.bertopic_visualization import BertopicVisualizationCreate
@@ -51,18 +51,12 @@ class TrainModelRequest(BaseModel):
     summary="Train BERTopic on text",
     response_description="Trained Model and Plotly Visualization config"
 )
-def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db), s3: Minio = Depends(get_minio)) -> (
+def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db), s3: S3Client = Depends(get_s3)) -> (
     Union[BertopicTrained, HTTPValidationError]
 ):
     """
     Train a BERTopic model on text.
     """
-    # check to make sure id exists
-    bertopic_sentence_transformer_obj: BertopicEmbeddingPretrainedModel = crud.bertopic_embedding_pretrained.get(
-        db, request.sentence_transformer_id)
-
-    validate_obj(bertopic_sentence_transformer_obj)
-
     # verify enough documents to actually handle clustering
     if len(request.document_ids) < MIN_BERTOPIC_DOCUMENTS:
         raise HTTPException(
@@ -75,25 +69,6 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
     if request.train_percent < 0.0 or request.train_percent > 1.0:
         raise HTTPException(
             status_code=400, detail="train pecent must be between [0, 1]")
-
-    bertopic_weak_learner_obj = None
-    if request.weak_learner_id:
-        # check to make sure id exists
-        bertopic_weak_learner_obj: BertopicEmbeddingPretrainedModel = crud.bertopic_embedding_pretrained.get(
-            db, request.weak_learner_id)
-
-        validate_obj(bertopic_weak_learner_obj)
-
-    # disabling summarization due to issue with pydantic v2 validation of langchain_community.llms.CTransformers
-    # https://github.com/orgs/MIT-AI-Accelerator/projects/3/views/2?pane=issue&itemId=91139209
-    request.summarization_model_id = None
-    llm_pretrained_obj = None
-    if request.summarization_model_id:
-        # check to make sure id exists
-        llm_pretrained_obj: LlmPretrainedModel = crud_llm_pretrained.llm_pretrained.get(
-            db, request.summarization_model_id)
-
-        validate_obj(llm_pretrained_obj)
 
     documents, precalculated_embeddings = get_documents_and_embeddings(db, request.document_ids, request.sentence_transformer_id)
     document_df = crud_mattermost.mattermost_documents.get_document_dataframe(db, document_uuids=request.document_ids)
@@ -114,13 +89,7 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
         document_df['summarization_message'] = document_df['message']
 
     # train the model
-    basic_inference = BasicInference(bertopic_sentence_transformer_obj,
-                                     s3,
-                                     request.prompt_template,
-                                     request.refine_template,
-                                     bertopic_weak_learner_obj,
-                                     llm_pretrained_obj,
-                                     stop_word_list=request.stop_words)
+    basic_inference = validate_inference_inputs_and_generate_service(request, db, s3)
     inference_output = basic_inference.train_bertopic_on_documents(db,
                                                                    documents, precalculated_embeddings=precalculated_embeddings, num_topics=request.num_topics,
                                                                    document_df=document_df,
@@ -162,8 +131,8 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
     new_bertopic_trained_obj: BertopicTrainedModel = crud.bertopic_trained.create_with_embedding_pretrained_id(
         db, obj_in=bertopic_trained_obj, embedding_pretrained_id=request.sentence_transformer_id)
 
-    # upload the trained model to minio
-    upload_success = pickle_and_upload_object_to_minio(
+    # upload the trained model to s3
+    upload_success = pickle_and_upload_object_to_s3(
         object=inference_output.topic_model, id=new_bertopic_trained_obj.id, s3=s3)
 
     # if upload was successful, set the uploaded flag to true in the database using crud.bertopic_trained.update
@@ -195,6 +164,43 @@ def validate_obj(obj: Union[BertopicEmbeddingPretrainedModel, None]):
     if not obj.uploaded:
         raise HTTPException(
             status_code=422, detail=f"{str(obj.model_type)} pretrained model not uploaded")
+
+
+def validate_inference_inputs_and_generate_service(request: TrainModelRequest, db: Session, s3: S3Client):
+
+    # check to make sure id exists
+    bertopic_sentence_transformer_obj: BertopicEmbeddingPretrainedModel = crud.bertopic_embedding_pretrained.get(
+        db, request.sentence_transformer_id)
+
+    bertopic_weak_learner_obj = None
+    if request.weak_learner_id:
+        # check to make sure id exists
+        bertopic_weak_learner_obj: BertopicEmbeddingPretrainedModel = crud.bertopic_embedding_pretrained.get(
+            db, request.weak_learner_id)
+
+        validate_obj(bertopic_weak_learner_obj)
+
+    # disabling summarization due to issue with pydantic v2 validation of langchain_community.llms.CTransformers
+    # https://github.com/orgs/MIT-AI-Accelerator/projects/3/views/2?pane=issue&itemId=91139209
+    request.summarization_model_id = None
+    llm_pretrained_obj = None
+    if request.summarization_model_id:
+        # check to make sure id exists
+        llm_pretrained_obj: LlmPretrainedModel = crud_llm_pretrained.llm_pretrained.get(
+            db, request.summarization_model_id)
+
+        validate_obj(llm_pretrained_obj)
+
+    validate_obj(bertopic_sentence_transformer_obj)
+
+    return BasicInference(bertopic_sentence_transformer_obj,
+                            s3,
+                            request.prompt_template,
+                            request.refine_template,
+                            bertopic_weak_learner_obj,
+                            llm_pretrained_obj,
+                            stop_word_list=request.stop_words)
+
 
 def get_documents_and_embeddings(db, document_ids, sentence_transformer_id):
 

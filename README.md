@@ -3,7 +3,7 @@
 
 2. Create and activate a new conda environment, e.g., `transformers-api` with python 3.10.
 ```bash
-conda create --name transformers-api python==3.10
+conda create --name transformers-api python=3.10
 conda activate transformers-api
 ```
 
@@ -90,7 +90,13 @@ to the requirements.txt in place of the previous `transformers` installation.
 - Process for environment updates:
 1. Update poetry: $ poetry add package==version
 2. Sync with pip: $ ./hooks/output-requirements-txt.sh
-3. Manually edit ppg-common entry in requirements.txt to `./ppg-common ; ...`
+
+## Logs
+Logs for the deployed application can be viewed on [ArgoCD](https://argocd-il4.admin.dso.mil/applications?showFavorites=false&proj=&sync=&autoSync=&health=&namespace=&cluster=&labels=)
+- click the application
+- view in tree, network, or list modes (see icons next to "Log out" at the top right)
+- click the ellipsis to the right of the desired pod
+- click Logs
 
 ## Testing
 In general, tensorflow and pytorch use the underlying `unittest` framework that comes stock with Python.  However, FastAPI has a ton of great features through `pytest` that make testing HTTP much, much easier.  Good news is that, for the most part, pytest as the runner will also handle unittest, so we can use the TF or pytorch frameworks with unittest and FastAPI with pytest.  Some articles on this:
@@ -132,6 +138,8 @@ In general, tensorflow and pytorch use the underlying `unittest` framework that 
 
 ### K8s configs
 - [IL4 mission bootstrap](https://code.il4.dso.mil/platform-one/devops/mission-bootstrap/il4-mission-bootstrap/-/tree/master/integrations/ai-accel/transformers)
+- [Deployment manifests](https://code.il4.dso.mil/platform-one/products/ai-accel/transformers/transformers-manifests)
+- [IRSA for S3 instructions](https://p1docs.dso.mil/docs/party-bus/mission-devops-mdo/how-tos/s3/#python)
 
 ## Twistlock
 - [Twistlock link for repo](https://twistlock-il4.admin.dso.mil/api/v1/platform-one/products/ai-accel/transformers/c3po-model-server)

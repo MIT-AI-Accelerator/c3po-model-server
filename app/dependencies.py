@@ -1,9 +1,9 @@
 from collections.abc import Generator
 import httpx
+from mypy_boto3_s3.client import S3Client
 from .db.session import SessionLocal
 from .aimodels.lstm_stress_classifier.ai_service.inference.inference_model import LstmStressClassifierModel
-from .core.minio import build_client
-
+from .core.s3 import build_client
 
 
 # see here for config suggestions: https://stackoverflow.com/questions/74184899/is-having-a-concurrent-futures-threadpoolexecutor-call-dangerous-in-a-fastapi-en/74239367#74239367
@@ -18,12 +18,14 @@ def get_lstm_stress_classifier_model():
 
 # ********use for DB initialization*****
 def get_db() -> Generator:
+    db = None
     try:
         db = SessionLocal()
         yield db
     finally:
-        db.close()
+        if db is not None:
+            db.close()
 
-# ********use for minio initialization*****
-def get_minio():
-    return  build_client()
+# ********use for s3 initialization*****
+def get_s3() -> S3Client:
+    return build_client()

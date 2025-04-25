@@ -121,14 +121,14 @@ def test_upload_llm_pretrained_object_post_valid_request(client: TestClient,
 
     # Upload the file to the LLM Embedding Pretrained Model object
     with open(test_file, "rb") as f:
-        mock_upload_file_to_minio = MagicMock(return_value=True)
-        mocker.patch("app.aimodels.gpt4all.routers.pretrained.upload_file_to_minio",
-                     new=mock_upload_file_to_minio)
+        mock_upload_file_to_s3 = MagicMock(return_value=True)
+        mocker.patch("app.aimodels.gpt4all.routers.pretrained.upload_file_to_s3",
+                     new=mock_upload_file_to_s3)
 
         response2 = client.post(
             f"/aimodels/llm/pretrained/{embedding_pretrained_id}/upload/", files={"new_file": f})
 
-        mock_upload_file_to_minio.assert_called_once()
+        mock_upload_file_to_s3.assert_called_once()
 
     os.remove(test_file)
 
@@ -157,14 +157,14 @@ def test_upload_llm_pretrained_object_post_invalid_sha256(client: TestClient, va
 
     # Upload the file to the gpt4all Embedding Pretrained Model object
     with open(test_file, "rb") as f:
-        mock_upload_file_to_minio = MagicMock(return_value=True)
-        mocker.patch("app.aimodels.gpt4all.routers.pretrained.upload_file_to_minio",
-                     new=mock_upload_file_to_minio)
+        mock_upload_file_to_s3 = MagicMock(return_value=True)
+        mocker.patch("app.aimodels.gpt4all.routers.pretrained.upload_file_to_s3",
+                     new=mock_upload_file_to_s3)
 
         response2 = client.post(
             f"/aimodels/llm/pretrained/{embedding_pretrained_id}/upload/", files={"new_file": f})
 
-        mock_upload_file_to_minio.assert_not_called()
+        mock_upload_file_to_s3.assert_not_called()
 
     os.remove(test_file)
 
@@ -194,14 +194,14 @@ def test_upload_llm_pretrained_object_post_invalid_id(client: TestClient, mocker
         f.write(b"test data")
 
     with open(test_file, "rb") as f:
-        mock_upload_file_to_minio = MagicMock(return_value=True)
-        mocker.patch("app.aimodels.gpt4all.routers.pretrained.upload_file_to_minio",
-                     new=mock_upload_file_to_minio)
+        mock_upload_file_to_s3 = MagicMock(return_value=True)
+        mocker.patch("app.aimodels.gpt4all.routers.pretrained.upload_file_to_s3",
+                     new=mock_upload_file_to_s3)
 
         response = client.post(
             f"/aimodels/llm/pretrained/999/upload/", files={"new_file": f})
 
-        mock_upload_file_to_minio.assert_not_called()
+        mock_upload_file_to_s3.assert_not_called()
 
     os.remove(test_file)
 
