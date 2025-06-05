@@ -17,6 +17,7 @@ from app.aimodels.bertopic import crud as crud_document
 from ..models.mattermost_channels import MattermostChannelModel
 from ..models.mattermost_users import MattermostUserModel
 from ..models.mattermost_documents import MattermostDocumentModel
+import app.nitmre_nlp_utils.preprocess as pre
 
 
 class CRUDMattermostChannel(CRUDBase[MattermostChannelModel, MattermostChannelCreate, MattermostChannelCreate]):
@@ -413,50 +414,32 @@ def convert_conversation_threads(df: pd.DataFrame):
 
     df['root_id'] = df['root_id'].fillna('')
     df['message'] = df['message'].fillna('')
-    df['thread'] = df['message'].fillna('')
-    df['thread_speaker'] = df['message'].fillna('')
-    df['thread_speaker_persona'] = df['message'].fillna('')
-    threads = {}
-    threads_speaker = {}
-    threads_speaker_persona = {}
-    threads_row = {}
 
-    for index, row in df.iterrows():
-        thread = row['root_id']
-        utterance = row['message']
-        utterance.replace("\n", " ")
-        speaker = row['user_name']
-        persona = row['nickname']
-        utterance_speaker = speaker + ': ' + utterance
-        utterance_speaker_persona = speaker + ' (' + persona + '): ' + utterance
-        p_id = row['message_id']
+    df.rename(columns={'message_id': 'id'}, inplace=True)
+    df.sort_values(by='create_at', ascending=True, inplace=True)
 
-        if utterance.find("added to the channel") < 0 and utterance.find("joined the channel") < 0 and utterance.find("left the channel") < 0:
-            if len(thread) > 0:
-                if thread not in threads:
-                    threads[thread] = [utterance]
-                    threads_speaker[thread] = [utterance_speaker]
-                    threads_speaker_persona[thread] = [utterance_speaker_persona]
-                else:
-                    threads[thread].append(utterance)
-                    threads_speaker[thread].append(utterance_speaker)
-                    threads_speaker_persona[thread].append(utterance_speaker_persona)
-            else:
-                threads[p_id] = [utterance]
-                threads_speaker[p_id] = [utterance_speaker]
-                threads_speaker_persona[p_id] = [utterance_speaker_persona]
-                threads_row[p_id] = row
-    keys = set(sorted(threads.keys())).intersection(threads_row.keys())
+    tdf = pre.convert_conversation_threads(df, 'message')
+    tdf.sort_values(by='create_at', ascending=True, inplace=True)
+    df['thread'] = tdf['message']
+    df['thread'] = df['thread'].fillna('')
 
-    conversations = []
-    for index, key in enumerate(keys):
-        row = threads_row[key]
-        row['thread'] = "\n".join(threads[key])
-        row['thread_speaker'] = "\n".join(threads_speaker[key])
-        row['thread_speaker_persona'] = "\n".join(threads_speaker_persona[key])
-        conversations.append(row)
+    df['message_speaker'] = df['user_name'] + ': ' + df['message']
+    tdf = pre.convert_conversation_threads(df, 'message_speaker')
+    tdf.sort_values(by='create_at', ascending=True, inplace=True)
+    df['thread_speaker'] = tdf['message_speaker']
+    df['thread_speaker'] = df['thread_speaker'].fillna('')
 
-    return pd.DataFrame(conversations, columns=df.columns)
+    df['message_speaker_persona'] = df.apply(
+        lambda row: f"{row['user_name']} ({row['nickname']}): {row['message']}"
+        if row['nickname'].strip() != '' else row['message_speaker'],
+        axis=1)
+    tdf = pre.convert_conversation_threads(df, 'message_speaker_persona')
+    tdf.sort_values(by='create_at', ascending=True, inplace=True)
+    df['thread_speaker_persona'] = tdf['message_speaker_persona']
+    df['thread_speaker_persona'] = df['thread_speaker_persona'].fillna('')
+
+    df.rename(columns={'id': 'message_id'}, inplace=True)
+    return df[df['root_id'] == '']
 
 
 def parse_props(jobj: dict):
