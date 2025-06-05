@@ -215,12 +215,14 @@ def test_convert_conversation_threads():
     document_df = pd.concat([document_df,  pd.DataFrame([{'message_id': '1',
                                                           'message': msg1,
                                                           'root_id': '',
+                                                          'create_at': 0,
                                                           'user_name': usr1,
                                                           'nickname': usr1,
                                                           'info_type': InfoTypeEnum.CHAT}])])
     document_df = pd.concat([document_df,  pd.DataFrame([{'message_id': '2',
                                                           'message': msg2,
                                                           'root_id': '1',
+                                                          'create_at': 1,
                                                           'user_name': usr2,
                                                           'nickname': usr2,
                                                           'info_type': InfoTypeEnum.CHAT}])])
