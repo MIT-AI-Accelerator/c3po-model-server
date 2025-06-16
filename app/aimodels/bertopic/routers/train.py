@@ -7,12 +7,13 @@ import pandas as pd
 from app.core.logging import logger
 from app.core.s3 import pickle_and_upload_object_to_s3
 from app.core.errors import ValidationError, HTTPValidationError
-from app.core.config import settings
+from app.core.config import settings, get_acronym_dictionary, get_icao_dictionary
 from app.dependencies import get_db, get_s3
 from app.ppg_common.schemas.bertopic.document_embedding_computation import DocumentEmbeddingComputationCreate
 from app.ppg_common.schemas.bertopic.bertopic_trained import BertopicTrained, BertopicTrainedCreate, BertopicTrainedUpdate
 from app.ppg_common.schemas.bertopic.bertopic_visualization import BertopicVisualizationCreate
 from app.ppg_common.schemas.bertopic.topic import TopicSummaryUpdate
+from app.nitmre_nlp_utils.preprocess import preprocess_message
 from app.aimodels.gpt4all.models import LlmPretrainedModel
 from app.aimodels.gpt4all.crud import crud_llm_pretrained
 import app.mattermost.crud.crud_mattermost as crud_mattermost
@@ -87,6 +88,7 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
     else:
         logger.warning("reusing document_ids for summarization, missing merge criteria")
         document_df['summarization_message'] = document_df['message']
+    document_df['summarization_message'] = document_df.apply(lambda r: preprocess_message(get_acronym_dictionary(), get_icao_dictionary(), r['summarization_message'], msg_only=True), axis=1)
 
     # train the model
     basic_inference = validate_inference_inputs_and_generate_service(request, db, s3)
