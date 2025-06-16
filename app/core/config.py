@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     originated_from: OriginationEnum = OriginationEnum.ORIGINATED_FROM_APP
     acronym_dictionary: dict = {}
+    icao_dictionary: dict = {}
 
     # s3 settings
     s3_bucket_name: str = ""
@@ -105,6 +106,15 @@ def set_acronym_dictionary(acronym_dictionary):
 
 def get_acronym_dictionary():
     return settings.acronym_dictionary
+
+# Functions to access icao dictionary
+def append_icao_dictionary(icao_dictionary):
+    settings.icao_dictionary.update(icao_dictionary)
+
+    return settings.icao_dictionary
+
+def get_icao_dictionary():
+    return settings.icao_dictionary
 
 # Functions to access weak learning label dictionary
 def set_label_dictionary(label_dictionary):
