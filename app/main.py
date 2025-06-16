@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.sql import text
 from logging.config import dictConfig
 from .dependencies import httpx_client, get_db
-from .core.config import settings, set_acronym_dictionary, get_label_dictionary, set_label_dictionary, OriginationEnum
+from .core.config import settings, set_acronym_dictionary, append_icao_dictionary, get_label_dictionary, set_label_dictionary, OriginationEnum
 from .core.errors import HTTPValidationError
 from .core.logging import logger, LogConfig
 from .core.s3 import build_client, list_s3_objects
@@ -93,6 +93,11 @@ async def originated_from_test():
 @app.post('/upload_acronym_dictionary/')
 async def upload_acronym_list(acronym_dictionary: str):
     return set_acronym_dictionary(json.loads(acronym_dictionary))
+
+# upload acronym list
+@app.post('/upload_icao_dictionary/')
+async def upload_icao_list(icao_dictionary: str):
+    return append_icao_dictionary(json.loads(icao_dictionary))
 
 @app.get(
     "/download",

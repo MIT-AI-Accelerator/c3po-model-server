@@ -4,7 +4,7 @@ from io import StringIO
 from sqlalchemy.orm import Session
 from fastapi.testclient import TestClient
 from app.main import versioned_app
-from app.core.config import get_acronym_dictionary, OriginationEnum
+from app.core.config import get_acronym_dictionary, get_icao_dictionary, OriginationEnum
 from app.ppg_common.schemas.bertopic.document import DocumentCreate
 from app.aimodels.bertopic.crud.crud_document import document
 
@@ -36,6 +36,15 @@ def test_upload_acronym_dictionary():
     assert response.status_code == 200
     assert response.json() == acronym_dictionary
     assert get_acronym_dictionary() == acronym_dictionary
+
+# test upload icao list
+def test_upload_icao_dictionary():
+    acode = 'KBOS'
+    icao_dictionary = dict({acode: 'General Edward Lawrence Logan International Airport (KBOS)'})
+    response = client.post("/v1/upload_icao_dictionary", params={'icao_dictionary': json.dumps(icao_dictionary)})
+    assert response.status_code == 200
+    assert response.json() == icao_dictionary
+    assert get_icao_dictionary()[acode] == icao_dictionary[acode]
 
 # test download db data
 def test_download_db_data_invalid():

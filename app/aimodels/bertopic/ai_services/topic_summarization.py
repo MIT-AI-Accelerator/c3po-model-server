@@ -135,8 +135,7 @@ class TopicSummarizer:
             logger.error("no document content to summarize")
 
         else:
-            # replace acronyms and concatenate top n documents
-            list_of_texts = '\n'.join(self.fix_text(documents))
+            list_of_texts = '\n'.join(documents)
 
             text_splitter = CharacterTextSplitter(
                 separator="\n",
