@@ -2,7 +2,7 @@ import hashlib
 import pickle
 import pandas as pd
 from typing import Union
-from io import TextIOWrapper, StringIO, BytesIO
+from io import TextIOWrapper, StringIO, BytesIO, BufferedReader
 
 from fastapi import Depends, APIRouter, UploadFile
 from fastapi import HTTPException
@@ -82,9 +82,9 @@ async def upload_bertopic_embedding_post(new_file: UploadFile, db: Session = Dep
 
     # load the training data
     cstr = ""
-    with new_file.file as f:
-        for line in TextIOWrapper(f, encoding='utf-8'):
-            cstr += line
+    new_file.file.seek(0)
+    for line in new_file.file:
+        cstr += line.decode('utf-8')
     df_train = pd.read_csv(StringIO(cstr))
 
     # check for columns required to train weak learner
