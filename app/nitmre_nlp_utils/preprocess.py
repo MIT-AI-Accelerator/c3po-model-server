@@ -141,7 +141,6 @@ def _fix_missing_roots(df: pd.DataFrame) -> pd.DataFrame:
 def convert_conversation_threads(
     df: pd.DataFrame,
     message_col_name: str,
-    id_col_name: str = 'id',
 ) -> pd.DataFrame:
     """Take a full set of individual messages to form single message threads.
 
@@ -154,7 +153,7 @@ def convert_conversation_threads(
     - create_at
     - the given message_col_name
     """
-    req_cols_set = {id_col_name, 'root_id', 'create_at', message_col_name}
+    req_cols_set = {'id', 'root_id', 'create_at', message_col_name}
     if len(req_cols_set & set(df.columns)) != len(req_cols_set):
         raise KeyError(f'Invalid dataframe. Required columns: {req_cols_set}.')
 
@@ -168,11 +167,11 @@ def convert_conversation_threads(
     grouped_threads = df_threads.groupby('root_id')[message_col_name].apply(  # type: ignore
         list
     )
-    root_messages: dict[str, str] = df_roots.set_index(id_col_name)[  # type: ignore
+    root_messages: dict[str, str] = df_roots.set_index('id')[  # type: ignore
         message_col_name
     ].to_dict()
 
-    for root_id in tqdm(df_roots[id_col_name].to_list()):
+    for root_id in tqdm(df_roots['id'].to_list()):
         # Messages without a thread are untouched.
         if root_id in grouped_threads:
             root_message = root_messages[root_id]
@@ -181,6 +180,6 @@ def convert_conversation_threads(
             threaded = '\n'.join(all_messages)
 
             # Replace the original message with the thread.
-            df_roots.loc[df_roots[id_col_name] == root_id, message_col_name] = threaded
+            df_roots.loc[df_roots['id'] == root_id, message_col_name] = threaded
 
     return df_roots  # rows are in their original order
