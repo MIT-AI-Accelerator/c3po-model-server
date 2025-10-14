@@ -100,7 +100,7 @@ def test_upload_mattermost_user_info_invalid_input(client: TestClient):
 # test user upload endpoint
 def test_upload_mattermost_user_info(client: TestClient, monkeypatch: MonkeyPatch):
 
-    if environment_settings.environment == 'test':
+    if (environment_settings.environment == 'test') or (environment_settings.environment == 'integration'):
         return
 
     # see note at tests/mattermost/test_mattermost_router.py::test_get_mattermost_user_info
@@ -139,7 +139,7 @@ def test_get_mattermost_user_info_invalid_input(client: TestClient):
 # test user get endpoint
 def test_get_mattermost_user_info(client: TestClient, monkeypatch: MonkeyPatch):
 
-    if environment_settings.environment == 'test':
+    if (environment_settings.environment == 'test') or (environment_settings.environment == 'integration'):
         return
 
     # This test creates db entries for mm user and channel; these are

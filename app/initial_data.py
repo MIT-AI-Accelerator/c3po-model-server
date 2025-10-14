@@ -66,7 +66,7 @@ def get_db(environment: str, migration_toggle: bool) -> Union[Session, None]:
 
     # all environments need to initialize the database
     # prod only if migration toggle is on
-    if (environment in ['local', 'development', 'test', 'staging'] or (environment == 'production' and migration_toggle is True)):
+    if (environment in ['local', 'development', 'integration', 'test', 'staging'] or (environment == 'production' and migration_toggle is True)):
         logger.info("Creating database schema and tables")
         db = SessionLocal()
         init()
@@ -91,12 +91,12 @@ def get_s3(environment: str, db: Session) -> Union[S3Client, None]:
     s3 = None
 
     # setup s3 client if available (i.e., not in unit tests)
-    if (environment in ['local', 'development', 'staging', 'production']):
+    if (environment in ['local', 'development', 'integration', 'staging', 'production']):
         logger.info("Connecting S3 client")
         s3 = build_client()
         logger.info("S3 client connected")
 
-    if (environment in ['local', 'development']):
+    if (environment in ['local', 'development', 'integration']):
         logger.info("Setting up S3 bucket")
         init_s3_bucket(s3)
         logger.info("S3 bucket set up.")
@@ -520,10 +520,10 @@ def main() -> None:
 
     s3 = get_s3(environment, db)
 
-    if (environment != 'test'):
+    if (environment != 'test') and (environment != 'integration'):
         init_large_objects(db)
 
-    if (environment == 'local'):
+    if (environment == 'local') or (environment == 'integration'):
         init_large_objects_local(s3, db)
     elif (environment == 'staging' or (environment == 'production' and migration_toggle is True)):
         init_large_objects_p1(s3, db)
