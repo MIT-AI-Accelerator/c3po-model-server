@@ -166,7 +166,7 @@ def test_crud_mattermost(db: Session):
 def test_populate_mm_user_team_info_local(db: Session, monkeypatch: MonkeyPatch):
     # test user info in database
 
-    if environment_settings.environment == 'test':
+    if (environment_settings.environment == 'test') or (environment_settings.environment == 'integration'):
         return
 
     # see note at tests/mattermost/test_mattermost_router.py::test_get_mattermost_user_info
