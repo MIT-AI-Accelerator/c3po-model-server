@@ -16,26 +16,34 @@ conda activate transformers-api
 
 3. Install the dependencies `poetry install`
 
-4.  In `c3po-model-server/app/core/env_var`, create a `secrets.env` file and ensure it is on the `.gitignore`.  Add the following for local dev:
+4. Launch postgres, pgadmin, and minio via docker-compose `docker-compose up --build`.
+
+5. Visit `localhost:9001`.  Login with user:`miniouser` and password:`minioadmin`.  This is the minio console.
+
+6. Visit `localhost:5050`.  Login with email:`user@test.com` and password:`admin`.  This is the pgadmin console.  **See notes below for important details**
+
+7. Run the app db init script `ENVIRONMENT=integration ./scripts/init.sh`
+
+8. Keeping your docker containers running, start the app in a new terminal (activate your conda env first) with `ENVIRONMENT=integration uvicorn app.main:versioned_app --reload`.
+
+9. Open `localhost:8000/v1/docs` and start interacting with swagger!
+
+10. Run tests and get coverage with `ENVIRONMENT=integration pytest --cov`, and get html reports for vs code live server (or any server) with `ENVIRONMENT=integration pytest --cov --cov-report=html:coverage_re`
+
+11.  You can shut down and your db / minio data will persist via docker volumes.
+
+
+# Getting Started with Mattermost
+
+1.  In `c3po-model-server/app/core/env_var`, create a `secrets.env` file and ensure it is on the `.gitignore`.  Add the following for local dev:
 ```sh
 MM_TOKEN="<your_preprod_mattermost_token>"
 ```
+2. Run the app db init script `ENVIRONMENT=local ./scripts/init.sh`
 
-5. Launch postgres, pgadmin, and minio via docker-compose `docker-compose up --build`.
+3. Keeping your docker containers running, start the app in a new terminal (activate your conda env first) with `ENVIRONMENT=local uvicorn app.main:versioned_app --reload`.
 
-6. Visit `localhost:9001`.  Login with user:`miniouser` and password:`minioadmin`.  This is the minio console.
-
-7. Visit `localhost:5050`.  Login with email:`user@test.com` and password:`admin`.  This is the pgadmin console.  **See notes below for important details**
-
-8. Run the app db init script `./scripts/init.sh`
-
-9. Keeping your docker containers running, start the app in a new terminal (activate your conda env first) with `ENVIRONMENT=local uvicorn app.main:versioned_app --reload`.
-
-10. Open `localhost:8000/v1/docs` and start interacting with swagger!
-
-11. Run tests and get coverage with `ENVIRONMENT=local pytest --cov`, and get html reports for vs code live server (or any server) with `ENVIRONMENT=local pytest --cov --cov-report=html:coverage_re`
-
-12.  You can shut down and your db / minio data will persist via docker volumes.
+4. Run tests and get coverage with `ENVIRONMENT=local pytest --cov`, and get html reports for vs code live server (or any server) with `ENVIRONMENT=local pytest --cov --cov-report=html:coverage_re`
 
 
 # Adding a package
