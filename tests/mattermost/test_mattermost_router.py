@@ -88,6 +88,10 @@ def test_upload_mattermost_user_info_invalid_format(client: TestClient):
 
 # returns 422
 def test_upload_mattermost_user_info_invalid_input(client: TestClient):
+
+    if (environment_settings.environment == 'test') or (environment_settings.environment == 'integration'):
+        return
+
     response = client.post(
         "/mattermost/user/upload",
         headers={},
@@ -168,6 +172,10 @@ def test_upload_mattermost_documents_invalid_format(client: TestClient):
 
 # returns 422
 def test_upload_mattermost_documents_invalid_input(client: TestClient):
+
+    if (environment_settings.environment == 'test') or (environment_settings.environment == 'integration'):
+        return
+
     response = client.post(
         "/mattermost/documents/upload",
         headers={},

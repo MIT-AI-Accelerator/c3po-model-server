@@ -58,7 +58,7 @@ def get_db(environment: str, migration_toggle: bool) -> Union[Session, None]:
 
     # clear DB if local or staging as long as not actively testing migrating
     # note: reenabled wipe_db for staging (['local', 'staging']) due to db schema changes, remove staging when schema stable
-    if (environment in ['local', 'staging'] and migration_toggle is False):
+    if (environment in ['local', 'integration', 'staging'] and migration_toggle is False):
         logger.info("Clearing database")
         drop_constraints()
         wipe_db()
@@ -510,7 +510,7 @@ def main() -> None:
     if len(args) == 1 and args[0] == '--toggle-migration':
         migration_toggle = True
 
-    # environment can be one of 'local', 'test', 'staging', 'production'
+    # environment can be one of 'local', 'test', 'integration', 'staging', 'production'
     environment = environment_settings.environment
 
     logger.info(f"Using initialization environment: {environment}")
