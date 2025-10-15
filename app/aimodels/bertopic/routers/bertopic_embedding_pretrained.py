@@ -2,7 +2,7 @@ import hashlib
 import pickle
 import pandas as pd
 from typing import Union
-from io import TextIOWrapper, StringIO, BytesIO, BufferedReader
+from io import StringIO, BytesIO
 
 from fastapi import Depends, APIRouter, UploadFile
 from fastapi import HTTPException

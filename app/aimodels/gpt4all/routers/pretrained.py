@@ -1,7 +1,6 @@
 
 import hashlib
 from typing import Union
-from aiofiles import open as open_aio
 from fastapi import Depends, APIRouter, UploadFile, HTTPException
 from pydantic import UUID4
 from sqlalchemy.orm import Session
