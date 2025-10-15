@@ -1,7 +1,6 @@
 from typing import Union
 from datetime import datetime, timedelta
 import pandas as pd
-import numpy as np
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from app.core.config import settings

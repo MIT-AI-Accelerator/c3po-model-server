@@ -6,7 +6,7 @@ from app.db.base_class import Base
 from app.core.config import get_originated_from, OriginationEnum
 
 if TYPE_CHECKING:
-    from .mattermost_documents import MattermostDocumentModel
+    pass
 
 
 class MattermostChannelModel(Base):
