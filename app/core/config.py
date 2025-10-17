@@ -16,7 +16,7 @@ class EnvironmentSettings(BaseSettings):
 class Settings(BaseSettings):
     # general settings
     docs_ui_root_path: str = ""
-    log_level: str = "INFO"
+    log_level: str = "WARNING"
     originated_from: OriginationEnum = OriginationEnum.ORIGINATED_FROM_APP
     acronym_dictionary: dict = {}
     icao_dictionary: dict = {}
