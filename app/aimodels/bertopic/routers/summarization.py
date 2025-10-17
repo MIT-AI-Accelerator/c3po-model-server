@@ -1,8 +1,6 @@
-import json
 from typing import Union, Any
-from pydantic import BaseModel, UUID4
+from pydantic import UUID4
 from fastapi import Depends, APIRouter, HTTPException
-from fastapi.encoders import jsonable_encoder
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 from app.dependencies import get_db

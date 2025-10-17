@@ -18,7 +18,6 @@ from app.aimodels.gpt4all.ai_services.completion_inference import (
 from app.chat_search.ai_services.marco_rerank_retriever import MarcoRerankRetriever
 from app.core.errors import ValidationError
 from app.core.s3 import download_pickled_object_from_s3
-from app.core.model_cache import MODEL_CACHE_BASEDIR
 from app.core.config import settings
 from app.aimodels.bertopic.crud import (
     bertopic_embedding_pretrained as bertopic_embedding_pretrained_crud,

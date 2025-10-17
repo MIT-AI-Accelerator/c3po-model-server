@@ -13,7 +13,7 @@ def _tokenize(msg: str) -> set[str]:
     /   often used between acronyms in an explicit/implied coordination
         line (e.g., DO/LL)
     """
-    p = re.compile('[^\w/#@]+')
+    p = re.compile(r'[^\w/#@]+')
     return set(p.split(msg))  # only keep unique tokens to avoid revisiting during preprocessing
 
 
