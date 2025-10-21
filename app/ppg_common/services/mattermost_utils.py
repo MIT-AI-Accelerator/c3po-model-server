@@ -2,6 +2,7 @@
 from datetime import datetime
 import pandas as pd
 import requests
+import time as tm
 from app.core.logging import logger
 
 HTTP_REQUEST_TIMEOUT_S = 60
@@ -34,9 +35,12 @@ def get_all_pages(url, mm_token, is_channel=False, do_pagination=True):
 
         else:
             logger.error(f"{resp.url} request failed: {resp.status_code}")
+            print(f"response headers: {resp.headers}")
+            print(f"response content: {resp.text}")
             break
 
         page_num += 1
+        tm.sleep(0.1)
 
     return rdf
 
