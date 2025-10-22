@@ -9,6 +9,7 @@ HTTP_REQUEST_TIMEOUT_S = 60
 DEFAULT_HISTORY_DEPTH_DAYS = 45
 MM_BOT_USERNAME = "nitmre-bot"
 
+
 def get_all_pages(url, mm_token, is_channel=False, do_pagination=True):
     """iterate through pages of an http request"""
 
@@ -24,23 +25,41 @@ def get_all_pages(url, mm_token, is_channel=False, do_pagination=True):
         if not do_pagination:
             do_loop = False
 
-        resp = requests.get(url, headers={'Authorization': f'Bearer {mm_token}'},
-                            params={'page': page_num, 'per_page': per_page},
-                            timeout=HTTP_REQUEST_TIMEOUT_S)
-        if resp.status_code < 400:
-            (rdf, rlen) = get_page_data(resp, rdf, per_page, is_channel)
+        try:
+            resp = requests.get(
+                url,
+                headers={'Authorization': f'Bearer {mm_token}'},
+                params={'page': page_num, 'per_page': per_page},
+                timeout=HTTP_REQUEST_TIMEOUT_S
+            )
+
+            # raise an HTTPError for bad responses (4xx and 5xx)
+            resp.raise_for_status()
+
+            rdf, rlen = get_page_data(resp, rdf, per_page, is_channel)
 
             if rlen < per_page:
                 break
 
-        else:
-            logger.error(f"{resp.url} request failed: {resp.status_code}")
-            print(f"response headers: {resp.headers}")
-            print(f"response content: {resp.text}")
+        except requests.exceptions.ReadTimeout:
+            logger.error(f"{resp.url} request timed out: {resp.status_code}. {e}")
+            logger.debug(f"response headers: {resp.headers}")
+            logger.debug(f"response content: {resp.text}")
+            logger.debug(f"retrying page {page_num}...")
+            tm.sleep(60)
+            continue
+
+        except requests.exceptions.HTTPError as e:
+            logger.error(f"{resp.url} request failed: {resp.status_code}. {e}")
+            logger.debug(f"response headers: {resp.headers}")
+            logger.debug(f"response content: {resp.text}")
+            break
+
+        except Exception as e:
+            logger.error(f"{resp.url} unexpected error: {e}")
             break
 
         page_num += 1
-        tm.sleep(0.1)
 
     return rdf
 
