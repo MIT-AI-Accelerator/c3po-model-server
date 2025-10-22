@@ -43,16 +43,16 @@ def get_all_pages(url, mm_token, is_channel=False, do_pagination=True):
 
         except requests.exceptions.ReadTimeout:
             logger.error(f"{resp.url} request timed out: {resp.status_code}. {e}")
-            logger.debug(f"response headers: {resp.headers}")
-            logger.debug(f"response content: {resp.text}")
+            logger.error(f"response headers: {resp.headers}")
+            logger.error(f"response content: {resp.text}")
             logger.debug(f"retrying page {page_num}...")
             tm.sleep(60)
             continue
 
         except requests.exceptions.HTTPError as e:
             logger.error(f"{resp.url} request failed: {resp.status_code}. {e}")
-            logger.debug(f"response headers: {resp.headers}")
-            logger.debug(f"response content: {resp.text}")
+            logger.error(f"response headers: {resp.headers}")
+            logger.error(f"response content: {resp.text}")
             break
 
         except Exception as e:
