@@ -68,8 +68,13 @@ def test_threading_successful():
         }
     )
     result = pre.convert_conversation_threads(df, 'message')
-
     assert_frame_equal(result, expected)
+
+    result_processes_2 = pre.convert_conversation_threads(df, 'message', 2)
+    assert_frame_equal(result_processes_2, expected)
+
+    result_processes_3 = pre.convert_conversation_threads(df, 'message', 3)
+    assert_frame_equal(result_processes_3, expected)
 
 
 def test_threading_incorrect_columns():
@@ -89,3 +94,89 @@ def test_threading_incorrect_columns():
 
     with pytest.raises(KeyError):
         pre.convert_conversation_threads(df, message_col_name)
+
+
+def test_threading_empty_dataframe():
+    df = pd.DataFrame(columns=['id', 'root_id', 'create_at', 'message'])
+
+    expected = pd.DataFrame(columns=['id', 'root_id', 'create_at', 'message'])
+    result = pre.convert_conversation_threads(df, 'message')
+    assert_frame_equal(result, expected)
+
+
+def test_threading_duplicate_messages():
+    df = pd.DataFrame(
+        {
+            'id': [0, 1, 2, 3, 4, 5],
+            'root_id': ['', '', 0, 0, 1, 1],
+            'create_at': [
+                datetime(2024, 1, 1),
+                datetime(2024, 2, 1),
+                datetime(2024, 3, 1),
+                datetime(2024, 3, 1),  # Duplicate timestamp
+                datetime(2024, 4, 1),
+                datetime(2024, 4, 1),  # Duplicate timestamp
+            ],
+            'message': [
+                'zero',
+                'one',
+                'two',
+                'two',  # Duplicate message
+                'four',
+                'four',  # Duplicate message
+            ],
+        }
+    )
+
+    expected_root_ids = (0, 1)
+    expected = pd.DataFrame(
+        {
+            'id': expected_root_ids,
+            'ro'
+            'ot_id': ['', ''],
+            'create_at': df[df['id'].isin(expected_root_ids)]['create_at'],  # type: ignore
+            'message': [
+                'zero\ntwo\ntwo',  # Duplicate messages are preserved
+                'one\nfour\nfour',  # Duplicate messages are preserved
+            ],
+        }
+    )
+    result = pre.convert_conversation_threads(df, 'message')
+    assert_frame_equal(result, expected)
+
+
+def test_preprocess_message():
+    acronym_dictionary = {
+        "LL": "Logistics Liaison"
+    }
+    icao_dictionary = {
+        "KATL": "Atlanta International Airport",
+        "KLAX": "Los Angeles International Airport",
+    }
+
+    # Test input message
+    msg = (
+        "Message from @DO1 regarding RCH123. "
+        "Flight is scheduled to depart KLAX. "
+        "LL coordination required. "
+    )
+
+    # Expected outputs
+    expected_msg_only = (
+        "Message from @DO1 regarding RCH123. "
+        "Flight is scheduled to depart KLAX. "
+        "Logistics Liaison coordination required. "
+    )
+    expected_full_output = (
+        expected_msg_only,
+        ["RCH123"],  # Extracted RCH call signs
+        ["KLAX"],  # Extracted ICAO codes
+    )
+
+    # Test msg_only=True
+    result_msg_only = pre.preprocess_message(acronym_dictionary, icao_dictionary, msg, msg_only=True)
+    assert result_msg_only == expected_msg_only, f"Expected: {expected_msg_only}, Got: {result_msg_only}"
+
+    # Test full output (msg_only=False)
+    result_full_output = pre.preprocess_message(acronym_dictionary, icao_dictionary, msg, msg_only=False)
+    assert result_full_output == expected_full_output, f"Expected: {expected_full_output}, Got: {result_full_output}"

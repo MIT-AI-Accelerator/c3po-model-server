@@ -1,7 +1,10 @@
 import re
+import math
 import pandas as pd
 import numpy as np
 from tqdm import tqdm
+from concurrent.futures import ProcessPoolExecutor, as_completed
+import multiprocessing as mp
 
 
 def _tokenize(msg: str) -> set[str]:
@@ -122,7 +125,6 @@ def _fix_missing_roots(df: pd.DataFrame) -> pd.DataFrame:
     thread_root_ids = set(df_threads['root_id'])
     missing_root_ids = thread_root_ids - root_ids
     df_missing = df_threads[df_threads['root_id'].isin(missing_root_ids)]  # type: ignore
-    print(df_missing)
 
     # Take the earliest message in each thread and make that message the root
     idx_min = df_missing.groupby('root_id')['create_at'].transform('idxmin')  # type: ignore
@@ -138,9 +140,36 @@ def _fix_missing_roots(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def _thread_messages(
+    df_roots: pd.DataFrame,
+    grouped_threads: pd.Series,
+    root_messages: dict[str, str],
+    message_col_name: str,
+    worker_id: int = 0,
+) -> pd.DataFrame:
+    for root_id in tqdm(
+        df_roots['id'].to_list(),
+        position=worker_id,
+        desc=f'Worker {worker_id}',
+        leave=True,
+    ):
+        # Messages without a thread are untouched.
+        if root_id in grouped_threads:
+            root_message = root_messages[root_id]
+            thread_messages = grouped_threads[root_id]
+            all_messages = [root_message] + thread_messages
+            threaded = '\n'.join(all_messages)
+
+            # Replace the original message with the thread.
+            df_roots.loc[df_roots['id'] == root_id, message_col_name] = threaded
+
+    return df_roots
+
+
 def convert_conversation_threads(
     df: pd.DataFrame,
     message_col_name: str,
+    num_processes: int = 0,
 ) -> pd.DataFrame:
     """Take a full set of individual messages to form single message threads.
 
@@ -171,15 +200,42 @@ def convert_conversation_threads(
         message_col_name
     ].to_dict()
 
-    for root_id in tqdm(df_roots['id'].to_list()):
-        # Messages without a thread are untouched.
-        if root_id in grouped_threads:
-            root_message = root_messages[root_id]
-            thread_messages = grouped_threads[root_id]
-            all_messages = [root_message] + thread_messages
-            threaded = '\n'.join(all_messages)
+    if num_processes:
+        num_roots = len(df_roots)
+        chunk_size = math.ceil(num_roots / num_processes)
+        chunks = (
+            df_roots.iloc[i : i + chunk_size].copy(deep=True)
+            for i in range(0, num_roots, chunk_size)
+        )
 
-            # Replace the original message with the thread.
-            df_roots.loc[df_roots['id'] == root_id, message_col_name] = threaded
+        # Process pools use fork() by default, but this can result in deadlock
+        # issues since dataframes use threads internally.
+        mp.set_start_method('spawn', force=True)
+        with ProcessPoolExecutor(max_workers=num_processes) as executor:
+            future_to_chunk = {
+                executor.submit(
+                    _thread_messages,
+                    chunk_df,
+                    grouped_threads,
+                    root_messages,
+                    message_col_name,
+                    i,
+                ): i
+                for i, chunk_df in enumerate(chunks)
+            }
 
-    return df_roots  # rows are in their original order
+            chunk_results: dict[int, pd.DataFrame] = {}
+            for future in as_completed(future_to_chunk):
+                chunk_idx = future_to_chunk[future]
+                chunk_results[chunk_idx] = future.result()
+
+        # Maintain the original order of the root messages
+        ordered_results = (chunk_results[i] for i in sorted(chunk_results))
+        return pd.concat(ordered_results)
+
+    else:
+        df_roots = _thread_messages(
+            df_roots, grouped_threads, root_messages, message_col_name
+        )
+
+        return df_roots  # rows are in their original order
