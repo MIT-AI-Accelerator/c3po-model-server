@@ -18,6 +18,12 @@ def test_env_file_name_test():
     env_file = get_env_file(environment_settings)
     assert env_file == os.path.join(BASEDIR, "test.env")
 
+@mock.patch.dict(os.environ, {"ENVIRONMENT": "integration"})
+def test_env_file_name_test():
+    environment_settings = EnvironmentSettings()
+    env_file = get_env_file(environment_settings)
+    assert env_file == os.path.join(BASEDIR, "integration.env")
+
 @mock.patch.dict(os.environ, {"ENVIRONMENT": "local"})
 def test_env_file_name_local():
     environment_settings = EnvironmentSettings()
