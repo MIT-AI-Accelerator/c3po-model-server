@@ -295,3 +295,27 @@ def get_all_team_posts_by_substring(mm_base_url, mm_token, team_id, search_str):
         logger.error(f"{resp.url} request failed: {resp.status_code}")
 
     return ddf
+
+def get_post(mm_base_url, mm_token, post_id, get_thread=False):
+    """get a single post"""
+
+    rdf = pd.DataFrame()
+    ustr = f'{mm_base_url}/api/v4/posts/{post_id}'
+    if get_thread:
+        ustr = f'{ustr}/thread'
+    resp = requests.get(ustr,
+                        headers={'Authorization': f'Bearer {mm_token}'},
+                        timeout=HTTP_REQUEST_TIMEOUT_S)
+    if resp.status_code < 400:
+        pdata = resp.json()
+        # print(pdata)
+        if get_thread:
+            pdata = pdata['posts']
+            rdf = pd.DataFrame(pdata).transpose()
+            # display(rdf)
+        else:
+            rdf = pd.DataFrame([pdata])
+    else:
+        logger.error(f"{resp.url} request failed: {resp.status_code}")
+
+    return rdf
