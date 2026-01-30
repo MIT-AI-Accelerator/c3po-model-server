@@ -1,6 +1,10 @@
 import re
+import math
 import pandas as pd
+import numpy as np
 from tqdm import tqdm
+from concurrent.futures import ProcessPoolExecutor, as_completed
+import multiprocessing as mp
 
 
 def _tokenize(msg: str) -> set[str]:
@@ -13,14 +17,16 @@ def _tokenize(msg: str) -> set[str]:
     /   often used between acronyms in an explicit/implied coordination
         line (e.g., DO/LL)
     """
-    p = re.compile('[^\w/#@]+')
-    return set(p.split(msg))  # only keep unique tokens to avoid revisiting during preprocessing
+    p = re.compile(r'[^\w/#@]+')
+    return set(
+        p.split(msg)
+    )  # only keep unique tokens to avoid revisiting during preprocessing
 
 
-def _acronym_repl_helper(m: re.Match, token_expanded: str) -> str:
+def _acronym_repl_helper(m: re.Match[str], token_expanded: str) -> str:
     """Helper function that allows us to preserve plurality when expanding
     acronyms.
-    
+
     Can be extended with compiled regex to do additional processing on
     acronyms."""
     result = f' {token_expanded}'
@@ -32,7 +38,7 @@ def preprocess_message(
     icao_dictionary: dict[str, str],
     msg: str,
     *,
-    msg_only: bool=False,
+    msg_only: bool = False,
 ) -> str | tuple[str, list[str], list[str]]:
     """Extract all tokens from a message and replace instances with expanded
     acronyms.
@@ -43,7 +49,8 @@ def preprocess_message(
     # Any acronyms found that match a token will be expanded;
     # matches are case-sensitive.
     msg_expanded = msg
-    call_signs, icaos = [], []
+    call_signs: list[str] = []
+    icaos: list[str] = []
     for token in tokens:
         # compile the token as a regex pattern
         p = re.compile(r'{}'.format(token))
@@ -62,8 +69,8 @@ def preprocess_message(
             token_expanded = acronym_dictionary[token]
             p = re.compile(r'\s' + r'{}'.format(token) + r's?')
             msg_expanded = p.sub(
-                lambda m: _acronym_repl_helper(m, token_expanded),
-                msg_expanded)
+                lambda m: _acronym_repl_helper(m, token_expanded), msg_expanded
+            )
 
         # RCH call signs
         else:
@@ -84,28 +91,85 @@ def preprocess_message(
     return msg_expanded if msg_only else (msg_expanded, call_signs, icaos)
 
 
-def _thread_message(
-    root_message: str,
-    df_thread: pd.DataFrame,
+def _sep_roots_and_threads(
+    df: pd.DataFrame,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    df_roots = df[(df['root_id'] == '') | (df['root_id'].isna())].copy(
+        deep=True
+    )
+    df_threads = df[(df['root_id'] != '') & ~(df['root_id'].isna())].copy(
+        deep=True
+    )
+
+    # To make sure the thread is in chronological order.
+    df_threads.sort_values(by='create_at', ascending=True, inplace=True)  # type: ignore
+
+    return df_roots, df_threads
+
+
+def _fix_missing_roots(df: pd.DataFrame) -> pd.DataFrame:
+    """Fix the dataframe so that missing root_id messages don't cause their
+    threads to be discarded.
+
+    We might lose the root message for various reasons (e.g., weak learner,
+    root message dated outside of dataset's date range), but we don't want to
+    lose those messages.
+
+    This fix takes the earliest message in each thread (by create_at value), and
+    sets that id as the new root_id for all messages in the thread.
+    """
+    df_roots, df_threads = _sep_roots_and_threads(df)
+
+    # Identify the ids of the root messages that are not in the dataframe
+    root_ids = set(df_roots['id'])
+    thread_root_ids = set(df_threads['root_id'])
+    missing_root_ids = thread_root_ids - root_ids
+    df_missing = df_threads[df_threads['root_id'].isin(missing_root_ids)]  # type: ignore
+
+    # Take the earliest message in each thread and make that message the root
+    idx_min = df_missing.groupby('root_id')['create_at'].transform('idxmin')  # type: ignore
+    new_root_ids = df_missing.loc[idx_min, 'id'].values  # type: ignore
+    df_missing.loc[:, 'root_id'] = new_root_ids
+    df_missing.loc[:, 'root_id'] = np.where(
+        df_missing['id'] == df_missing['root_id'], '', df_missing['root_id']
+    )
+
+    # Update the original dataframe
+    df.update(df_missing)  # type: ignore
+
+    return df
+
+
+def _thread_messages(
+    df_roots: pd.DataFrame,
+    grouped_threads: pd.Series,
+    root_messages: dict[str, str],
     message_col_name: str,
-) -> str:
-    """Take a root message and a dataframe of messages in the root's thread to
-    create a single threaded message.
+    worker_id: int = 0,
+) -> pd.DataFrame:
+    for root_id in tqdm(
+        df_roots['id'].to_list(),
+        position=worker_id,
+        desc=f'Worker {worker_id}',
+        leave=True,
+    ):
+        # Messages without a thread are untouched.
+        if root_id in grouped_threads:
+            root_message = root_messages[root_id]
+            thread_messages = grouped_threads[root_id]
+            all_messages = [root_message] + thread_messages
+            threaded = '\n'.join(all_messages)
 
-    Use message_col_name to specify the column that contains the messages in
-    the thread."""
-    messages = [root_message]
+            # Replace the original message with the thread.
+            df_roots.loc[df_roots['id'] == root_id, message_col_name] = threaded
 
-    for _, row in df_thread.iterrows():
-        message = row[message_col_name]
-        messages.append(message)
-
-    return '\n'.join(messages)
+    return df_roots
 
 
 def convert_conversation_threads(
     df: pd.DataFrame,
     message_col_name: str,
+    num_processes: int = 0,
 ) -> pd.DataFrame:
     """Take a full set of individual messages to form single message threads.
 
@@ -123,23 +187,55 @@ def convert_conversation_threads(
         raise KeyError(f'Invalid dataframe. Required columns: {req_cols_set}.')
 
     print('Converting raw messages to conversation threads.')
-    
-    # Separate the root message from messages in the thread.
-    df_roots, df_threads = df[df['root_id'] == ''], df[df['root_id'] != '']
 
-    for root_id in tqdm(df_roots['id'].to_list()):
-        df_root = df_roots[df_roots['id'] == root_id]
-        df_thread = df_threads[df_threads['root_id'] == root_id].copy()
-        
-        # Preserve chronological ordering of each message in the thread.
-        df_thread.sort_values(by='create_at', ascending=True, inplace=True)
+    df = _fix_missing_roots(df)
+    df_roots, df_threads = _sep_roots_and_threads(df)
 
-        threaded_message = _thread_message(
-            df_root.iloc[0][message_col_name], df_thread, message_col_name)
-        
-        # Replace the original message with the thread.
-        df_roots.loc[
-            df_roots['id'] == root_id, message_col_name
-        ] = threaded_message
-    
-    return df_roots
+    # Grouping and mapping messages outside of the loop is more efficient than
+    # filtering for each root id in every iteration.
+    grouped_threads = df_threads.groupby('root_id')[message_col_name].apply(  # type: ignore
+        list
+    )
+    root_messages: dict[str, str] = df_roots.set_index('id')[  # type: ignore
+        message_col_name
+    ].to_dict()
+
+    if num_processes:
+        num_roots = len(df_roots)
+        chunk_size = math.ceil(num_roots / num_processes)
+        chunks = (
+            df_roots.iloc[i : i + chunk_size].copy(deep=True)
+            for i in range(0, num_roots, chunk_size)
+        )
+
+        # Process pools use fork() by default, but this can result in deadlock
+        # issues since dataframes use threads internally.
+        mp.set_start_method('spawn', force=True)
+        with ProcessPoolExecutor(max_workers=num_processes) as executor:
+            future_to_chunk = {
+                executor.submit(
+                    _thread_messages,
+                    chunk_df,
+                    grouped_threads,
+                    root_messages,
+                    message_col_name,
+                    i,
+                ): i
+                for i, chunk_df in enumerate(chunks)
+            }
+
+            chunk_results: dict[int, pd.DataFrame] = {}
+            for future in as_completed(future_to_chunk):
+                chunk_idx = future_to_chunk[future]
+                chunk_results[chunk_idx] = future.result()
+
+        # Maintain the original order of the root messages
+        ordered_results = (chunk_results[i] for i in sorted(chunk_results))
+        return pd.concat(ordered_results)
+
+    else:
+        df_roots = _thread_messages(
+            df_roots, grouped_threads, root_messages, message_col_name
+        )
+
+        return df_roots  # rows are in their original order
