@@ -2,11 +2,13 @@
 from datetime import datetime
 import pandas as pd
 import requests
+import time as tm
 from app.core.logging import logger
 
 HTTP_REQUEST_TIMEOUT_S = 60
 DEFAULT_HISTORY_DEPTH_DAYS = 45
 MM_BOT_USERNAME = "nitmre-bot"
+
 
 def get_all_pages(url, mm_token, is_channel=False, do_pagination=True):
     """iterate through pages of an http request"""
@@ -23,17 +25,36 @@ def get_all_pages(url, mm_token, is_channel=False, do_pagination=True):
         if not do_pagination:
             do_loop = False
 
-        resp = requests.get(url, headers={'Authorization': f'Bearer {mm_token}'},
-                            params={'page': page_num, 'per_page': per_page},
-                            timeout=HTTP_REQUEST_TIMEOUT_S)
-        if resp.status_code < 400:
-            (rdf, rlen) = get_page_data(resp, rdf, per_page, is_channel)
+        try:
+            resp = requests.get(
+                url,
+                headers={'Authorization': f'Bearer {mm_token}'},
+                params={'page': page_num, 'per_page': per_page},
+                timeout=HTTP_REQUEST_TIMEOUT_S
+            )
+
+            # raise an HTTPError for bad responses (4xx and 5xx)
+            resp.raise_for_status()
+
+            rdf, rlen = get_page_data(resp, rdf, per_page, is_channel)
 
             if rlen < per_page:
                 break
 
-        else:
-            logger.error(f"{resp.url} request failed: {resp.status_code}")
+        except requests.exceptions.ReadTimeout as e:
+            logger.error(f"{url} request timed out: {resp.status_code}. {e}")
+            logger.error(f"response headers: {resp.headers}")
+            logger.error(f"response content: {resp.text}")
+            break
+
+        except requests.exceptions.HTTPError as e:
+            logger.error(f"{url} request failed: {resp.status_code}. {e}")
+            logger.error(f"response headers: {resp.headers}")
+            logger.error(f"response content: {resp.text}")
+            break
+
+        except Exception as e:
+            logger.error(f"{url} unexpected error: {e}")
             break
 
         page_num += 1
