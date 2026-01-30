@@ -2,6 +2,7 @@ from typing import Union
 from datetime import datetime, timedelta
 import pandas as pd
 import numpy as np
+from tqdm import tqdm
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from app.core.config import settings
@@ -376,8 +377,8 @@ def get_or_create_mm_user_object(db: Session, *, user_id: str):
         user_name = mattermost_utils.get_user_name(
             settings.mm_base_url, settings.mm_token, user_id)
         if not user_name:
-            raise HTTPException(
-                status_code=422, detail="Mattermost user not found")
+            logger.warning('Mattermost user %s not found' % user_id)
+            return None
         user_obj = populate_mm_user_team_info(
             db, user_name=user_name)
 
@@ -397,6 +398,9 @@ def populate_mm_document_info(db: Session, *, document_df: pd.DataFrame):
         user_ids = set(cdf.user_id)
         for user_id in user_ids:
             user_obj = get_or_create_mm_user_object(db, user_id=user_id)
+            if not user_obj:
+                continue
+
             udf = cdf[cdf.user_id == user_id]
             udf['channel'] = channel_obj.id
             udf['user'] = user_obj.id
@@ -406,6 +410,50 @@ def populate_mm_document_info(db: Session, *, document_df: pd.DataFrame):
             new_mattermost_docs = new_mattermost_docs + mattermost_documents.create_all_using_df(db, ddf=udf, thread_type=ThreadTypeEnum.MESSAGE)
 
     return new_mattermost_docs
+
+def create_document_objects(db: Session, *,
+                            channel_ids: list[str],
+                            history_depth: int = mattermost_utils.DEFAULT_HISTORY_DEPTH_DAYS,
+                            filter_system_posts: bool = True,
+                            usernames_to_filter: list[str] = []):
+    adf = pd.DataFrame()
+    for channel_id in tqdm(channel_ids):
+        channel_obj = get_or_create_mm_channel_object(db, channel_id=channel_id)
+        df = mattermost_utils.get_channel_posts(
+            settings.mm_base_url,
+            settings.mm_token,
+            channel_id,
+            history_depth=history_depth,
+            filter_system_types=filter_system_posts,
+            usernames_to_filter=usernames_to_filter).assign(channel=channel_obj.id)
+        adf = pd.concat([adf, df], ignore_index=True)
+    channel_uuids = adf['channel'].unique()
+
+    # handle empty channels
+    # https://github.com/orgs/MIT-AI-Accelerator/projects/2/views/1?pane=issue&itemId=44143308
+    deleted_user_ids = []
+    if not adf.empty:
+        user_ids = adf['user_id'].unique()
+        for uid in user_ids:
+            user_obj = get_or_create_mm_user_object(db, user_id=uid)
+            # handle deleted users
+            # https://github.com/MIT-AI-Accelerator/c3po-model-server/issues/302
+            if not user_obj:
+                deleted_user_ids.append(uid)
+                continue
+            adf.loc[adf['user_id'] == uid, 'user'] = user_obj.id
+
+        channel_document_objs = mattermost_documents.get_all_channel_documents(
+            db, channels=channel_uuids)
+        existing_ids = [obj.message_id for obj in channel_document_objs]
+        adf = adf[~adf.id.isin(existing_ids)].drop_duplicates(subset='id')
+
+    invalid_post_index = adf[adf['user_id'].isin(deleted_user_ids)].index
+    adf = adf.drop(invalid_post_index)
+    adf.rename(columns={'id': 'message_id'}, inplace=True)
+    mattermost_documents.create_all_using_df(db, ddf=adf, thread_type=ThreadTypeEnum.MESSAGE)
+
+    return channel_uuids
 
 
 # Takes message utterances (i.e. individual rows) from chat dataframe, and converts them to conversation threads
