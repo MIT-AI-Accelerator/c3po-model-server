@@ -113,34 +113,11 @@ async def upload_mm_channel_docs(request: UploadDocumentRequest, db: Session = D
     if request.filter_bot_posts:
         usernames_to_filter.add(mattermost_utils.MM_BOT_USERNAME)
 
-    adf = pd.DataFrame()
-    for channel_id in tqdm(request.channel_ids):
-        channel_obj = crud_mattermost.get_or_create_mm_channel_object(db, channel_id=channel_id)
-        df = mattermost_utils.get_channel_posts(
-            settings.mm_base_url,
-            settings.mm_token,
-            channel_id,
-            history_depth=request.history_depth,
-            filter_system_types=request.filter_system_posts,
-            usernames_to_filter=usernames_to_filter).assign(channel=channel_obj.id)
-        adf = pd.concat([adf, df], ignore_index=True)
-    channel_uuids = adf['channel'].unique()
-
-    # handle empty channels
-    # https://github.com/orgs/MIT-AI-Accelerator/projects/2/views/1?pane=issue&itemId=44143308
-    if not adf.empty:
-        user_ids = adf['user_id'].unique()
-        for uid in user_ids:
-            user_obj = crud_mattermost.get_or_create_mm_user_object(db, user_id=uid)
-            adf.loc[adf['user_id'] == uid, 'user'] = user_obj.id
-
-        channel_document_objs = crud_mattermost.mattermost_documents.get_all_channel_documents(
-            db, channels=channel_uuids)
-        existing_ids = [obj.message_id for obj in channel_document_objs]
-        adf = adf[~adf.id.isin(existing_ids)].drop_duplicates(subset='id')
-
-    adf.rename(columns={'id': 'message_id'}, inplace=True)
-    crud_mattermost.mattermost_documents.create_all_using_df(db, ddf=adf, thread_type=ThreadTypeEnum.MESSAGE)
+    channel_uuids = crud_mattermost.create_document_objects(db,
+                                                            channel_ids=request.channel_ids,
+                                                            history_depth=request.history_depth,
+                                                            filter_system_posts=request.filter_system_posts,
+                                                            usernames_to_filter=usernames_to_filter)
 
     return crud_mattermost.mattermost_documents.get_all_channel_documents(db,
                                                                           channels=channel_uuids,
