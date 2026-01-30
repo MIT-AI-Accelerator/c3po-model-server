@@ -413,34 +413,7 @@ def init_mattermost_documents(db:Session, bot_obj: MattermostUserModel) -> None:
         # nitmre-bot may be a member of 1000s of channels, this may take a lot of time
         # start with 2 channels for now: fm_618aoc, jicc618aoc
         channel_ids = ["49qb17rn4pyxzf8t7tn5q5i9by", "rzmytnht33fjxr7dy46p8aqb9e"]
-        history_depth = 0
-        filter_system_posts = True
-
-        adf = pd.DataFrame()
-        for channel_id in tqdm(channel_ids):
-            channel_obj = crud_mattermost.get_or_create_mm_channel_object(db, channel_id=channel_id)
-            df = mattermost_utils.get_channel_posts(
-                settings.mm_base_url,
-                settings.mm_token,
-                channel_id,
-                history_depth=history_depth,
-                filter_system_types=filter_system_posts).assign(channel=channel_obj.id)
-            adf = pd.concat([adf, df], ignore_index=True)
-        channel_uuids = adf['channel'].unique()
-
-        if not adf.empty:
-            user_ids = adf['user_id'].unique()
-            for uid in user_ids:
-                user_obj = crud_mattermost.get_or_create_mm_user_object(db, user_id=uid)
-                adf.loc[adf['user_id'] == uid, 'user'] = user_obj.id
-
-            channel_document_objs = crud_mattermost.mattermost_documents.get_all_channel_documents(
-                db, channels=channel_uuids)
-            existing_ids = [obj.message_id for obj in channel_document_objs]
-            adf = adf[~adf.id.isin(existing_ids)].drop_duplicates(subset='id')
-
-        adf.rename(columns={'id': 'message_id'}, inplace=True)
-        return crud_mattermost.mattermost_documents.create_all_using_df(db, ddf=adf, thread_type=ThreadTypeEnum.MESSAGE)
+        crud_mattermost.create_document_objects(db, channel_ids=channel_ids, history_depth=0, filter_system_posts=True)
 
 ########## large object uploads ################
 
