@@ -58,7 +58,7 @@ def get_db(environment: str, migration_toggle: bool) -> Union[Session, None]:
 
     # clear DB if local or staging as long as not actively testing migrating
     # note: reenabled wipe_db for staging (['local', 'staging']) due to db schema changes, remove staging when schema stable
-    if (environment in ['local', 'staging'] and migration_toggle is False):
+    if (environment in ['local', 'integration', 'staging'] and migration_toggle is False):
         logger.info("Clearing database")
         drop_constraints()
         wipe_db()
@@ -66,7 +66,7 @@ def get_db(environment: str, migration_toggle: bool) -> Union[Session, None]:
 
     # all environments need to initialize the database
     # prod only if migration toggle is on
-    if (environment in ['local', 'development', 'test', 'staging'] or (environment == 'production' and migration_toggle is True)):
+    if (environment in ['local', 'development', 'integration', 'test', 'staging'] or (environment == 'production' and migration_toggle is True)):
         logger.info("Creating database schema and tables")
         db = SessionLocal()
         init()
@@ -91,12 +91,12 @@ def get_s3(environment: str, db: Session) -> Union[S3Client, None]:
     s3 = None
 
     # setup s3 client if available (i.e., not in unit tests)
-    if (environment in ['local', 'development', 'staging', 'production']):
+    if (environment in ['local', 'development', 'integration', 'staging', 'production']):
         logger.info("Connecting S3 client")
         s3 = build_client()
         logger.info("S3 client connected")
 
-    if (environment in ['local', 'development']):
+    if (environment in ['local', 'development', 'integration']):
         logger.info("Setting up S3 bucket")
         init_s3_bucket(s3)
         logger.info("S3 bucket set up.")
@@ -510,7 +510,7 @@ def main() -> None:
     if len(args) == 1 and args[0] == '--toggle-migration':
         migration_toggle = True
 
-    # environment can be one of 'local', 'test', 'staging', 'production'
+    # environment can be one of 'local', 'test', 'integration', 'staging', 'production'
     environment = environment_settings.environment
 
     logger.info(f"Using initialization environment: {environment}")
@@ -520,10 +520,10 @@ def main() -> None:
 
     s3 = get_s3(environment, db)
 
-    if (environment != 'test'):
+    if (environment != 'test') and (environment != 'integration'):
         init_large_objects(db)
 
-    if (environment == 'local'):
+    if (environment == 'local') or (environment == 'integration'):
         init_large_objects_local(s3, db)
     elif (environment == 'staging' or (environment == 'production' and migration_toggle is True)):
         init_large_objects_p1(s3, db)
