@@ -6,7 +6,7 @@ from app.ppg_common.services import mattermost_utils
 def test_mattermost_bot():
 # test mattermost api calls for user, team, and channel info
 
-    if environment_settings.environment == 'test':
+    if (environment_settings.environment == 'test') or (environment_settings.environment == 'integration'):
         return
 
     # test get user, teams

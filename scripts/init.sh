@@ -8,6 +8,10 @@ elif [ "$ENVIRONMENT" = "development" ]
 then
     echo "running development script"
     ./scripts/init-development.sh
+elif [ "$ENVIRONMENT" = "integration" ]
+then
+    echo "running integration script"
+    ./scripts/init-integration.sh
 elif [ "$ENVIRONMENT" = "staging" ]
 then
     echo "running staging script"

@@ -87,6 +87,8 @@ def get_env_file(environment_settings_in):
     elif environment_settings_in.environment == 'development':
         env_file = (os.path.join(BASEDIR, "development.env"),
                     os.path.join(BASEDIR, "secrets.env"))
+    elif environment_settings_in.environment == 'integration':
+        env_file = os.path.join(BASEDIR, "integration.env")
     else:
         env_file = os.path.join(BASEDIR, "test.env")
 
