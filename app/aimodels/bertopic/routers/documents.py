@@ -1,7 +1,5 @@
-import os
 from typing import Union
 from fastapi import Depends, APIRouter
-from pydantic import UUID4
 from sqlalchemy.orm import Session
 from app.dependencies import get_db
 from app.core.errors import HTTPValidationError

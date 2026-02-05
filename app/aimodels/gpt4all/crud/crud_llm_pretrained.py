@@ -1,8 +1,7 @@
 
 from typing import Union
 from sqlalchemy.orm import Session
-from sqlalchemy import func
-from app.core.config import get_originated_from, OriginationEnum
+from app.core.config import OriginationEnum
 from app.crud.base import CRUDBase
 from app.ppg_common.schemas.gpt4all.llm_pretrained import LlmPretrainedCreate, LlmPretrainedUpdate
 from ..models import LlmPretrainedModel

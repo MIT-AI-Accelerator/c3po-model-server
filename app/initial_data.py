@@ -11,7 +11,6 @@ from pathlib import Path
 from tqdm import tqdm
 from typing import Union
 from fastapi import UploadFile
-from fastapi.encoders import jsonable_encoder
 from mypy_boto3_s3.client import S3Client
 
 import app.ppg_common.services.mattermost_utils as mattermost_utils
@@ -21,7 +20,6 @@ from app.ppg_common.schemas.bertopic.document import DocumentCreate
 from app.ppg_common.schemas.mattermost.mattermost_documents import ThreadTypeEnum
 
 from app.aimodels.bertopic.models.bertopic_embedding_pretrained import BertopicEmbeddingPretrainedModel, EmbeddingModelTypeEnum
-from app.aimodels.bertopic.models.document import DocumentModel
 from app.aimodels.gpt4all.models.llm_pretrained import LlmPretrainedModel, LlmFilenameEnum
 
 from app.db.init_db import init_db, wipe_db, drop_constraints

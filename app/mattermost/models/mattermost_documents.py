@@ -7,9 +7,7 @@ from app.core.config import get_originated_from, OriginationEnum
 from app.ppg_common.schemas.mattermost.mattermost_documents import InfoTypeEnum, ThreadTypeEnum
 
 if TYPE_CHECKING:
-    from .mattermost_channels import MattermostChannelModel
-    from .mattermost_users import MattermostUserModel
-    from app.aimodels.bertopic.models.document import DocumentModel
+    pass
 
 
 class MattermostDocumentModel(Base):

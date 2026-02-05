@@ -6,7 +6,7 @@ from mypy_boto3_s3.client import S3Client
 import pandas as pd
 from app.core.logging import logger
 from app.core.s3 import pickle_and_upload_object_to_s3
-from app.core.errors import ValidationError, HTTPValidationError
+from app.core.errors import HTTPValidationError
 from app.core.config import settings, get_acronym_dictionary, get_icao_dictionary
 from app.dependencies import get_db, get_s3
 from app.ppg_common.schemas.bertopic.document_embedding_computation import DocumentEmbeddingComputationCreate

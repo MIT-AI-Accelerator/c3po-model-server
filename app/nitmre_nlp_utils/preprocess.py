@@ -18,9 +18,7 @@ def _tokenize(msg: str) -> set[str]:
         line (e.g., DO/LL)
     """
     p = re.compile(r'[^\w/#@]+')
-    return set(
-        p.split(msg)
-    )  # only keep unique tokens to avoid revisiting during preprocessing
+    return set(p.split(msg))  # only keep unique tokens to avoid revisiting during preprocessing
 
 
 def _acronym_repl_helper(m: re.Match[str], token_expanded: str) -> str:

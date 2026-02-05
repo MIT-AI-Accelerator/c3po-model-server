@@ -1,5 +1,5 @@
 from typing import TYPE_CHECKING
-from sqlalchemy import Column, ForeignKey, Table, Enum
+from sqlalchemy import Column, ForeignKey, Table
 from app.db.base_class import Base
 
 if TYPE_CHECKING:
