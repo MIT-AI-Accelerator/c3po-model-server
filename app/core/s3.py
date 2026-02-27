@@ -9,26 +9,27 @@ from pydantic import UUID4
 from mypy_boto3_s3.client import S3Client
 from botocore.response import StreamingBody
 
-
 def build_client() -> S3Client:
+    try:
+        if not settings.s3_region:
+            return boto3.client(
+                's3',
+                endpoint_url=settings.s3_endpoint_url,
+                aws_access_key_id=settings.s3_access_key,
+                aws_secret_access_key=settings.s3_secret_key,
+                use_ssl=settings.s3_secure
+            )
 
-    if not settings.s3_region:
         return boto3.client(
             's3',
             endpoint_url=settings.s3_endpoint_url,
             aws_access_key_id=settings.s3_access_key,
             aws_secret_access_key=settings.s3_secret_key,
-            use_ssl=settings.s3_secure
+            use_ssl=settings.s3_secure,
+            region_name=settings.s3_region
         )
-
-    return boto3.client(
-        's3',
-        endpoint_url=settings.s3_endpoint_url,
-        aws_access_key_id=settings.s3_access_key,
-        aws_secret_access_key=settings.s3_secret_key,
-        use_ssl=settings.s3_secure,
-        region_name=settings.s3_region
-    )
+    except Exception as e:
+        raise Exception(f"An unexpected error occurred while creating the S3 client: {str(e)}. endpoint_url={settings.s3_endpoint_url}, region_name={settings.s3_region}") from e
 
 def upload_file_to_s3(file: UploadFile, id: UUID4, s3: S3Client) -> bool:
     output_filename = f"{id}"
