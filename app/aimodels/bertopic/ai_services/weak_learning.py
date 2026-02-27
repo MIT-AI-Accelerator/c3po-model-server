@@ -47,7 +47,7 @@ class WeakLearner:
             y_pred = self.svm.predict(x)
             y_prob = self.svm.predict_proba(x)
             mx = np.max(y_prob, axis=1)
-            idx = np.where(mx < 0.75)
+            idx = np.nonzero(mx < 0.75)
             y_pred[idx[0]] = int(ChatLabel.ABSTAIN)
             return y_pred[0]
 
