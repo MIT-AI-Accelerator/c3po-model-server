@@ -8,7 +8,7 @@ from fastapi import UploadFile, HTTPException
 from pydantic import UUID4
 from mypy_boto3_s3.client import S3Client
 from botocore.response import StreamingBody
-from botocore.exceptions import BotoCoreError, ClientError
+from botocore.exceptions import BotoCoreError
 
 def build_client() -> S3Client:
     try:
@@ -98,7 +98,7 @@ def download_file_from_s3(id: Union[UUID4, str], s3: S3Client, filename: Optiona
             file_obj.close()
 
         return file_obj
-    except ClientError as e:
+    except BotoCoreError as e:
         logger.error(f"Failed to download file from S3: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error") from e
     finally:
@@ -121,5 +121,5 @@ def list_s3_objects(s3: S3Client) -> Any:
         logger.info("S3 objects:")
         for obj in response['Contents']:
             logger.info(f"Key: {obj['Key']}, Last modified: {obj['LastModified']}, Size (B): {obj['Size']}")
-    except: # pylint: disable=bare-except
+    except BotoCoreError as e:
         logger.warning(f"unable to list s3 objects for {settings.s3_bucket_name}")
