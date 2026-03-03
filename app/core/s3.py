@@ -8,7 +8,7 @@ from fastapi import UploadFile, HTTPException
 from pydantic import UUID4
 from mypy_boto3_s3.client import S3Client
 from botocore.response import StreamingBody
-from botocore.exceptions import BotoCoreError
+from botocore.exceptions import BotoCoreError, ClientError
 
 def build_client() -> S3Client:
     try:
@@ -98,7 +98,7 @@ def download_file_from_s3(id: Union[UUID4, str], s3: S3Client, filename: Optiona
             file_obj.close()
 
         return file_obj
-    except BotoCoreError as e:
+    except ClientError as e:
         logger.error(f"Failed to download file from S3: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error") from e
     finally:
