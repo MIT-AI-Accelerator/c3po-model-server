@@ -92,8 +92,8 @@ class WeakLearner:
         x_train = self.vectorizer.fit_transform(df_train['message'])
         y_train = df_train['labels']
 
-        self.svm = SVC(gamma=2, C=1, probability=True)
-        self.mlp = MLPClassifier(alpha=1, max_iter=1000)
+        self.svm = SVC(kernel='rbf', gamma=2, C=1, probability=True)
+        self.mlp = MLPClassifier(hidden_layer_sizes=(100,), alpha=1, max_iter=1000)
         self.svm.fit(x_train.toarray(), y_train)
         self.mlp.fit(x_train.toarray(), y_train)
 
