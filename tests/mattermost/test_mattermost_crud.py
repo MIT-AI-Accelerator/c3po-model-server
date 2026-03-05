@@ -5,6 +5,8 @@ from _pytest.monkeypatch import MonkeyPatch
 from sqlalchemy.orm import Session
 from app.core.config import environment_settings, settings, OriginationEnum
 from app.mattermost.models.mattermost_documents import MattermostDocumentModel
+from app.mattermost.models.mattermost_channels import MattermostChannelModel
+from app.mattermost.models.mattermost_users import MattermostUserModel
 from app.aimodels.bertopic.models.document import DocumentModel
 from app.aimodels.bertopic.crud import crud_document
 from app.ppg_common.schemas.mattermost.mattermost_documents import InfoTypeEnum, ThreadTypeEnum
@@ -344,3 +346,90 @@ def test_parse_props_dataminr():
 
     assert itype == InfoTypeEnum.DATAMINR
     assert omsg[0:len(imsg)] == imsg
+
+def test_get_by_message_id(db: Session):
+
+    # Create mock data for DocumentModel
+    document = str(uuid.uuid4())
+    mock_document = DocumentModel(
+        id=document,
+        original_created_time=datetime.datetime.now(),
+        text='text',
+        originated_from=OriginationEnum.ORIGINATED_FROM_TEST
+    )
+    db.add(mock_document)
+    db.commit()
+
+    # Create mock data for MattermostChannelModel
+    channel = str(uuid.uuid4())
+    mock_channel = MattermostChannelModel(
+        id=channel,
+        channel_id=str(uuid.uuid4()),
+        channel_name=channel,
+        team_id=str(uuid.uuid4()),
+        team_name=channel,
+        display_name='display_name',
+        type='P',
+        header='header',
+        purpose='purpose',
+        originated_from=OriginationEnum.ORIGINATED_FROM_TEST
+    )
+    db.add(mock_channel)
+    db.commit()
+
+    # Create mock data for MattermostUserModel
+    user = str(uuid.uuid4())
+    mock_user = MattermostUserModel(
+        id=user,
+        user_id=str(uuid.uuid4()),
+        user_name=user,
+        nickname='nickname',
+        first_name='first_name',
+        last_name='last_name',
+        position='position',
+        email='email',
+        originated_from=OriginationEnum.ORIGINATED_FROM_TEST
+    )
+    db.add(mock_user)
+    db.commit()
+
+    # Create mock data for MattermostDocumentModel
+    mock_mm_document = MattermostDocumentModel(
+        message_id=str(uuid.uuid4()),
+        root_message_id=str(uuid.uuid4()),
+        channel=channel,
+        user=user,
+        document=document,
+        type="C",
+        hashtags="test",
+        has_reactions=False,
+        props={"key": "value"},
+        doc_metadata={"meta_key": "meta_value"},
+        thread_type=ThreadTypeEnum.MESSAGE,
+        originated_from=settings.originated_from,
+    )
+    db.add(mock_mm_document)
+    db.commit()
+
+    # Test retrieving the document by valid message_id
+    retrieved_document = crud.mattermost_documents.get_by_message_id(
+        db, message_id=mock_mm_document.message_id
+    )
+    assert retrieved_document is not None
+    assert retrieved_document.message_id == mock_mm_document.message_id
+    assert retrieved_document.root_message_id == mock_mm_document.root_message_id
+    assert retrieved_document.channel == mock_mm_document.channel
+    assert retrieved_document.user == mock_mm_document.user
+    assert retrieved_document.type == mock_mm_document.type
+    assert retrieved_document.hashtags == mock_mm_document.hashtags
+    assert retrieved_document.has_reactions == mock_mm_document.has_reactions
+    assert retrieved_document.props == mock_mm_document.props
+    assert retrieved_document.doc_metadata == mock_mm_document.doc_metadata
+    assert retrieved_document.thread_type == mock_mm_document.thread_type
+    assert retrieved_document.originated_from == mock_mm_document.originated_from
+
+    # Test retrieving a document with an invalid message_id
+    invalid_document = crud.mattermost_documents.get_by_message_id(
+        db, message_id="invalid-message-id"
+    )
+    assert invalid_document is None

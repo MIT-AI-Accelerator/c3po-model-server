@@ -18,7 +18,9 @@ def _tokenize(msg: str) -> set[str]:
         line (e.g., DO/LL)
     """
     p = re.compile(r'[^\w/#@]+')
-    return set(p.split(msg))  # only keep unique tokens to avoid revisiting during preprocessing
+    return set(
+        p.split(msg)
+    )  # only keep unique tokens to avoid revisiting during preprocessing
 
 
 def _acronym_repl_helper(m: re.Match[str], token_expanded: str) -> str:
@@ -67,7 +69,8 @@ def preprocess_message(
             token_expanded = acronym_dictionary[token]
             p = re.compile(r'\s' + r'{}'.format(token) + r's?')
             msg_expanded = p.sub(
-                lambda m: _acronym_repl_helper(m, token_expanded), msg_expanded
+                lambda m, token_expanded=token_expanded: _acronym_repl_helper(m, token_expanded),
+                msg_expanded
             )
 
         # RCH call signs
@@ -127,7 +130,7 @@ def _fix_missing_roots(df: pd.DataFrame) -> pd.DataFrame:
     # Take the earliest message in each thread and make that message the root
     idx_min = df_missing.groupby('root_id')['create_at'].transform('idxmin')  # type: ignore
     new_root_ids = df_missing.loc[idx_min, 'id'].values  # type: ignore
-    df_missing.loc[:, 'root_id'] = new_root_ids
+    df_missing.loc[:, 'root_id'] = new_root_ids # NOSONAR - this is intended
     df_missing.loc[:, 'root_id'] = np.where(
         df_missing['id'] == df_missing['root_id'], '', df_missing['root_id']
     )

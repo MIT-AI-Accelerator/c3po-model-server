@@ -47,7 +47,7 @@ class WeakLearner:
             y_pred = self.svm.predict(x)
             y_prob = self.svm.predict_proba(x)
             mx = np.max(y_prob, axis=1)
-            idx = np.where(mx < 0.75)
+            idx = np.nonzero(mx < 0.75)
             y_pred[idx[0]] = int(ChatLabel.ABSTAIN)
             return y_pred[0]
 
@@ -92,8 +92,8 @@ class WeakLearner:
         x_train = self.vectorizer.fit_transform(df_train['message'])
         y_train = df_train['labels']
 
-        self.svm = SVC(gamma=2, C=1, probability=True)
-        self.mlp = MLPClassifier(alpha=1, max_iter=1000)
+        self.svm = SVC(kernel='rbf', gamma=2, C=1, probability=True)
+        self.mlp = MLPClassifier(hidden_layer_sizes=(100,), alpha=1, max_iter=1000)
         self.svm.fit(x_train.toarray(), y_train)
         self.mlp.fit(x_train.toarray(), y_train)
 

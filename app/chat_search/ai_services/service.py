@@ -77,7 +77,7 @@ class RetrievalService(BaseModel):
                 local_embeddings = InitializedHuggingFaceEmbeddings(
                     loaded_model=self.sentence_model
                 )
-            except Exception as _:
+            except RuntimeError as _:
                 # failed to load from db or s3, so load from huggingface if possible
 
                 model_name = "sentence-transformers/all-MiniLM-L6-v2"
