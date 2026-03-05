@@ -130,10 +130,8 @@ def _fix_missing_roots(df: pd.DataFrame) -> pd.DataFrame:
     # Take the earliest message in each thread and make that message the root
     idx_min = df_missing.groupby('root_id')['create_at'].transform('idxmin')  # type: ignore
     new_root_ids = df_missing.loc[idx_min, 'id'].values  # type: ignore
-    df_missing.loc[:, 'root_id'] = new_root_ids # NOSONAR - this is intended
-    df_missing.loc[:, 'root_id'] = np.where(
-        df_missing['id'] == df_missing['root_id'], '', df_missing['root_id']
-    )
+    df_missing.loc[:, 'root_id'] = new_root_ids
+    df_missing.loc[:, 'root_id'] = np.where(df_missing['id'] == df_missing['root_id'], '', df_missing['root_id']) # NOSONAR - this is intended
 
     # Update the original dataframe
     df.update(df_missing)  # type: ignore
