@@ -1,7 +1,8 @@
 import os
-from fastapi import Depends, APIRouter
+from fastapi import Depends, APIRouter, HTTPException
 from fastapi.responses import HTMLResponse
 from jinja2 import Environment, FileSystemLoader
+from jinja2.exceptions import TemplateNotFound
 from sqlalchemy.orm import Session
 from mypy_boto3_s3.client import S3Client
 
@@ -45,7 +46,14 @@ async def chat_query_retrieval_get(
 
     results = retrieval_service.retrieve(api_inputs, summarize, max_docs=max_docs)
 
-    return _render_result_as_html(results)
+    try:
+        results = _render_result_as_html(results)
+    except TemplateNotFound:
+        raise HTTPException(
+            status_code=500,
+            detail="HTML template not found")
+
+    return results
 
 
 # Function to render the result dictionary as HTML

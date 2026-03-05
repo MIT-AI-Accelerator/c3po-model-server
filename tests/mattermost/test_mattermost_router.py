@@ -371,3 +371,66 @@ def test_mattermost_conversation_thread_thread(mm_db_obj_thread: MattermostDocum
 
     thread_df = crud_mattermost.mattermost_documents.get_document_dataframe(db, document_uuids = mm_docs['threads_speaker_persona'])
     assert str(mm_db_obj_thread.message_id) in [row['message_id'] for key, row in thread_df.iterrows()]
+
+def test_upload_mattermost_docs_by_substring(db: Session, client: TestClient, mocker: MockerFixture):
+    # Mock Mattermost API response for substring search
+    mock_data = pd.DataFrame([
+        {
+            'id': str(uuid.uuid4()),
+            'create_at': datetime.datetime.now(),
+            'update_at': datetime.datetime.now(),
+            'edit_at': 0,
+            'delete_at': 0,
+            'is_pinned': False,
+            'user_id': str(uuid.uuid4()),
+            'channel_id': str(uuid.uuid4()),
+            'root_id': '',
+            'original_id': '',
+            'message': 'This is a test message containing the substring.',
+            'type': '',
+            'props': {},
+            'hashtags': '',
+            'pending_post_id': '',
+            'reply_count': 0,
+            'last_reply_at': 0,
+            'participants': '',
+            'metadata': {},
+            'has_reactions': False,
+            'file_ids': [],
+            'datetime': datetime.datetime.now(),
+        }
+    ])
+    mocker.patch(
+        'app.ppg_common.services.mattermost_utils.get_all_team_posts_by_substring',
+        return_value=mock_data
+    )
+
+    # Create mock data for MattermostChannelModel
+    channel = str(uuid.uuid4())
+    mock_channel = MattermostChannelModel(
+        id=channel,
+        channel_id=str(uuid.uuid4()),
+        channel_name=channel,
+        team_id=str(uuid.uuid4()),
+        team_name=channel,
+        display_name='display_name',
+        type='P',
+        header='header',
+        purpose='purpose',
+        originated_from=OriginationEnum.ORIGINATED_FROM_TEST
+    )
+    db.add(mock_channel)
+    db.commit()
+
+    # Send request to the endpoint
+    response = client.get(
+        '/mattermost/search/get',
+        headers={},
+        params={
+            'team_id': mock_channel.team_id,  # Use the valid team_id from the mock channel
+            'search_terms': ['substring'],   # Valid search terms
+        }
+    )
+
+    # Assert the response status code
+    assert response.status_code == 200

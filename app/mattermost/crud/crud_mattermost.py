@@ -20,6 +20,7 @@ from ..models.mattermost_users import MattermostUserModel
 from ..models.mattermost_documents import MattermostDocumentModel
 import app.nitmre_nlp_utils.preprocess as pre
 
+PROPS_PREFIX = '[%s] %s'
 
 class CRUDMattermostChannel(CRUDBase[MattermostChannelModel, MattermostChannelCreate, MattermostChannelCreate]):
     def get_by_channel_id(self, db: Session, *, channel_id: str) -> Union[MattermostChannelModel, None]:
@@ -496,7 +497,7 @@ def parse_props(jobj: dict):
     author_name = jobj['author_name']
     title = jobj['title']
     fallback = jobj['fallback']
-    msg = '[%s] %s' % (title, jobj['text'])
+    msg = PROPS_PREFIX % (title, jobj['text'])
 
     if 'Dataminr' in author_name:
         info_type = InfoTypeEnum.DATAMINR
@@ -523,7 +524,7 @@ def parse_props(jobj: dict):
 
 
 def parse_props_notam(jobj: dict):
-    msg = '[%s] %s' % (jobj['title'], jobj['text'])
+    msg = PROPS_PREFIX % (jobj['title'], jobj['text'])
 
     fld_list = ['ID', 'Type', 'From', 'To', 'Aerodrome', 'FIR', 'Subject', 'Condition', 'Traffic', 'Purpose', 'Scope', 'Area']
     if jobj['fields'] is not None:
@@ -540,7 +541,7 @@ def parse_props_notam(jobj: dict):
 
 
 def parse_props_acars(jobj: dict, title: str):
-    msg = '[%s] %s' % (title, jobj['text'])
+    msg = PROPS_PREFIX % (title, jobj['text'])
 
     fld_list = ['Tail #', 'Mission #', 'Callsign']
     if jobj['fields'] is not None:

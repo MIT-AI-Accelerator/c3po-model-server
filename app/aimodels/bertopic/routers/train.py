@@ -186,7 +186,7 @@ def validate_inference_inputs_and_generate_service(request: TrainModelRequest, d
     # https://github.com/orgs/MIT-AI-Accelerator/projects/3/views/2?pane=issue&itemId=91139209
     request.summarization_model_id = None
     llm_pretrained_obj = None
-    if request.summarization_model_id:
+    if request.summarization_model_id: # NOSONAR - currently disabled, set to None above
         # check to make sure id exists
         llm_pretrained_obj: LlmPretrainedModel = crud_llm_pretrained.llm_pretrained.get(
             db, request.summarization_model_id)
