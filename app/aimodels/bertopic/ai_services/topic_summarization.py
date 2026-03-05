@@ -213,7 +213,7 @@ def detect_trending_topics(document_info_train, document_df_test, trend_depth = 
 
         # test for trending if the topic has been seen at least twice and within 7 or more days
         if(len(num_posts) > 3):
-            stat, p_value = shapiro(num_posts)
+            _, p_value = shapiro(num_posts)
 
             # only include topics that have one day with more than N=5 posts
             if(p_value < DEFAULT_SHAPIRO_P_VALUE and np.max(num_posts) >= DEFAULT_POST_THRESHOLD):

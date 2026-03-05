@@ -119,7 +119,7 @@ async def get_items_from_db(table_name: str, limit: int = 0, db: Session = Depen
         raise HTTPException(status_code=422, detail=f"Limit ({limit}) below threshold")
     elif limit > 0:
         dquery = dquery.limit(limit)
-    ddf = pd.DataFrame([row for row in db.execute(dquery)])
+    ddf = pd.DataFrame(db.execute(dquery))
 
     dtnow = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
     stream = StringIO()

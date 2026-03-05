@@ -11,6 +11,10 @@ from sklearn.feature_extraction.text import CountVectorizer, ENGLISH_STOP_WORDS
 from pydantic import BaseModel, ConfigDict
 from app.core.config import get_label_dictionary
 
+
+# Add a seed for reproducibility
+SEED = 52
+
 class ChatLabel(IntEnum):
     ACTION = 0
     REVIEW = 1
@@ -92,8 +96,18 @@ class WeakLearner:
         x_train = self.vectorizer.fit_transform(df_train['message'])
         y_train = df_train['labels']
 
-        self.svm = SVC(kernel='rbf', gamma=2, C=1, probability=True)
-        self.mlp = MLPClassifier(hidden_layer_sizes=(100,), alpha=1, max_iter=1000)
+        self.svm = SVC(
+            kernel='rbf',
+            gamma=2, C=1,
+            probability=True,
+            random_state=SEED
+        )
+        self.mlp = MLPClassifier(
+            hidden_layer_sizes=(100,),
+            alpha=1,
+            max_iter=1000,
+            random_state=SEED
+        )
         self.svm.fit(x_train.toarray(), y_train)
         self.mlp.fit(x_train.toarray(), y_train)
 
