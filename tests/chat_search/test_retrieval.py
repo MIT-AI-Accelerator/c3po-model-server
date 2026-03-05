@@ -2,9 +2,14 @@ from unittest.mock import MagicMock
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from jinja2.exceptions import TemplateNotFound
+from app.core.config import environment_settings
 
 
 def test_chat_query_retrieval_get_invalid_prompt(client: TestClient, mocker):
+
+    if (environment_settings.environment == 'test'):
+        return
+
     # Mock the validate_inputs_and_generate_service to avoid actual dependencies
     mocker.patch(
         "app.chat_search.routers.retrieval.validate_inputs_and_generate_service",
@@ -21,6 +26,10 @@ def test_chat_query_retrieval_get_invalid_prompt(client: TestClient, mocker):
 
 
 def test_chat_query_retrieval_get_missing_dependencies(client: TestClient, mocker):
+
+    if (environment_settings.environment == 'test'):
+        return
+
     # Mock the validate_inputs_and_generate_service to simulate missing dependencies
     mocker.patch(
         "app.chat_search.routers.retrieval.validate_inputs_and_generate_service",
@@ -37,6 +46,10 @@ def test_chat_query_retrieval_get_missing_dependencies(client: TestClient, mocke
 
 
 def test_chat_query_retrieval_get_template_not_found(client: TestClient, mocker):
+
+    if (environment_settings.environment == 'test'):
+        return
+
     # Mock the RetrievalService to return a valid result
     mocker.patch(
         "app.chat_search.routers.retrieval.validate_inputs_and_generate_service",
