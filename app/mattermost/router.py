@@ -106,8 +106,10 @@ async def upload_mm_channel_docs(request: UploadDocumentRequest, db: Session = D
     filters = [f.value for f in InfoTypeEnum]
     if any(f not in filters for f in request.filter_post_content):
         raise HTTPException(
-            status_code=422, detail="Invalid post content filter: %s. Available filters: %s" %
-            ([f for f in request.filter_post_content], filters))
+            status_code=422,
+            detail="Invalid post content filter: %s. Available filters: %s" %
+            (list(request.filter_post_content), filters)
+)
 
     usernames_to_filter = set()
     if request.filter_bot_posts:

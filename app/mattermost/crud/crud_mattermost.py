@@ -291,7 +291,7 @@ def populate_mm_user_team_info(db: Session, *, user_name: str, get_teams = False
         logger.debug(f"Mattermost user not found: {user_name}")
         return None
 
-    teams = dict()
+    teams = {}
     if not tdf.empty:
         teams = tdf['name'].to_dict()
     elif get_teams:
@@ -535,7 +535,7 @@ def parse_props_notam(jobj: dict):
                 nstrs.append('%s: %s' % (fld['title'], fld['value']))
 
         if len(nstrs):
-            msg = '%s (%s)' % (msg, ', '.join(s for s in nstrs))
+            msg = '%s (%s)' % (msg, ', '.join(nstrs))
 
     return msg
 
@@ -552,7 +552,7 @@ def parse_props_acars(jobj: dict, title: str):
                 nstrs.append('%s: %s' % (fld['title'], fld['value']))
 
         if len(nstrs):
-            msg = '%s (%s)' % (msg, ', '.join(s for s in nstrs))
+            msg = '%s (%s)' % (msg, ', '.join(nstrs))
 
     return msg
 
@@ -569,7 +569,7 @@ def parse_props_dataminr(jobj: dict):
                 nstrs.append('%s: %s' % (fld['title'], fld['value']))
 
         if len(nstrs):
-            msg = '%s (%s)' % (msg, ', '.join(s for s in nstrs))
+            msg = '%s (%s)' % (msg, ', '.join(nstrs))
 
     return msg
 

@@ -230,7 +230,7 @@ class BasicInference:
 
             self.weak_learner = WeakLearner(
                 self.vectorizer, self.svm, self.mlp, self.label_model)
-            labeling_functions, self.label_applier = self.weak_learner.create_label_applier()
+            _, self.label_applier = self.weak_learner.create_label_applier()
 
         self.topic_summarizer = None
         if topic_summarizer_obj:
@@ -298,7 +298,7 @@ class BasicInference:
             topic_document_data_test = topic_document_data_train
 
         # update topics for test documents
-        topics, probs = topic_model.transform(documents=topic_document_data_test.document_text_list,
+        topics, _ = topic_model.transform(documents=topic_document_data_test.document_text_list,
                                               embeddings=topic_document_data_test.embeddings)
 
         # train documents needed for representative documents / summarization

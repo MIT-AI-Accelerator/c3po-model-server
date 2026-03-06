@@ -88,7 +88,7 @@ async def upload_bertopic_embedding_post(new_file: UploadFile, db: Session = Dep
     df_train = pd.read_csv(StringIO(cstr))
 
     # check for columns required to train weak learner
-    if not set(['message', 'createat', 'labels']).issubset(df_train.columns):
+    if not {'message', 'createat', 'labels'}.issubset(df_train.columns):
         raise HTTPException(status_code=422, detail="unable to train weak learner")
 
     # train and serialize the weak learner object, return as binary

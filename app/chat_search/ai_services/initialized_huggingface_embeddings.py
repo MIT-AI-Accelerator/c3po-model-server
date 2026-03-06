@@ -9,5 +9,5 @@ class InitializedHuggingFaceEmbeddings(HuggingFaceEmbeddings):
         """Initialize the sentence_transformer."""
         try:
             super().__init__(**kwargs)
-        except Exception as e:
+        except Exception:
             self.client = self.loaded_model

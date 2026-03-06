@@ -240,7 +240,7 @@ class CompletionInference:
         llm_chain = LLMChain(prompt=prompt, llm=llm)
 
         # run inference
-        api_input_list = [{ "api_prompt": api_inputs.prompt } for item in range(api_inputs.n)]
+        api_input_list = [{ "api_prompt": api_inputs.prompt } for _ in range(api_inputs.n)]
 
         # use context manager to redirect stream output so multiple requests
         # can be handled at once on the same process (else output streams conflict)

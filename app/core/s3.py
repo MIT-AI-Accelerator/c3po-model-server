@@ -121,5 +121,5 @@ def list_s3_objects(s3: S3Client) -> Any:
         logger.info("S3 objects:")
         for obj in response['Contents']:
             logger.info(f"Key: {obj['Key']}, Last modified: {obj['LastModified']}, Size (B): {obj['Size']}")
-    except BotoCoreError as e:
+    except BotoCoreError:
         logger.warning(f"unable to list s3 objects for {settings.s3_bucket_name}")
