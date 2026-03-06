@@ -223,7 +223,7 @@ def get_channel_info(mm_base_url, mm_token, channel_id):
     return channel
 
 
-def get_channel_posts(mm_base_url, mm_token, channel_id, history_depth=0, filter_system_types=True, usernames_to_filter=set([MM_BOT_USERNAME])):
+def get_channel_posts(mm_base_url, mm_token, channel_id, history_depth=0, filter_system_types=True, usernames_to_filter={MM_BOT_USERNAME}):
     """get a list of posts for a single channel"""
 
     url = f'{mm_base_url}/api/v4/channels/%s/posts' % channel_id
