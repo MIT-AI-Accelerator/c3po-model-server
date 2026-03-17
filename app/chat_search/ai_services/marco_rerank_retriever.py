@@ -1,6 +1,7 @@
 from typing import Any, List
-from langchain.schema import BaseRetriever, Document
-from langchain.callbacks.manager import Callbacks
+from langchain_core.retrievers import BaseRetriever
+from langchain_core.documents import Document
+from langchain_core.callbacks import Callbacks
 from sentence_transformers import CrossEncoder
 
 class MarcoRerankRetriever(BaseRetriever):

@@ -1,12 +1,36 @@
 
 from unittest.mock import patch, create_autospec
+from typing import List, Optional
+from pydantic import Field
 from app.aimodels.gpt4all.ai_services.completion_inference import CompletionInference, CompletionInferenceInputs
 from app.aimodels.gpt4all.models.llm_pretrained import LlmPretrainedModel
 from pydantic import ValidationError
-
-from langchain_community.llms import FakeListLLM
+from langchain_core.language_models.llms import LLM
 from mypy_boto3_s3.client import S3Client
 
+class FakeListLLM(LLM):
+    responses: List[str] = Field(default_factory=list)
+    index: int = 0
+
+    def _call(
+        self,
+        prompt: str,
+        stop: Optional[List[str]] = None,
+        **kwargs,
+    ) -> str:
+        if self.index < len(self.responses):
+            output = self.responses[self.index]
+            self.index += 1
+            return output
+        return ""
+
+    @property
+    def _identifying_params(self):
+        return {"responses": self.responses}
+
+    @property
+    def _llm_type(self) -> str:
+        return "fake"
 
 @patch('app.aimodels.gpt4all.ai_services.completion_inference.os.path.isfile', return_value=False)
 @patch('app.aimodels.gpt4all.ai_services.completion_inference.download_file_from_s3', return_value=True)
@@ -74,8 +98,8 @@ def test_question_response_lang_chain_works_with_fake_llm(mock_os_path, mock_gpt
         s3=create_autospec(S3Client)
     )
 
-    inputs = CompletionInferenceInputs(prompt="test",n=2)
-    output = completion_inference_obj.basic_response(inputs)
+    inputs = CompletionInferenceInputs(prompt="test", n=2)
+    output = completion_inference_obj.question_response(inputs)
 
     mock_gpt4all_new.assert_called_once()
     assert output.choices[0].text == "test1"
