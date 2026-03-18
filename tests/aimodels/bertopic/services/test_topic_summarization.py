@@ -216,8 +216,12 @@ def test_get_summary(mock_s3: MagicMock,
         'app.aimodels.bertopic.ai_services.topic_summarization.CTransformers',
         return_value=mock_llm)
     mocker.patch(
-        'app.aimodels.bertopic.ai_services.topic_summarization.load_summarize_chain',
-        return_value=Mock(return_value=dict(output_text=output_text)))
+        'app.aimodels.bertopic.ai_services.topic_summarization.PromptTemplate',
+        return_value=Mock())
+    mocker.patch(
+        'app.aimodels.bertopic.ai_services.topic_summarization.LLMChain',
+        return_value=Mock(invoke=Mock(return_value=output_text))
+    )
 
     ts = TopicSummarizer()
     ts.initialize_llm(mock_s3,

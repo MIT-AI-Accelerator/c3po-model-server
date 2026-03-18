@@ -2,11 +2,11 @@ import re
 from typing import Any
 from .initialized_huggingface_embeddings import InitializedHuggingFaceEmbeddings
 from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain.docstore.document import Document
+from langchain_core.documents import Document
 from langchain_community.retrievers import BM25Retriever
-from langchain.retrievers import EnsembleRetriever
+from langchain_core.runnables import RunnableLambda
 from langchain_community.vectorstores import FAISS
-from langchain.chains import RetrievalQA
+from langchain_classic.chains import RetrievalQA
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 from mypy_boto3_s3.client import S3Client
@@ -128,8 +128,8 @@ class RetrievalService(BaseModel):
         bm25_retriever.k = 25
 
         # initialize the ensemble retriever
-        ensemble_retriever = EnsembleRetriever(
-            retrievers=[bm25_retriever, chat_retriever], weights=[0.5, 0.5]
+        ensemble_retriever = RunnableLambda(
+            lambda query: bm25_retriever.invoke(query) * 0.5 + chat_retriever.invoke(query) * 0.5
         )
 
         # download marco rerank model

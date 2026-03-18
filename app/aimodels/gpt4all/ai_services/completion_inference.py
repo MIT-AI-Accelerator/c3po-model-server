@@ -4,11 +4,13 @@ import os
 from time import time
 from uuid import uuid4
 from enum import Enum
-from typing import Optional, Any
+from typing import Optional, Any, List
 from pydantic import BaseModel, field_validator, model_validator, ValidationError, ConfigDict
-from langchain import PromptTemplate, LLMChain
+from langchain_core.prompts import PromptTemplate
+from langchain_core.runnables import RunnableMap
+from langchain_classic.chains import LLMChain
 from langchain_community.llms import GPT4All
-from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
+from langchain_core.callbacks import StreamingStdOutCallbackHandler
 from pathlib import Path
 from botocore.client import BaseClient
 from app.aimodels.gpt4all.models.llm_pretrained import LlmFilenameEnum
@@ -222,43 +224,44 @@ class CompletionInference:
 
         return self._general_completion_base(api_inputs, template=template)
 
-    def _general_completion_base(self,
-                                 api_inputs: CompletionInferenceInputs,
-                                 template: str = """{api_prompt}""",
-                                 ):
+    def _general_completion_base(self, api_inputs: CompletionInferenceInputs, template: str = "{api_prompt}"):
 
-        # validate input
+        # Validate input
         if not isinstance(api_inputs, CompletionInferenceInputs):
-            raise ValidationError(
-                'must input type BasicResponseInputs')
+            raise ValidationError('must input type CompletionInferenceInputs')
 
-        # build the prompt template
-        prompt = PromptTemplate(template=template, input_variables=["api_prompt"])
+        # Build the prompt template
+        prompt = PromptTemplate(
+            template=template,
+            input_variables=["api_prompt"],
+            validate_template=False
+        )
 
-        # build the chain
+        # Build the LLM
         llm = self._build_llm(api_inputs)
-        llm_chain = LLMChain(prompt=prompt, llm=llm)
 
-        # run inference
-        api_input_list = [{ "api_prompt": api_inputs.prompt } for _ in range(api_inputs.n)]
+        # In 1.x, chains are replaced by "prompt | llm"
+        runnable_chain = prompt | llm
 
-        # use context manager to redirect stream output so multiple requests
-        # can be handled at once on the same process (else output streams conflict)
-        # https://stackoverflow.com/questions/1218933/can-i-redirect-the-stdout-into-some-sort-of-string-buffer
+        # Prepare inputs (list of prompts)
+        api_input_list = [api_inputs.prompt for _ in range(api_inputs.n)]
+
+        # Redirect stdout for multiple concurrent streams
+        results: List[str] = []
         with io.StringIO() as buf, redirect_stdout(buf):
-            results = llm_chain.generate(api_input_list)
+            for p in api_input_list:
+                result = runnable_chain.invoke({"api_prompt": p})
+                results.append(result)
 
-        choices = []
-        for generation in results.generations:
-            finish_reason = FinishReasonEnum.NULL
-            if (generation[0].generation_info) and ("finish_reason" in generation[0].generation_info):
-                finish_reason = generation[0].generation_info['finish_reason']
-
-            choices.append(CompletionInferenceOutputChoices(
-                text=generation[0].text,
-                index=0,
-                finish_reason=finish_reason
-            ))
+        # Build output choices
+        choices = [
+            CompletionInferenceOutputChoices(
+                text=gen,
+                index=i,
+                finish_reason=FinishReasonEnum.STOP
+            )
+            for i, gen in enumerate(results)
+        ]
 
         return CompletionInferenceOutputs(
             model=self.llm_pretrained_model_obj.model_type,

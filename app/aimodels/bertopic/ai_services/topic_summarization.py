@@ -6,8 +6,8 @@ from pathlib import Path
 from string import punctuation
 from langchain_core.prompts import PromptTemplate
 from langchain_community.llms import CTransformers
-from langchain.chains.summarize import load_summarize_chain
-from langchain.text_splitter import CharacterTextSplitter
+from langchain_classic.chains import LLMChain
+from langchain_text_splitters import CharacterTextSplitter
 from scipy.stats import shapiro
 from app.core.logging import logger
 from app.core.model_cache import MODEL_CACHE_BASEDIR
@@ -150,20 +150,24 @@ class TopicSummarizer:
             refine_prompt = PromptTemplate.from_template(self.refine_template)
 
             # Takes a list of documents, combines them into a single string, and passes this to an LLMChain
-            chain = load_summarize_chain(self.llm,
-                                            chain_type="refine",
-                                            verbose=False,
-                                            question_prompt=prompt,
-                                            refine_prompt=refine_prompt,
-                                            return_intermediate_steps=True,
-                                            input_key="input_documents",
-                                            output_key="output_text",
-                                        )
+            # initial implementation used langchain.chains.summarize import load_summarize_chain, unavailable in latest langchain
+            # chain = load_summarize_chain(self.llm,
+            #                                 chain_type="refine",
+            #                                 verbose=False,
+            #                                 question_prompt=prompt,
+            #                                 refine_prompt=refine_prompt,
+            #                                 return_intermediate_steps=True,
+            #                                 input_key="input_documents",
+            #                                 output_key="output_text")
+            chain = LLMChain(
+                llm=self.llm,
+                prompt=prompt,
+                verbose=False,
+            )
 
             # saves only the summary (but output includes intermediate steps of how we get to the summary
             # if we want to save that in the future for XAI or other reason e.g., output_summary['intermediate_steps'])
-            output_summary = chain({"input_documents": docs})
-            summary_text = output_summary['output_text']
+            summary_text = chain.invoke({"input_documents": docs})
             if summary_text == '':
                 logger.warning('null output_text in topic summarization')
                 summary_text = 'topic summary not available'
