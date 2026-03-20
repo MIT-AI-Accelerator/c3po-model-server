@@ -43,7 +43,6 @@ langsmith = {extras = ["pytest"], version = "^0.7.18"}
 scipy = "^1.15.3"
 requests = "^2.32.5"
 idna = "^3.10"
-nltk = "^3.9.3"
 setuptools = "^80.9.0"
 annotated-types = "^0.7.0"
 datamodel-code-generator = "^0.25.6"
