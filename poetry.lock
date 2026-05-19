@@ -5501,23 +5501,24 @@ files = [
 
 [[package]]
 name = "snorkel"
-version = "0.9.9"
+version = "0.10.0"
 description = "A system for quickly generating training data with weak supervision"
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.11"
 files = [
-    {file = "snorkel-0.9.9-py3-none-any.whl", hash = "sha256:a927ee5e04b1ebfb015bfed4c1b161075f998eb2ff520872f2055a10528ef213"},
-    {file = "snorkel-0.9.9.tar.gz", hash = "sha256:b3e4d6c33fd145dc8a7c990866ad11511301e51ce27810b2b5ea9720c157c321"},
+    {file = "snorkel-0.10.0-py3-none-any.whl", hash = "sha256:42a2f354d8142f4807c5339ed256c763e12dd198ca5a34583d27344e64f927c8"},
+    {file = "snorkel-0.10.0.tar.gz", hash = "sha256:b1f36412430a810124cc0aac432fa29f41960cff2d9804d3816f9d9d0d6d44ed"},
 ]
 
 [package.dependencies]
 munkres = ">=1.0.6"
 networkx = ">=2.2"
-numpy = ">=1.16.5"
+numpy = ">=1.24.0"
 pandas = ">=1.0.0"
+protobuf = ">=3.19.6"
 scikit-learn = ">=0.20.2"
 scipy = ">=1.2.0"
-tensorboard = ">=2.9.1"
+tensorboard = ">=2.13.0"
 torch = ">=1.2.0"
 tqdm = ">=4.33.0"
 
@@ -6777,4 +6778,4 @@ cffi = ["cffi (>=1.17,<2.0)", "cffi (>=2.0.0b)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "~3.13"
-content-hash = "80166845fff0183b2503e6d12a0a7261d7130a62299a5810bc451048c3209621"
+content-hash = "7c22e54a44a5740ec0f766f9c7730427b00c312be70f67f5f58748759d6636c3"
