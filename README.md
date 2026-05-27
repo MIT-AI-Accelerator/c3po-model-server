@@ -146,8 +146,8 @@ to the requirements.txt in place of the previous `transformers` installation.
 - P1 uses pip for environment setup; locally, both poetry and pip are acceptable
 - However, ppg-common broke the pre-commit hook that keeps the poetry and pip requirements in sync
 - Process for environment updates:
-1. Update poetry: $ poetry add package==version
-2. Sync with pip: $ ./hooks/output-requirements-txt.sh
+1. Update the package with poetry: `$ poetry add "package==version"`
+2. Sync with pip: `$ ./hooks/output-requirements-txt.sh`
 
 ## Logs
 Logs for the deployed application can be viewed on [ArgoCD](https://argocd-il4.admin.dso.mil/applications?showFavorites=false&proj=&sync=&autoSync=&health=&namespace=&cluster=&labels=)
