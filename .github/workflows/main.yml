@@ -1,0 +1,69 @@
+name: CVE Scan
+
+# Scans Python dependencies for known vulnerabilities (CVEs / GHSAs) with pip-audit.
+# - On push & PR: gates changes that introduce a vulnerable dependency.
+# - Daily schedule: re-scans existing dependencies so newly-published CVEs
+#   against already-pinned versions get surfaced even with no code change.
+# - Manual: run on demand from the Actions tab.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # 07:00 UTC daily — picks up CVEs published overnight.
+    - cron: "0 7 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cve-scan-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pip-audit:
+    name: pip-audit (resolved deps)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Export pinned requirements from uv.lock
+        # pip-audit consumes a requirements file; export the fully-resolved,
+        # hashed lock so the audit matches exactly what uv would install.
+        run: uv export --frozen --no-emit-project --no-dev --output-file requirements.txt
+
+      - name: Audit dependencies for CVEs
+        run: |
+          uvx pip-audit \
+            --requirement requirements.txt \
+            --desc \
+            --format markdown \
+            --output audit.md \
+            --progress-spinner off || true
+          {
+            echo "## pip-audit results"
+            echo
+            if [ -s audit.md ]; then
+              cat audit.md
+            else
+              echo "No known vulnerabilities found in resolved dependencies. :white_check_mark:"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail if vulnerabilities were found
+        # Re-run with a strict exit code so PRs are gated. The summary above
+        # is written regardless, so reviewers always see the detail.
+        run: |
+          uvx pip-audit \
+            --requirement requirements.txt \
+            --progress-spinner off
