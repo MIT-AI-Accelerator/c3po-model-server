@@ -7,10 +7,7 @@ name: CVE Scan
 # - Manual: run on demand from the Actions tab.
 
 on:
-  push:
-    branches: [main]
   pull_request:
-    branches: [main]
   schedule:
     # 07:00 UTC daily — picks up CVEs published overnight.
     - cron: "0 7 * * *"
