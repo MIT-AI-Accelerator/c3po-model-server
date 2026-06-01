@@ -14,6 +14,23 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    # Spin up a throwaway Postgres alongside the job, reachable at localhost:5432.
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        # Don't start the tests until Postgres is actually accepting connections.
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python 3.13
@@ -26,5 +43,14 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         pip install pytest pytest-cov
     - name: Test with pytest
+      env:
+        ENVIRONMENT: local
+        # These must match what your "local" config / db_test_session.py expects.
+        POSTGRES_SERVER: localhost
+        POSTGRES_HOST: localhost
+        POSTGRES_PORT: "5432"
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: postgres
+        POSTGRES_DB: postgres
       run: |
-        ENVIRONMENT=local pytest --cov
+        pytest --cov
