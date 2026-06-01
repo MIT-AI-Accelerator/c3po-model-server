@@ -54,4 +54,4 @@ jobs:
         POSTGRES_PASSWORD: postgres
         POSTGRES_DB: postgres
       run: |
-        ENVIRONMENT=integration pytest --cov
+        ENVIRONMENT=integration pytest --cov-fail-under=90
