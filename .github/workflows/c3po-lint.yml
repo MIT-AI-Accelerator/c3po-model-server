@@ -35,4 +35,4 @@ jobs:
       # not some other pylint on PATH. --exit-zero keeps lint findings non-blocking,
       # but a genuine crash will now be obvious in the "Show versions" / log output.
       run: |
-        python -m pylint --exit-zero $(git ls-files '*.py')
+        python -m pylint --fail-on=E,F $(git ls-files '*.py')
