@@ -44,7 +44,6 @@ jobs:
         pip install pytest pytest-cov
     - name: Test with pytest
       env:
-      env:
         ENVIRONMENT: integration
         # These must match what your "integration" config / db_test_session.py expects.
         POSTGRES_SERVER: localhost
