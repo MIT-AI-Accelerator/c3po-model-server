@@ -22,7 +22,7 @@ concurrency:
 jobs:
   # 1) CVE scan ---------------------------------------------------------
   cve-scan:
-    name: pip-audit (requirements.txt)
+    name: CVE scan (pip-audit)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -75,7 +75,7 @@ jobs:
 
   # 2) Secret scan ------------------------------------------------------
   trufflehog:
-    name: TruffleHog
+    name: Secret scan (TruffleHog)
     needs: cve-scan
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
@@ -94,7 +94,7 @@ jobs:
 
   # 3) Type check -------------------------------------------------------
   mypy:
-    name: mypy
+    name: Type check (mypy)
     needs: trufflehog
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
@@ -130,7 +130,7 @@ jobs:
 
   # 4) Lint -------------------------------------------------------------
   pylint:
-    name: pylint
+    name: Lint (pylint)
     needs: mypy
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
@@ -174,7 +174,7 @@ jobs:
 
   # 5) Tests ------------------------------------------------------------
   pytest:
-    name: pytest
+    name: Tests (pytest)
     needs: pylint
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
