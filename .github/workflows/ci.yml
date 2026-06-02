@@ -2,6 +2,7 @@
 # of earlier failures (`if: !cancelled()`):
 #   1. CVE scan (pip-audit)  2. Secret scan (TruffleHog)
 #   3. Type check (mypy)     4. Lint (pylint)            5. Tests (pytest)
+# Every stage writes a section to the run's job summary.
 name: c3po CI
 
 on:
@@ -64,7 +65,7 @@ jobs:
             --progress-spinner off \
             -v || true
           {
-            echo "## pip-audit results"
+            echo "## CVE scan (pip-audit) results"
             echo
             if [ -s audit.md ]; then
               cat audit.md
@@ -87,10 +88,26 @@ jobs:
           fetch-depth: 0
 
       - name: Run TruffleHog
+        id: trufflehog
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
           extra_args: --results=verified,unknown
+
+      - name: Summary
+        # Runs even if TruffleHog failed (secrets found), so the summary is
+        # always written. The job still goes red on a failure.
+        if: ${{ always() }}
+        run: |
+          {
+            echo "## Secret scan (TruffleHog) results"
+            echo
+            if [ "${{ steps.trufflehog.outcome }}" = "success" ]; then
+              echo "No verified/unknown secrets detected. :white_check_mark:"
+            else
+              echo ":rotating_light: Potential secrets detected — see the **Run TruffleHog** step log for details."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
 
   # 3) Type check -------------------------------------------------------
   mypy:
@@ -121,12 +138,30 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           pip install mypy
 
-      - name: Run mypy
+      - name: Run mypy (report-only)
+        # Non-blocking: capture output + exit code, write a summary, never fail.
         run: |
+          set +e
           mypy . \
             --install-types \
             --non-interactive \
-            --ignore-missing-imports
+            --ignore-missing-imports | tee mypy.txt
+          status=${PIPESTATUS[0]}
+          set -e
+          {
+            echo "## Type check (mypy) results"
+            echo
+            if [ "$status" -eq 0 ]; then
+              echo "No type errors found. :white_check_mark:"
+            else
+              echo ":warning: Type issues found (non-blocking, exit $status):"
+            fi
+            echo
+            echo '```'
+            cat mypy.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          # report-only: deliberately do not propagate mypy's exit code.
 
   # 4) Lint -------------------------------------------------------------
   pylint:
@@ -169,8 +204,26 @@ jobs:
 
       - name: Analysing the code with pylint
         # --fail-on=E,F: fail only on errors/fatals; --fail-under=-100: ignore score.
+        # Output is captured into the summary; exit code is preserved so E/F still fail.
         run: |
-          python -m pylint --fail-on=E,F --fail-under=-100 $(git ls-files '*.py')
+          set +e
+          python -m pylint --fail-on=E,F --fail-under=-100 $(git ls-files '*.py') | tee pylint.txt
+          status=${PIPESTATUS[0]}
+          set -e
+          {
+            echo "## Lint (pylint) results"
+            echo
+            if [ "$status" -eq 0 ]; then
+              echo "No errors or fatals. :white_check_mark:"
+            else
+              echo ":x: Errors/fatals found (exit $status):"
+            fi
+            echo
+            echo '```'
+            cat pylint.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit $status
 
   # 5) Tests ------------------------------------------------------------
   pytest:
@@ -228,6 +281,24 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: postgres
+        # Output captured into the summary; exit code preserved so test/coverage
+        # failures still fail the job.
         run: |
-          ENVIRONMENT=test pytest --cov-fail-under=85
-
+          set +e
+          ENVIRONMENT=test pytest --cov-fail-under=85 | tee pytest.txt
+          status=${PIPESTATUS[0]}
+          set -e
+          {
+            echo "## Tests (pytest) results"
+            echo
+            if [ "$status" -eq 0 ]; then
+              echo "All tests passed and coverage >= 85%. :white_check_mark:"
+            else
+              echo ":x: Tests failed or coverage below threshold (exit $status):"
+            fi
+            echo
+            echo '```'
+            tail -n 60 pytest.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit $status
