@@ -37,7 +37,9 @@ jobs:
           enable-cache: true
 
       - name: Set up Python
-        run: uv python install 3.13
+        run: |
+          uv python install 3.13
+          uv python pin 3.13
 
       - name: Debug — show requirements.txt
         # Temporary: confirms the file is present in the checked-out tree
@@ -133,7 +135,9 @@ jobs:
           enable-cache: true
 
       - name: Set up Python
-        run: uv python install 3.13
+        run: |
+          uv python install 3.13
+          uv python pin 3.13
 
       - name: Install dependencies
         run: |
@@ -191,7 +195,9 @@ jobs:
           enable-cache: true
 
       - name: Set up Python
-        run: uv python install 3.13
+        run: |
+          uv python install 3.13
+          uv python pin 3.13
 
       - name: Install dependencies
         run: |
@@ -272,7 +278,9 @@ jobs:
           enable-cache: true
 
       - name: Set up Python
-        run: uv python install 3.13
+        run: |
+          uv python install 3.13
+          uv python pin 3.13
 
       - name: Install dependencies
         run: |
