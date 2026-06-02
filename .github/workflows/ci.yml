@@ -29,15 +29,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
         with:
           enable-cache: true
 
       - name: Set up Python
-        run: uv python install
+        run: uv python install 3.13
 
       - name: Debug — show requirements.txt
         # Temporary: confirms the file is present in the checked-out tree
@@ -84,7 +84,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           # Full history so TruffleHog can diff commits / scan the whole repo.
           fetch-depth: 0
@@ -118,7 +118,7 @@ jobs:
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Free up disk space
         # Same cleanup as the lint/pytest jobs — mypy installs the heavy deps too.
@@ -127,18 +127,18 @@ jobs:
             /opt/hostedtoolcache/CodeQL "$AGENT_TOOLSDIRECTORY"
           sudo docker image prune --all --force || true
 
-      - name: Set up Python 3.13
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
         with:
-          python-version: "3.13"
-          cache: pip
-          cache-dependency-path: requirements.txt
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.13
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          pip install mypy
+          if [ -f requirements.txt ]; then uv pip install -r requirements.txt --system; fi
+          uv pip install mypy
 
       - name: Run mypy (report-only)
         # Non-blocking: capture output + exit code, write a summary, never fail.
@@ -172,7 +172,7 @@ jobs:
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Free up disk space
         run: |
@@ -185,31 +185,30 @@ jobs:
           sudo docker image prune --all --force || true
           df -h /
 
-      - name: Set up Python 3.13
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
         with:
-          python-version: "3.13"
-          cache: pip
-          cache-dependency-path: requirements.txt
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.13
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          # --upgrade forces a current pylint even if requirements.txt pins an old one.
-          python -m pip install --upgrade "pylint>=3.1" pytest pytest-cov
+          if [ -f requirements.txt ]; then uv pip install -r requirements.txt --system; fi
+          uv pip install --upgrade "pylint>=3.1"
 
       - name: Show versions
         run: |
-          python --version
-          python -m pylint --version
+          uv run python --version
+          uv run -m pylint --version
 
       - name: Analysing the code with pylint
         # --fail-on=E,F: fail only on errors/fatals; --fail-under=-100: ignore score.
         # Summary shows the status + pylint's rating line only; exit code preserved.
         run: |
           set +e
-          python -m pylint --fail-on=E,F --fail-under=-100 $(git ls-files '*.py') | tee pylint.txt
+          uv run -m pylint --fail-on=E,F --fail-under=-100 $(git ls-files '*.py') | tee pylint.txt
           status=${PIPESTATUS[0]}
           set -e
           {
@@ -252,7 +251,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Map 'postgres' hostname to the service
         # The app's "test" config expects the DB host to be `postgres`
@@ -267,18 +266,18 @@ jobs:
             /opt/hostedtoolcache/CodeQL "$AGENT_TOOLSDIRECTORY"
           sudo docker image prune --all --force || true
 
-      - name: Set up Python 3.13
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
         with:
-          python-version: "3.13"
-          cache: pip
-          cache-dependency-path: requirements.txt
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.13
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          pip install pytest pytest-cov
+          if [ -f requirements.txt ]; then uv pip install -r requirements.txt --system; fi
+          uv pip install pytest pytest-cov
 
       - name: Test with pytest
         env:
@@ -296,7 +295,7 @@ jobs:
         # Exit code preserved so test/coverage failures still fail the job.
         run: |
           set +e
-          ENVIRONMENT=test pytest --cov --cov-report=term --cov-fail-under=80 | tee pytest.txt
+          ENVIRONMENT=test uv run pytest --cov --cov-report=term --cov-fail-under=80 | tee pytest.txt
           status=${PIPESTATUS[0]}
           set -e
           {
