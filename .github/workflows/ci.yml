@@ -39,7 +39,7 @@ jobs:
       - name: Set up Python
         run: |
           uv python install 3.13
-          uv python pin 3.13
+          uv venv --python 3.13
 
       - name: Debug — show requirements.txt
         # Temporary: confirms the file is present in the checked-out tree
@@ -137,11 +137,11 @@ jobs:
       - name: Set up Python
         run: |
           uv python install 3.13
-          uv python pin 3.13
+          uv venv --python 3.13
 
       - name: Install dependencies
         run: |
-          if [ -f requirements.txt ]; then uv pip install -r requirements.txt --system; fi
+          if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
           uv pip install mypy
 
       - name: Run mypy (report-only)
@@ -197,11 +197,11 @@ jobs:
       - name: Set up Python
         run: |
           uv python install 3.13
-          uv python pin 3.13
+          uv venv --python 3.13
 
       - name: Install dependencies
         run: |
-          if [ -f requirements.txt ]; then uv pip install -r requirements.txt --system; fi
+          if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
           uv pip install --upgrade "pylint>=3.1"
 
       - name: Show versions
@@ -280,11 +280,11 @@ jobs:
       - name: Set up Python
         run: |
           uv python install 3.13
-          uv python pin 3.13
+          uv venv --python 3.13
 
       - name: Install dependencies
         run: |
-          if [ -f requirements.txt ]; then uv pip install -r requirements.txt --system; fi
+          if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
           uv pip install pytest pytest-cov
 
       - name: Test with pytest
