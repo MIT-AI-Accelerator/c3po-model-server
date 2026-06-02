@@ -1,0 +1,233 @@
+# Combined CI pipeline — runs serially in order, every stage runs regardless
+# of earlier failures (`if: !cancelled()`):
+#   1. CVE scan (pip-audit)  2. Secret scan (TruffleHog)
+#   3. Type check (mypy)     4. Lint (pylint)            5. Tests (pytest)
+name: c3po CI
+
+on:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    # 07:00 UTC daily — picks up CVEs published overnight (runs the full chain).
+    - cron: "0 7 * * *"
+
+permissions:
+  contents: read
+
+# One run per branch; a new push cancels the in-flight run (stale-cancel).
+concurrency:
+  group: c3po-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # 1) CVE scan ---------------------------------------------------------
+  cve-scan:
+    name: pip-audit (requirements.txt)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Debug — show requirements.txt
+        # Temporary: confirms the file is present in the checked-out tree
+        # and shows its contents. Remove once verified.
+        run: |
+          echo "Working dir: $(pwd)"
+          echo "Repo root listing:"
+          ls -la
+          echo "---- requirements.txt ----"
+          if [ -f requirements.txt ]; then
+            cat requirements.txt
+            echo "---- line count: $(wc -l < requirements.txt) ----"
+          else
+            echo "requirements.txt NOT FOUND at repo root"
+          fi
+
+      - name: Audit dependencies for CVEs
+        # Scans the committed requirements.txt as-is.
+        # -v prints debug info; `|| true` keeps the run green even when
+        # vulnerabilities are found (report-only).
+        run: |
+          uvx pip-audit \
+            --requirement requirements.txt \
+            --desc \
+            --format markdown \
+            --output audit.md \
+            --progress-spinner off \
+            -v || true
+          {
+            echo "## pip-audit results"
+            echo
+            if [ -s audit.md ]; then
+              cat audit.md
+            else
+              echo "No known vulnerabilities found in requirements.txt. :white_check_mark:"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # 2) Secret scan ------------------------------------------------------
+  trufflehog:
+    name: TruffleHog
+    needs: cve-scan
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Full history so TruffleHog can diff commits / scan the whole repo.
+          fetch-depth: 0
+
+      - name: Run TruffleHog
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          extra_args: --results=verified,unknown
+
+  # 3) Type check -------------------------------------------------------
+  mypy:
+    name: mypy
+    needs: trufflehog
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Free up disk space
+        # Same cleanup as the lint/pytest jobs — mypy installs the heavy deps too.
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+            /opt/hostedtoolcache/CodeQL "$AGENT_TOOLSDIRECTORY"
+          sudo docker image prune --all --force || true
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install mypy
+
+      - name: Run mypy
+        run: |
+          mypy . \
+            --install-types \
+            --non-interactive \
+            --ignore-missing-imports
+
+  # 4) Lint -------------------------------------------------------------
+  pylint:
+    name: pylint
+    needs: mypy
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Free up disk space
+        run: |
+          df -h /
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          sudo docker image prune --all --force || true
+          df -h /
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          # --upgrade forces a current pylint even if requirements.txt pins an old one.
+          python -m pip install --upgrade "pylint>=3.1" pytest pytest-cov
+
+      - name: Show versions
+        run: |
+          python --version
+          python -m pylint --version
+
+      - name: Analysing the code with pylint
+        # --fail-on=E,F: fail only on errors/fatals; --fail-under=-100: ignore score.
+        run: |
+          python -m pylint --fail-on=E,F --fail-under=-100 $(git ls-files '*.py')
+
+  # 5) Tests ------------------------------------------------------------
+  pytest:
+    name: pytest
+    needs: pylint
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+
+    # Throwaway Postgres alongside the job, reachable at localhost:5432.
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Free up disk space
+        # pytest installs the same heavy deps as lint/mypy.
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+            /opt/hostedtoolcache/CodeQL "$AGENT_TOOLSDIRECTORY"
+          sudo docker image prune --all --force || true
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install pytest pytest-cov
+
+      - name: Test with pytest
+        env:
+          ENVIRONMENT: test
+          # Must match what your "test" config / db_test_session.py expects.
+          POSTGRES_SERVER: localhost
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: "5432"
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        run: |
+          ENVIRONMENT=test pytest --cov-fail-under=85
+
