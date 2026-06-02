@@ -1,0 +1,322 @@
+# Combined CI pipeline — runs serially in order, every stage runs regardless
+# of earlier failures (`if: !cancelled()`):
+#   1. CVE scan (pip-audit)  2. Secret scan (TruffleHog)
+#   3. Type check (mypy)     4. Lint (pylint)            5. Tests (pytest)
+# Every stage writes a section to the run's job summary.
+name: c3po CI
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+  workflow_dispatch:
+  schedule:
+    # 07:00 UTC daily — picks up CVEs published overnight (runs the full chain).
+    - cron: "0 7 * * *"
+
+permissions:
+  contents: read
+
+# One run per branch; a new push cancels the in-flight run (stale-cancel).
+concurrency:
+  group: c3po-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # 1) CVE scan ---------------------------------------------------------
+  cve-scan:
+    name: CVE scan (pip-audit)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: |
+          uv python install 3.13
+          uv venv --python 3.13
+
+      - name: Debug — show requirements.txt
+        # Temporary: confirms the file is present in the checked-out tree
+        # and shows its contents. Remove once verified.
+        run: |
+          echo "Working dir: $(pwd)"
+          echo "Repo root listing:"
+          ls -la
+          echo "---- requirements.txt ----"
+          if [ -f requirements.txt ]; then
+            cat requirements.txt
+            echo "---- line count: $(wc -l < requirements.txt) ----"
+          else
+            echo "requirements.txt NOT FOUND at repo root"
+          fi
+
+      - name: Audit dependencies for CVEs
+        # Scans the committed requirements.txt as-is.
+        # -v prints debug info; `|| true` keeps the run green even when
+        # vulnerabilities are found (report-only).
+        run: |
+          uvx pip-audit \
+            --requirement requirements.txt \
+            --desc \
+            --format markdown \
+            --output audit.md \
+            --progress-spinner off \
+            -v || true
+          {
+            echo "## CVE scan (pip-audit) results"
+            echo
+            if [ -s audit.md ]; then
+              cat audit.md
+            else
+              echo "No known vulnerabilities found in requirements.txt. :white_check_mark:"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # 2) Secret scan ------------------------------------------------------
+  trufflehog:
+    name: Secret scan (TruffleHog)
+    needs: cve-scan
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          # Full history so TruffleHog can diff commits / scan the whole repo.
+          fetch-depth: 0
+
+      - name: Run TruffleHog
+        id: trufflehog
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          extra_args: --results=verified,unknown
+
+      - name: Summary
+        # Runs even if TruffleHog failed (secrets found), so the summary is
+        # always written. The job still goes red on a failure.
+        if: ${{ always() }}
+        run: |
+          {
+            echo "## Secret scan (TruffleHog) results"
+            echo
+            if [ "${{ steps.trufflehog.outcome }}" = "success" ]; then
+              echo "No verified/unknown secrets detected. :white_check_mark:"
+            else
+              echo ":rotating_light: Potential secrets detected — see the **Run TruffleHog** step log for details."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # 3) Type check -------------------------------------------------------
+  mypy:
+    name: Type check (mypy)
+    needs: trufflehog
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Free up disk space
+        # Same cleanup as the lint/pytest jobs — mypy installs the heavy deps too.
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+            /opt/hostedtoolcache/CodeQL "$AGENT_TOOLSDIRECTORY"
+          sudo docker image prune --all --force || true
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: |
+          uv python install 3.13
+          uv venv --python 3.13
+
+      - name: Install dependencies
+        run: |
+          if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
+          uv pip install mypy
+
+      - name: Run mypy (report-only)
+        # Non-blocking: capture output + exit code, write a summary, never fail.
+        run: |
+          set +e
+          uv run mypy . \
+            --install-types \
+            --non-interactive \
+            --ignore-missing-imports | tee mypy.txt
+          status=${PIPESTATUS[0]}
+          set -e
+          {
+            echo "## Type check (mypy) results"
+            echo
+            if [ "$status" -eq 0 ]; then
+              echo "No type errors found. :white_check_mark:"
+            else
+              echo ":warning: Type issues found (non-blocking, exit $status):"
+            fi
+            echo
+            echo '```'
+            cat mypy.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          # report-only: deliberately do not propagate mypy's exit code.
+
+  # 4) Lint -------------------------------------------------------------
+  pylint:
+    name: Lint (pylint)
+    needs: mypy
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Free up disk space
+        run: |
+          df -h /
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          sudo docker image prune --all --force || true
+          df -h /
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: |
+          uv python install 3.13
+          uv venv --python 3.13
+
+      - name: Install dependencies
+        run: |
+          if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
+          uv pip install --upgrade "pylint>=3.1"
+
+      - name: Show versions
+        run: |
+          uv run python --version
+          uv run -m pylint --version
+
+      - name: Analysing the code with pylint
+        # --fail-on=E,F: fail only on errors/fatals; --fail-under=-100: ignore score.
+        # Summary shows the status + pylint's rating line only; exit code preserved.
+        run: |
+          set +e
+          uv run -m pylint --fail-on=E,F --fail-under=-100 $(git ls-files '*.py') | tee pylint.txt
+          status=${PIPESTATUS[0]}
+          set -e
+          {
+            echo "## Lint (pylint) results"
+            echo
+            if [ "$status" -eq 0 ]; then
+              echo "No errors or fatals. :white_check_mark:"
+            else
+              echo ":x: Errors/fatals found (exit $status):"
+            fi
+            echo
+            echo '```'
+            echo "------------------------------------"
+            grep "Your code has been rated" pylint.txt || echo "(no score reported)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit $status
+
+  # 5) Tests ------------------------------------------------------------
+  pytest:
+    name: Tests (pytest)
+    needs: pylint
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+
+    # Throwaway Postgres alongside the job, published on localhost:5432.
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Map 'postgres' hostname to the service
+        # The app's "test" config expects the DB host to be `postgres`
+        # (the compose service name), and a test asserts the URI contains it.
+        # Point that name at 127.0.0.1, where the service's 5432 is published.
+        run: echo "127.0.0.1 postgres" | sudo tee -a /etc/hosts
+
+      - name: Free up disk space
+        # pytest installs the same heavy deps as lint/mypy.
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+            /opt/hostedtoolcache/CodeQL "$AGENT_TOOLSDIRECTORY"
+          sudo docker image prune --all --force || true
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: |
+          uv python install 3.13
+          uv venv --python 3.13
+
+      - name: Install dependencies
+        run: |
+          if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
+          uv pip install pytest pytest-cov
+
+      - name: Test with pytest
+        env:
+          ENVIRONMENT: test
+          # Use the host the "test" config expects; it resolves to the service
+          # via the /etc/hosts entry above.
+          POSTGRES_SERVER: postgres
+          POSTGRES_HOST: postgres
+          POSTGRES_PORT: "5432"
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        # Capture full pytest output (per-file progress, pass/fail summary line,
+        # and the --cov-report=term coverage table) into the job summary.
+        # Exit code preserved so test/coverage failures still fail the job.
+        run: |
+          set +e
+          ENVIRONMENT=test uv run pytest --cov --cov-report=term --cov-fail-under=80 | tee pytest.txt
+          status=${PIPESTATUS[0]}
+          set -e
+          {
+            echo "## Tests (pytest) results"
+            echo
+            if [ "$status" -eq 0 ]; then
+              echo "All tests passed and coverage >= 80%. :white_check_mark:"
+            else
+              echo ":x: Tests failed or coverage below 80% (exit $status)."
+            fi
+            echo
+            echo '```'
+            cat pytest.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit $status
