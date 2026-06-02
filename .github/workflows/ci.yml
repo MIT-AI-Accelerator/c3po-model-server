@@ -281,12 +281,13 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: postgres
-        # Run tests, then put only the per-file coverage table into the summary.
-        # Exit code is preserved so test/coverage failures still fail the job.
+        # Capture full pytest output (per-file progress, pass/fail summary line,
+        # and the --cov-report=term coverage table) into the job summary.
+        # Exit code preserved so test/coverage failures still fail the job.
         run: |
           set +e
-          ENVIRONMENT=test pytest --cov --cov-report=term --cov-fail-under=80
-          status=$?
+          ENVIRONMENT=test pytest --cov --cov-report=term --cov-fail-under=85 | tee pytest.txt
+          status=${PIPESTATUS[0]}
           set -e
           {
             echo "## Tests (pytest) results"
@@ -297,9 +298,8 @@ jobs:
               echo ":x: Tests failed or coverage below 85% (exit $status)."
             fi
             echo
-            echo "### Coverage"
             echo '```'
-            coverage report
+            cat pytest.txt
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
           exit $status
