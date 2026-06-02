@@ -204,7 +204,7 @@ jobs:
 
       - name: Analysing the code with pylint
         # --fail-on=E,F: fail only on errors/fatals; --fail-under=-100: ignore score.
-        # Output is captured into the summary; exit code is preserved so E/F still fail.
+        # Summary shows the status + pylint's rating line only; exit code preserved.
         run: |
           set +e
           python -m pylint --fail-on=E,F --fail-under=-100 $(git ls-files '*.py') | tee pylint.txt
@@ -220,7 +220,8 @@ jobs:
             fi
             echo
             echo '```'
-            cat pylint.txt
+            echo "------------------------------------"
+            grep "Your code has been rated" pylint.txt || echo "(no score reported)"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
           exit $status
