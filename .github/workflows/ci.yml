@@ -285,12 +285,26 @@ jobs:
       - name: Install dependencies
         run: |
           if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
+          # Replace the CUDA build with CPU-only torch — no GPU on the runner,
+          # avoids the CUDA-init segfault and ~5 GB of nvidia wheels.
+          uv pip install --reinstall --index-url https://download.pytorch.org/whl/cpu \
+            "torch==2.12.0" "torchvision==0.27.0"
           uv pip install pytest pytest-cov
+
+      - name: Smoke-test native imports
+        # Exit 139 = segfault. Import the native libs in isolation so a crash
+        # pinpoints the culprit (torch alone vs. torch+tensorflow together).
+        run: |
+          uv run python -c "import numpy; print('numpy', numpy.__version__)"
+          uv run python -c "import torch; print('torch', torch.__version__)"
+          uv run python -c "import torchvision; print('torchvision', torchvision.__version__)"
+          uv run python -c "import tensorflow as tf; print('tf', tf.__version__)"
+          uv run python -c "import torch, tensorflow; print('torch+tf together OK')"
 
       - name: Test with pytest
         env:
           ENVIRONMENT: test
-          # Use the host the "test" config expects; it resolves to the service
+          # Use the host the "test" config expects; resolves to the service
           # via the /etc/hosts entry above.
           POSTGRES_SERVER: postgres
           POSTGRES_HOST: postgres
@@ -298,12 +312,17 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: postgres
+          # --- segfault mitigations ---
+          PYTHONFAULTHANDLER: "1"       # dump a native traceback if it still crashes
+          CUDA_VISIBLE_DEVICES: ""      # force CPU paths everywhere
+          OMP_NUM_THREADS: "1"          # avoid oversubscribing OpenMP threads
+          KMP_DUPLICATE_LIB_OK: "TRUE"  # tolerate duplicate OpenMP runtime (torch+tf)
         # Capture full pytest output (per-file progress, pass/fail summary line,
         # and the --cov-report=term coverage table) into the job summary.
         # Exit code preserved so test/coverage failures still fail the job.
         run: |
           set +e
-          ENVIRONMENT=test uv run pytest --cov --cov-report=term --cov-fail-under=80 | tee pytest.txt
+          uv run pytest --cov --cov-report=term --cov-fail-under=80 | tee pytest.txt
           status=${PIPESTATUS[0]}
           set -e
           {
