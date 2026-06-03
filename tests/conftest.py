@@ -1,3 +1,4 @@
+import torch # leave unused import here to fix import order issue in pytest
 from collections.abc import Generator
 import random
 from unittest.mock import MagicMock
