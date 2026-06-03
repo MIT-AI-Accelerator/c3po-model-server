@@ -41,42 +41,57 @@ jobs:
           uv python install 3.13
           uv venv --python 3.13
 
-      - name: Debug — show requirements.txt
-        # Temporary: confirms the file is present in the checked-out tree
-        # and shows its contents. Remove once verified.
-        run: |
-          echo "Working dir: $(pwd)"
-          echo "Repo root listing:"
-          ls -la
-          echo "---- requirements.txt ----"
-          if [ -f requirements.txt ]; then
-            cat requirements.txt
-            echo "---- line count: $(wc -l < requirements.txt) ----"
-          else
-            echo "requirements.txt NOT FOUND at repo root"
-          fi
-
       - name: Audit dependencies for CVEs
-        # Scans the committed requirements.txt as-is.
-        # -v prints debug info; `|| true` keeps the run green even when
-        # vulnerabilities are found (report-only).
+        # Report-only. Keeps pip-audit's standard columns and inserts a
+        # `Published` column (from OSV) between Fix Versions and Description.
         run: |
-          uvx pip-audit \
-            --requirement requirements.txt \
-            --desc \
-            --format markdown \
-            --output audit.md \
-            --progress-spinner off \
-            -v || true
-          {
-            echo "## CVE scan (pip-audit) results"
-            echo
-            if [ -s audit.md ]; then
-              cat audit.md
-            else
-              echo "No known vulnerabilities found in requirements.txt. :white_check_mark:"
-            fi
-          } >> "$GITHUB_STEP_SUMMARY"
+          set +e
+          uvx pip-audit --requirement requirements.txt --format json \
+            --progress-spinner off > audit.json
+          set -e
+          uv run python - <<'PY'
+          import json, os, urllib.request
+
+          try:
+              data = json.load(open("audit.json"))
+          except Exception:
+              data = {}
+          deps = data.get("dependencies", data if isinstance(data, list) else [])
+
+          def published(vuln_id):
+              # OSV resolves GHSA-/PYSEC-/CVE- IDs; returns ISO timestamp.
+              try:
+                  url = f"https://api.osv.dev/v1/vulns/{vuln_id}"
+                  with urllib.request.urlopen(url, timeout=15) as r:
+                      return (json.load(r).get("published") or "")[:10]  # YYYY-MM-DD
+              except Exception:
+                  return ""
+
+          def clean(s):
+              # Make a string safe for a one-line markdown table cell.
+              return (s or "").replace("\r", " ").replace("\n", " ").replace("|", "\\|").strip()
+
+          rows = []
+          for dep in deps:
+              name, ver = dep.get("name", "?"), dep.get("version", "?")
+              for v in dep.get("vulns", []):
+                  vid = v.get("id", "?")
+                  fixes = ",".join(v.get("fix_versions", []) or [])
+                  desc = clean(v.get("description", ""))
+                  rows.append((name, ver, vid, fixes, published(vid), desc))
+
+          rows.sort(key=lambda r: (r[0], r[1], r[2]))  # Name, Version, ID
+          out = ["## CVE scan (pip-audit) results", ""]
+          if rows:
+              out += ["| Name | Version | ID | Fix Versions | Published | Description |",
+                      "|---|---|---|---|---|---|"]
+              out += ["| " + " | ".join(c or "—" for c in r) + " |" for r in rows]
+          else:
+              out.append("No known vulnerabilities found in requirements.txt. :white_check_mark:")
+
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
+              f.write("\n".join(out) + "\n")
+          PY
 
   # 2) Secret scan ------------------------------------------------------
   trufflehog:
