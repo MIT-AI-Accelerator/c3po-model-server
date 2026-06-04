@@ -3,6 +3,9 @@
 #   1. CVE scan (pip-audit)  2. Secret scan (TruffleHog)
 #   3. Type check (mypy)     4. Lint (pylint)            5. Tests (pytest)
 # Every stage writes a section to the run's job summary.
+#
+# CVE allowlist (still reported, but non-failing) lives at:
+#   .github/workflows/.cve-allowlist.txt
 name: c3po CI
 
 on:
@@ -42,9 +45,10 @@ jobs:
           uv venv --python 3.13
 
       - name: Audit dependencies for CVEs
-        # Fails the job when vulnerabilities are found — but the summary is
-        # written first, and every downstream job has `if: !cancelled()`, so
-        # they still run regardless of this failure.
+        # Reports every finding. Findings whose ID (or an alias) is listed in
+        # .github/workflows/.cve-allowlist.txt are marked "Allowlisted" and do
+        # NOT fail the job; any non-allowlisted finding fails it. Summary is
+        # always written.
         run: |
           set +e
           uvx pip-audit --requirement requirements.txt --format json \
@@ -59,8 +63,24 @@ jobs:
               data = {}
           deps = data.get("dependencies", data if isinstance(data, list) else [])
 
+          # Load allowlist: "<ID> <optional reason>"; '#' lines are comments.
+          ALLOWLIST = ".github/workflows/cve-allowlist.txt"
+          allow = {}
+          if os.path.exists(ALLOWLIST):
+              for line in open(ALLOWLIST):
+                  line = line.strip()
+                  if not line or line.startswith("#"):
+                      continue
+                  parts = line.split(None, 1)
+                  allow[parts[0]] = parts[1].strip() if len(parts) > 1 else "allowlisted"
+
+          def allow_reason(v):
+              for vid in [v.get("id", "")] + list(v.get("aliases", [])):
+                  if vid in allow:
+                      return allow[vid]
+              return ""
+
           def published(vuln_id):
-              # OSV resolves GHSA-/PYSEC-/CVE- IDs; returns ISO timestamp.
               try:
                   url = f"https://api.osv.dev/v1/vulns/{vuln_id}"
                   with urllib.request.urlopen(url, timeout=15) as r:
@@ -69,24 +89,33 @@ jobs:
                   return ""
 
           def clean(s):
-              # Make a string safe for a one-line markdown table cell.
               return (s or "").replace("\r", " ").replace("\n", " ").replace("|", "\\|").strip()
 
-          rows = []
+          rows, blocking = [], 0
           for dep in deps:
               name, ver = dep.get("name", "?"), dep.get("version", "?")
               for v in dep.get("vulns", []):
-                  vid = v.get("id", "?")
-                  fixes = ",".join(v.get("fix_versions", []) or [])
-                  desc = clean(v.get("description", ""))
-                  rows.append((name, ver, vid, fixes, published(vid), desc))
+                  reason = allow_reason(v)
+                  if not reason:
+                      blocking += 1
+                  rows.append((name, ver, v.get("id", "?"),
+                               ",".join(v.get("fix_versions", []) or []),
+                               published(v.get("id", "?")),
+                               clean(v.get("description", "")),
+                               clean(reason) or "—"))
 
-          rows.sort(key=lambda r: (r[0], r[1], r[2]))  # Name, Version, ID
+          rows.sort(key=lambda r: (r[0], r[1], r[2]))
           out = ["## CVE scan (pip-audit) results", ""]
           if rows:
-              out += [f":x: **{len(rows)} known vulnerabilit(y/ies) found — failing the scan.**", ""]
-              out += ["| Name | Version | ID | Fix Versions | Published | Description |",
-                      "|---|---|---|---|---|---|"]
+              allowlisted = len(rows) - blocking
+              out.append(f"{len(rows)} finding(s): **{blocking} blocking**, {allowlisted} allowlisted.")
+              if blocking:
+                  out.append(":x: Failing — non-allowlisted vulnerabilities present.")
+              else:
+                  out.append("All findings are allowlisted. :white_check_mark:")
+              out += ["",
+                      "| Name | Version | ID | Fix Versions | Published | Description | Allowlisted |",
+                      "|---|---|---|---|---|---|---|"]
               out += ["| " + " | ".join(c or "—" for c in r) + " |" for r in rows]
           else:
               out.append("No known vulnerabilities found in requirements.txt. :white_check_mark:")
@@ -94,8 +123,8 @@ jobs:
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
               f.write("\n".join(out) + "\n")
 
-          # Fail the job if anything was found (summary already written above).
-          sys.exit(1 if rows else 0)
+          # Fail only if at least one finding is NOT allowlisted.
+          sys.exit(1 if blocking else 0)
           PY
 
   # 2) Secret scan ------------------------------------------------------
