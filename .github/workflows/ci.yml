@@ -42,15 +42,16 @@ jobs:
           uv venv --python 3.13
 
       - name: Audit dependencies for CVEs
-        # Report-only. Keeps pip-audit's standard columns and inserts a
-        # `Published` column (from OSV) between Fix Versions and Description.
+        # Fails the job when vulnerabilities are found — but the summary is
+        # written first, and every downstream job has `if: !cancelled()`, so
+        # they still run regardless of this failure.
         run: |
           set +e
           uvx pip-audit --requirement requirements.txt --format json \
             --progress-spinner off > audit.json
           set -e
           uv run python - <<'PY'
-          import json, os, urllib.request
+          import json, os, sys, urllib.request
 
           try:
               data = json.load(open("audit.json"))
@@ -83,6 +84,7 @@ jobs:
           rows.sort(key=lambda r: (r[0], r[1], r[2]))  # Name, Version, ID
           out = ["## CVE scan (pip-audit) results", ""]
           if rows:
+              out += [f":x: **{len(rows)} known vulnerabilit(y/ies) found — failing the scan.**", ""]
               out += ["| Name | Version | ID | Fix Versions | Published | Description |",
                       "|---|---|---|---|---|---|"]
               out += ["| " + " | ".join(c or "—" for c in r) + " |" for r in rows]
@@ -91,6 +93,9 @@ jobs:
 
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
               f.write("\n".join(out) + "\n")
+
+          # Fail the job if anything was found (summary already written above).
+          sys.exit(1 if rows else 0)
           PY
 
   # 2) Secret scan ------------------------------------------------------
