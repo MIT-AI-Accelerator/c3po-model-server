@@ -1,6 +1,6 @@
 # Load native libs in a clash-free order BEFORE anything imports them lazily.
-import torch          # or whichever the diagnostic shows is safe-first
 import tensorflow     # noqa: F401
+import torch          # noqa: F401
 
 from collections.abc import Generator
 import random
