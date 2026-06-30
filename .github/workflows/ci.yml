@@ -345,6 +345,19 @@ jobs:
           fi
           uv pip install pytest pytest-cov
 
+      - name: Smoke-test native imports
+        # Exit 139 = segfault at import time. Import each native lib in isolation
+        # (own process, faulthandler on) to find the culprit. `|| echo` keeps the
+        # loop going past a crash so we see which one fails.
+        run: |
+          for m in numpy scipy pandas sklearn torch torchvision tensorflow \
+                   faiss hdbscan numba llvmlite sentence_transformers \
+                   transformers gpt4all ctransformers; do
+            echo "=== import $m ==="
+            .venv/bin/python -X faulthandler -c "import $m; print('$m OK')" \
+              || echo ">>> $m FAILED (exit $?)"
+          done
+
       - name: Test with pytest
         env:
           ENVIRONMENT: test
@@ -356,20 +369,20 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: postgres
-          # --- segfault mitigations (torch on GPU-less runner + torch/tf OpenMP) ---
+          # --- segfault mitigations (native libs on GPU-less runner + OpenMP) ---
           PYTHONFAULTHANDLER: "1"       # dump a native traceback if it still crashes
           CUDA_VISIBLE_DEVICES: ""      # force CPU paths everywhere
           OMP_NUM_THREADS: "1"          # avoid oversubscribing OpenMP threads
           KMP_DUPLICATE_LIB_OK: "TRUE"  # tolerate duplicate OpenMP runtime (torch+tf)
           MKL_THREADING_LAYER: "GNU"    # reconcile MKL/OpenMP runtimes
-        # Capture full pytest output (per-file progress, pass/fail summary line,
-        # and the --cov-report=term coverage table) into the job summary.
-        # Exit code preserved so test/coverage failures still fail the job.
+        # Direct .venv binary — NOT `uv run` (which re-syncs/relocates the env and
+        # can undo the CPU-torch install). Output captured for the summary.
         run: |
           set +e
-          ENVIRONMENT=test uv run pytest --cov --cov-report=term --cov-fail-under=80 | tee pytest.txt
-          status=${PIPESTATUS[0]}
+          .venv/bin/pytest --cov --cov-report=term --cov-fail-under=80 > pytest.txt 2>&1
+          status=$?
           set -e
+          cat pytest.txt
           {
             echo "## Tests (pytest) results"
             echo
