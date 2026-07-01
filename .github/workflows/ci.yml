@@ -332,10 +332,27 @@ jobs:
           uv venv --python 3.13
 
       - name: Install dependencies
-        # coverage>=7.4 gives us the sys.monitoring ("sysmon") core used below.
+        # coverage>=7.4 gives us the sys.monitoring ("sysmon") core.
         run: |
           if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
           uv pip install pytest pytest-cov "coverage>=7.4"
+
+      - name: Diagnose pytest crash
+        # Isolates WHERE the 139 happens: during collection (conftest/test-file
+        # imports beyond `import app`), during a test run, or only under --cov.
+        # Direct .venv binary + faulthandler so a native crash prints a stack.
+        run: |
+          set +e
+          echo "===== collect-only (imports conftest + all test files) ====="
+          .venv/bin/python -X faulthandler -m pytest --collect-only -q > collect.txt 2>&1
+          echo ">>> collect-only exit: $?"
+          tail -n 40 collect.txt
+          echo
+          echo "===== run WITHOUT coverage (-o addopts='' drops --cov) ====="
+          .venv/bin/python -X faulthandler -m pytest -p no:cacheprovider -x -q -o addopts="" > run.txt 2>&1
+          echo ">>> no-cov run exit: $?"
+          tail -n 40 run.txt
+          set -e
 
       - name: Test with pytest
         env:
@@ -348,9 +365,9 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: postgres
-          # coverage via PEP 669 sys.monitoring instead of the C tracer, which
-          # segfaults (exit 139) under the native stack (torch/tf) on Python 3.13.
+          # coverage via PEP 669 sys.monitoring instead of the C tracer.
           COVERAGE_CORE: sysmon
+          PYTHONFAULTHANDLER: "1"
         # Capture full pytest output (per-file progress, pass/fail summary line,
         # and the --cov-report=term coverage table) into the job summary.
         # Exit code preserved so test/coverage failures still fail the job.
