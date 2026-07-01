@@ -334,9 +334,7 @@ jobs:
       - name: Install dependencies
         run: |
           if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
-          # Swap torch/torchvision to the CPU build at the SAME versions already
-          # resolved from pyproject/requirements (no version pin — honors latest).
-          # The CUDA build segfaults (exit 139) on the GPU-less runner.
+          # CPU torch at the resolved version (Linux runner has no GPU).
           TORCH_VER="$(uv pip show torch 2>/dev/null | awk '/^Version:/{print $2}' | cut -d+ -f1)"
           TV_VER="$(uv pip show torchvision 2>/dev/null | awk '/^Version:/{print $2}' | cut -d+ -f1)"
           if [ -n "$TORCH_VER" ]; then
@@ -345,18 +343,17 @@ jobs:
           fi
           uv pip install pytest pytest-cov
 
-      - name: Smoke-test native imports
-        # Exit 139 = segfault at import time. Import each native lib in isolation
-        # (own process, faulthandler on) to find the culprit. `|| echo` keeps the
-        # loop going past a crash so we see which one fails.
+      - name: Diagnose import crash
+        # Definitive: `python -v` prints every module as it loads. If `import app`
+        # segfaults (exit 139), the LAST lines below name the module that triggers
+        # it — that's the library colliding with torch 2.12 in one process.
         run: |
-          for m in numpy scipy pandas sklearn torch torchvision tensorflow \
-                   faiss hdbscan numba llvmlite sentence_transformers \
-                   transformers gpt4all ctransformers; do
-            echo "=== import $m ==="
-            .venv/bin/python -X faulthandler -c "import $m; print('$m OK')" \
-              || echo ">>> $m FAILED (exit $?)"
-          done
+          set +e
+          .venv/bin/python -X faulthandler -v -c "import app" > import_trace.txt 2>&1
+          echo "import app exit: $?"
+          set -e
+          echo "----- tail of import trace (culprit is near the end) -----"
+          tail -n 80 import_trace.txt
 
       - name: Test with pytest
         env:
@@ -369,15 +366,23 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: postgres
-          # --- segfault mitigations (native libs on GPU-less runner + OpenMP) ---
-          PYTHONFAULTHANDLER: "1"       # dump a native traceback if it still crashes
-          CUDA_VISIBLE_DEVICES: ""      # force CPU paths everywhere
-          OMP_NUM_THREADS: "1"          # avoid oversubscribing OpenMP threads
-          KMP_DUPLICATE_LIB_OK: "TRUE"  # tolerate duplicate OpenMP runtime (torch+tf)
-          MKL_THREADING_LAYER: "GNU"    # reconcile MKL/OpenMP runtimes
-        # Direct .venv binary — NOT `uv run` (which re-syncs/relocates the env and
-        # can undo the CPU-torch install). Output captured for the summary.
+          # --- native-clash mitigations (torch 2.12 + tf/faiss/numba on Linux) ---
+          PYTHONFAULTHANDLER: "1"
+          CUDA_VISIBLE_DEVICES: ""
+          OMP_NUM_THREADS: "1"
+          MKL_NUM_THREADS: "1"
+          OPENBLAS_NUM_THREADS: "1"
+          NUMEXPR_NUM_THREADS: "1"
+          KMP_DUPLICATE_LIB_OK: "TRUE"
+          MKL_THREADING_LAYER: "GNU"
+          TF_ENABLE_ONEDNN_OPTS: "0"    # disable TF oneDNN threading (torch+tf clash)
+          TF_CPP_MIN_LOG_LEVEL: "3"
+        # Force one OpenMP runtime, then run pytest directly from .venv (not
+        # `uv run`, which re-syncs/relocates the env). Output captured for summary.
         run: |
+          SYS_GOMP="$(find / -name 'libgomp.so.1' -path '*x86_64-linux-gnu*' 2>/dev/null | head -n1)"
+          export LD_PRELOAD="${SYS_GOMP}${LD_PRELOAD:+:$LD_PRELOAD}"
+          echo "LD_PRELOAD=$LD_PRELOAD"
           set +e
           .venv/bin/pytest --cov --cov-report=term --cov-fail-under=80 > pytest.txt 2>&1
           status=$?
@@ -397,4 +402,3 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
           exit $status
-
