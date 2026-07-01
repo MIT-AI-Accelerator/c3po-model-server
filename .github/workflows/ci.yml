@@ -289,6 +289,18 @@ jobs:
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
 
+    # Shared by ALL steps in this job (diagnostic + test) so both reach the DB.
+    env:
+      ENVIRONMENT: test
+      POSTGRES_SERVER: postgres
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+      COVERAGE_CORE: sysmon        # coverage via PEP 669 sys.monitoring, not the C tracer
+      PYTHONFAULTHANDLER: "1"      # native traceback on a segfault
+
     # Throwaway Postgres alongside the job, published on localhost:5432.
     services:
       postgres:
@@ -338,42 +350,23 @@ jobs:
           uv pip install pytest pytest-cov "coverage>=7.4"
 
       - name: Diagnose pytest crash
-        # Isolates WHERE the 139 happens: during collection (conftest/test-file
-        # imports beyond `import app`), during a test run, or only under --cov.
-        # Direct .venv binary + faulthandler so a native crash prints a stack.
+        # DB creds now inherited from the job env, so this reaches the DB and runs
+        # real tests. -x stops at the first failure/crash; the tail (with the
+        # faulthandler stack on a 139) names the offending test.
         run: |
           set +e
-          echo "===== collect-only (imports conftest + all test files) ====="
-          .venv/bin/python -X faulthandler -m pytest --collect-only -q > collect.txt 2>&1
-          echo ">>> collect-only exit: $?"
-          tail -n 40 collect.txt
-          echo
-          echo "===== run WITHOUT coverage (-o addopts='' drops --cov) ====="
           .venv/bin/python -X faulthandler -m pytest -p no:cacheprovider -x -q -o addopts="" > run.txt 2>&1
           echo ">>> no-cov run exit: $?"
-          tail -n 40 run.txt
+          tail -n 50 run.txt
           set -e
 
       - name: Test with pytest
-        env:
-          ENVIRONMENT: test
-          # Use the host the "test" config expects; it resolves to the service
-          # via the /etc/hosts entry above.
-          POSTGRES_SERVER: postgres
-          POSTGRES_HOST: postgres
-          POSTGRES_PORT: "5432"
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: postgres
-          # coverage via PEP 669 sys.monitoring instead of the C tracer.
-          COVERAGE_CORE: sysmon
-          PYTHONFAULTHANDLER: "1"
         # Capture full pytest output (per-file progress, pass/fail summary line,
         # and the --cov-report=term coverage table) into the job summary.
         # Exit code preserved so test/coverage failures still fail the job.
         run: |
           set +e
-          ENVIRONMENT=test uv run pytest --cov --cov-report=term --cov-fail-under=80 | tee pytest.txt
+          uv run pytest --cov --cov-report=term --cov-fail-under=80 | tee pytest.txt
           status=${PIPESTATUS[0]}
           set -e
           {
