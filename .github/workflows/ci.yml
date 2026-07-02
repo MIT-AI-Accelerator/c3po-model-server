@@ -349,25 +349,20 @@ jobs:
           if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
           uv pip install pytest pytest-cov "coverage>=7.4"
 
-      - name: Diagnose pytest crash (per-file)
-        # Run each test file in its own process so a native segfault is contained.
-        # The file that prints "SEGFAULT" is the one importing/exercising the
-        # native code that crashes with torch 2.12 on Linux. The loop finishes and
-        # reports every file rather than dying on the first crash.
+      - name: Diagnose conftest import chain
+        # `import app` was clean, but conftest imports `app.main` (the FULL app
+        # graph) + the DB session module (imports all models). Test each in its
+        # own faulthandler process to name the exact import that segfaults with
+        # torch 2.12 on Linux.
         env:
           PYTHONUNBUFFERED: "1"
         run: |
           set +e
-          for f in $(git ls-files 'tests/*.py' 'tests/**/*.py' | grep -v '/conftest\.py$'); do
-            .venv/bin/python -X faulthandler -m pytest "$f" -q -o addopts="" \
-              -p no:cacheprovider > /tmp/pt.log 2>&1
-            code=$?
-            if [ "$code" -eq 139 ]; then
-              echo "💥 SEGFAULT: $f"
-              tail -n 25 /tmp/pt.log
-            else
-              echo "ok(exit $code): $f"
-            fi
+          for mod in app app.main app.core.s3 tests.test_files.db.db_test_session tests.conftest; do
+            echo "===== import $mod ====="
+            stdbuf -oL -eL .venv/bin/python -X faulthandler -c "import $mod"
+            echo ">>> $mod exit: $?"
+            echo
           done
           set -e
 
