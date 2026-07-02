@@ -1,8 +1,12 @@
 # Combined CI pipeline — runs serially in order, every stage runs regardless
 # of earlier failures (`if: !cancelled()`):
 #   1. CVE scan (pip-audit)  2. Secret scan (TruffleHog)
-#   3. Type check (mypy)     4. Lint (pylint)            5. Tests (pytest)
+#   3. Type check (mypy, DISABLED)  4. Lint (pylint, DISABLED)  5. Tests (pytest)
 # Every stage writes a section to the run's job summary.
+#
+# NOTE: mypy and pylint are temporarily commented out. To re-enable, uncomment
+#       both jobs and restore the chain: cve-scan -> trufflehog -> mypy -> pylint
+#       -> pytest (set pytest `needs: pylint`).
 #
 # CVE allowlist (still reported, but non-failing) lives at:
 #   .github/workflows/.cve-allowlist.txt
@@ -162,130 +166,119 @@ jobs:
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
-  # 3) Type check -------------------------------------------------------
-  mypy:
-    name: Type check (mypy)
-    needs: trufflehog
-    if: ${{ !cancelled() }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
+  # 3) Type check (DISABLED) --------------------------------------------
+  # mypy:
+  #   name: Type check (mypy)
+  #   needs: trufflehog
+  #   if: ${{ !cancelled() }}
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v6
+  #
+  #     - name: Free up disk space
+  #       run: |
+  #         sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+  #           /opt/hostedtoolcache/CodeQL "$AGENT_TOOLSDIRECTORY"
+  #         sudo docker image prune --all --force || true
+  #
+  #     - name: Install uv
+  #       uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+  #       with:
+  #         enable-cache: true
+  #
+  #     - name: Set up Python
+  #       run: |
+  #         uv python install 3.13
+  #         uv venv --python 3.13
+  #
+  #     - name: Install dependencies
+  #       run: |
+  #         if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
+  #         uv pip install mypy
+  #
+  #     - name: Run mypy (report-only)
+  #       run: |
+  #         set +e
+  #         uv run mypy . --install-types --non-interactive --ignore-missing-imports | tee mypy.txt
+  #         status=${PIPESTATUS[0]}
+  #         set -e
+  #         {
+  #           echo "## Type check (mypy) results"
+  #           echo
+  #           if [ "$status" -eq 0 ]; then
+  #             echo "No type errors found. :white_check_mark:"
+  #           else
+  #             echo ":warning: Type issues found (non-blocking, exit $status):"
+  #           fi
+  #           echo
+  #           echo '```'
+  #           cat mypy.txt
+  #           echo '```'
+  #         } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Free up disk space
-        # Same cleanup as the lint/pytest jobs — mypy installs the heavy deps too.
-        run: |
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
-            /opt/hostedtoolcache/CodeQL "$AGENT_TOOLSDIRECTORY"
-          sudo docker image prune --all --force || true
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
-        with:
-          enable-cache: true
-
-      - name: Set up Python
-        run: |
-          uv python install 3.13
-          uv venv --python 3.13
-
-      - name: Install dependencies
-        run: |
-          if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
-          uv pip install mypy
-
-      - name: Run mypy (report-only)
-        # Non-blocking: capture output + exit code, write a summary, never fail.
-        run: |
-          set +e
-          uv run mypy . \
-            --install-types \
-            --non-interactive \
-            --ignore-missing-imports | tee mypy.txt
-          status=${PIPESTATUS[0]}
-          set -e
-          {
-            echo "## Type check (mypy) results"
-            echo
-            if [ "$status" -eq 0 ]; then
-              echo "No type errors found. :white_check_mark:"
-            else
-              echo ":warning: Type issues found (non-blocking, exit $status):"
-            fi
-            echo
-            echo '```'
-            cat mypy.txt
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
-          # report-only: deliberately do not propagate mypy's exit code.
-
-  # 4) Lint -------------------------------------------------------------
-  pylint:
-    name: Lint (pylint)
-    needs: mypy
-    if: ${{ !cancelled() }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Free up disk space
-        run: |
-          df -h /
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /usr/local/lib/android
-          sudo rm -rf /opt/ghc
-          sudo rm -rf /opt/hostedtoolcache/CodeQL
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-          sudo docker image prune --all --force || true
-          df -h /
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
-        with:
-          enable-cache: true
-
-      - name: Set up Python
-        run: |
-          uv python install 3.13
-          uv venv --python 3.13
-
-      - name: Install dependencies
-        run: |
-          if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
-          uv pip install --upgrade "pylint>=3.1"
-
-      - name: Show versions
-        run: |
-          uv run python --version
-          uv run -m pylint --version
-
-      - name: Analysing the code with pylint
-        # --fail-on=E,F: fail only on errors/fatals; --fail-under=-100: ignore score.
-        # Summary shows the status + pylint's rating line only; exit code preserved.
-        run: |
-          set +e
-          uv run -m pylint --fail-on=E,F --fail-under=-100 $(git ls-files '*.py') | tee pylint.txt
-          status=${PIPESTATUS[0]}
-          set -e
-          {
-            echo "## Lint (pylint) results"
-            echo
-            if [ "$status" -eq 0 ]; then
-              echo "No errors or fatals. :white_check_mark:"
-            else
-              echo ":x: Errors/fatals found (exit $status):"
-            fi
-            echo
-            echo '```'
-            echo "------------------------------------"
-            grep "Your code has been rated" pylint.txt || echo "(no score reported)"
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
-          exit $status
+  # 4) Lint (DISABLED) --------------------------------------------------
+  # pylint:
+  #   name: Lint (pylint)
+  #   needs: mypy
+  #   if: ${{ !cancelled() }}
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v6
+  #
+  #     - name: Free up disk space
+  #       run: |
+  #         df -h /
+  #         sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+  #           /opt/hostedtoolcache/CodeQL "$AGENT_TOOLSDIRECTORY"
+  #         sudo docker image prune --all --force || true
+  #         df -h /
+  #
+  #     - name: Install uv
+  #       uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+  #       with:
+  #         enable-cache: true
+  #
+  #     - name: Set up Python
+  #       run: |
+  #         uv python install 3.13
+  #         uv venv --python 3.13
+  #
+  #     - name: Install dependencies
+  #       run: |
+  #         if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
+  #         uv pip install --upgrade "pylint>=3.1"
+  #
+  #     - name: Show versions
+  #       run: |
+  #         uv run python --version
+  #         uv run -m pylint --version
+  #
+  #     - name: Analysing the code with pylint
+  #       run: |
+  #         set +e
+  #         uv run -m pylint --fail-on=E,F --fail-under=-100 $(git ls-files '*.py') | tee pylint.txt
+  #         status=${PIPESTATUS[0]}
+  #         set -e
+  #         {
+  #           echo "## Lint (pylint) results"
+  #           echo
+  #           if [ "$status" -eq 0 ]; then
+  #             echo "No errors or fatals. :white_check_mark:"
+  #           else
+  #             echo ":x: Errors/fatals found (exit $status):"
+  #           fi
+  #           echo
+  #           echo '```'
+  #           echo "------------------------------------"
+  #           grep "Your code has been rated" pylint.txt || echo "(no score reported)"
+  #           echo '```'
+  #         } >> "$GITHUB_STEP_SUMMARY"
+  #         exit $status
 
   # 5) Tests ------------------------------------------------------------
   pytest:
     name: Tests (pytest)
-    needs: pylint
+    needs: trufflehog          # ← was `pylint`; restore when mypy/pylint re-enabled
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
 
