@@ -42,6 +42,6 @@ class SuppressSpecificLogItemFilter(logging.Filter):
         return self.filter_string not in record.getMessage()
 
 
-dictConfig(LogConfig().dict())
+dictConfig(LogConfig().model_dump())
 logger = logging.getLogger("transformers")
 logger.addFilter(SuppressSpecificLogItemFilter(filter_string="this_should_be_filtered_out"))

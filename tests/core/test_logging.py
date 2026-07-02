@@ -150,7 +150,7 @@ def test_logger_filter_string():
 def test_log_config_model_validation():
     """Test that LogConfig is a valid Pydantic model"""
     config = LogConfig()
-    config_dict = config.dict()
+    config_dict = config.model_dump()
     assert isinstance(config_dict, dict)
     assert "LOGGER_NAME" in config_dict
     assert "LOG_FORMAT" in config_dict

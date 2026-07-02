@@ -108,6 +108,7 @@ pytest-cov = "^4.1.0"
 pytest-asyncio = "^0.21.0"
 pytest-mock = "^3.10.0"
 isort = "^5.12.0"
+httpx2 = "^2.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.3.2"
@@ -119,6 +120,29 @@ mccabe = "^0.6.0"
 [tool.coverage.run]
 source = ["app"]
 omit = ["__init__.py", "initial_data.py", "init_db.py"]
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    # FastAPI/Starlette httpx deprecation - will be resolved when FastAPI updates
+    "ignore:Using `httpx` with `starlette.testclient` is deprecated:starlette.testclient.StarletteDeprecationWarning",
+    # Swig internal deprecations - not actionable
+    "ignore:builtin type SwigPyPacked has no __module__ attribute:DeprecationWarning",
+    "ignore:builtin type SwigPyObject has no __module__ attribute:DeprecationWarning",
+    "ignore:builtin type swigvarlink has no __module__ attribute:DeprecationWarning",
+    # langchain-community deprecation - package being sunset, migration tracked separately
+    "ignore:`langchain-community` is being sunset:DeprecationWarning",
+    # UMAP runtime warnings with small test datasets - expected behavior
+    "ignore:n_jobs value .* overridden.*random_state:UserWarning",
+    "ignore:n_neighbors is larger than the dataset size:UserWarning",
+    # HDBSCAN warning for small datasets - expected in tests
+    "ignore:Clusterer does not have any defined clusters:UserWarning",
+    # Sklearn version compatibility - tracked separately
+    "ignore:Trying to unpickle estimator.*version:sklearn.exceptions.InconsistentVersionWarning",
+    # Sklearn SVC probability deprecation - fixed in code, but may appear in old pickled models
+    "ignore:The `probability` parameter was deprecated:FutureWarning",
+    # Snorkel FutureWarning - will be resolved in future snorkel updates
+    "ignore:Input has data type int64.*cast to float64:FutureWarning",
+]
 
 [build-system]
 requires = ["poetry-core"]

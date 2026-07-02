@@ -24,7 +24,7 @@ from .experimental_features_router import router as experimental_router
 from .aimodels.router import router as aimodels_router
 from .aimodels.bertopic import crud
 
-dictConfig(LogConfig().dict())
+dictConfig(LogConfig().model_dump())
 logger.info("Dummy Info")
 logger.error("Dummy Error")
 logger.debug("Dummy Debug")

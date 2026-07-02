@@ -20,7 +20,7 @@ from app.core.logging import logger, LogConfig
 from logging.config import dictConfig
 from ..models import LlmPretrainedModel
 
-dictConfig(LogConfig().dict())
+dictConfig(LogConfig().model_dump())
 
 BASE_CKPT_DIR = os.path.join(os.path.abspath(
     os.path.dirname(__file__)), "./data")

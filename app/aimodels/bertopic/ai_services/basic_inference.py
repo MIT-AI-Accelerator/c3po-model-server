@@ -140,8 +140,7 @@ class TrainBertopicOnDocumentsInput(BaseModel):
     precalculated_embeddings: list[list[StrictFloat] | None] | None
     num_topics: StrictInt | None
 
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class BuildTopicModelInputs(BaseModel):

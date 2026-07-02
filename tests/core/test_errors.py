@@ -88,7 +88,7 @@ def test_validation_error_to_dict():
         msg="Must be less than 100",
         type="value_error.number.not_le"
     )
-    error_dict = error.dict()
+    error_dict = error.model_dump()
     assert error_dict["loc"] == ["query", "limit"]
     assert error_dict["msg"] == "Must be less than 100"
     assert error_dict["type"] == "value_error.number.not_le"
@@ -102,7 +102,7 @@ def test_http_validation_error_to_dict():
         type="value_error.unique"
     )
     http_error = HTTPValidationError(detail=[validation_error])
-    error_dict = http_error.dict()
+    error_dict = http_error.model_dump()
     
     assert "detail" in error_dict
     assert len(error_dict["detail"]) == 1

@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from app.db.base_class import Base
 
 
-class TestModel(Base):
+class SampleModel(Base):
     """Test model for base class testing"""
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
@@ -22,7 +22,7 @@ def test_base_class_exists():
 
 def test_tablename_auto_generation():
     """Test that __tablename__ is automatically generated from class name"""
-    assert TestModel.__tablename__ == "testmodel"
+    assert SampleModel.__tablename__ == "samplemodel"
 
 
 def test_tablename_lowercase_conversion():
@@ -32,25 +32,25 @@ def test_tablename_lowercase_conversion():
 
 def test_base_class_inheritance():
     """Test that models properly inherit from Base"""
-    test_instance = TestModel()
+    test_instance = SampleModel()
     assert isinstance(test_instance, Base)
 
 
 def test_multiple_models_different_tablenames():
     """Test that different models have different table names"""
-    assert TestModel.__tablename__ != AnotherTestModel.__tablename__
-    assert TestModel.__tablename__ == "testmodel"
+    assert SampleModel.__tablename__ != AnotherTestModel.__tablename__
+    assert SampleModel.__tablename__ == "samplemodel"
     assert AnotherTestModel.__tablename__ == "anothertestmodel"
 
 
 def test_base_has_name_attribute():
     """Test that Base class has __name__ attribute"""
-    assert hasattr(TestModel, '__name__')
-    assert TestModel.__name__ == 'TestModel'
+    assert hasattr(SampleModel, '__name__')
+    assert SampleModel.__name__ == 'SampleModel'
 
 
 def test_model_can_define_columns():
     """Test that models can define columns"""
-    assert hasattr(TestModel, 'id')
-    assert hasattr(TestModel, 'name')
+    assert hasattr(SampleModel, 'id')
+    assert hasattr(SampleModel, 'name')
     assert hasattr(AnotherTestModel, 'value')
