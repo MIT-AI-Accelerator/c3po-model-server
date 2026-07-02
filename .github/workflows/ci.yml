@@ -349,17 +349,26 @@ jobs:
           if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
           uv pip install pytest pytest-cov "coverage>=7.4"
 
-      - name: Diagnose pytest crash
-        # Stream live (no file redirect) + line-buffered + unbuffered + -v, so the
-        # LAST "tests/...::test_..." line printed before the segfault names the
-        # crashing test. (Redirecting to a file block-buffers and loses it on 139.)
+      - name: Diagnose pytest crash (per-file)
+        # Run each test file in its own process so a native segfault is contained.
+        # The file that prints "SEGFAULT" is the one importing/exercising the
+        # native code that crashes with torch 2.12 on Linux. The loop finishes and
+        # reports every file rather than dying on the first crash.
         env:
           PYTHONUNBUFFERED: "1"
         run: |
           set +e
-          stdbuf -oL -eL .venv/bin/python -X faulthandler -m pytest \
-            -p no:cacheprovider -x -v -o addopts=""
-          echo ">>> no-cov run exit: $?"
+          for f in $(git ls-files 'tests/*.py' 'tests/**/*.py' | grep -v '/conftest\.py$'); do
+            .venv/bin/python -X faulthandler -m pytest "$f" -q -o addopts="" \
+              -p no:cacheprovider > /tmp/pt.log 2>&1
+            code=$?
+            if [ "$code" -eq 139 ]; then
+              echo "💥 SEGFAULT: $f"
+              tail -n 25 /tmp/pt.log
+            else
+              echo "ok(exit $code): $f"
+            fi
+          done
           set -e
 
       - name: Test with pytest
