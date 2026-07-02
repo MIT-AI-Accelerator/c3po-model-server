@@ -299,7 +299,7 @@ jobs:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: postgres
       COVERAGE_CORE: sysmon        # coverage via PEP 669 sys.monitoring, not the C tracer
-      PYTHONFAULTHANDLER: "1"      # native traceback on a segfault
+      PYTHONFAULTHANDLER: "1"      # native traceback on a segfault (goes to fd 2)
 
     # Throwaway Postgres alongside the job, published on localhost:5432.
     services:
@@ -350,14 +350,16 @@ jobs:
           uv pip install pytest pytest-cov "coverage>=7.4"
 
       - name: Diagnose pytest crash
-        # DB creds now inherited from the job env, so this reaches the DB and runs
-        # real tests. -x stops at the first failure/crash; the tail (with the
-        # faulthandler stack on a 139) names the offending test.
+        # Stream live (no file redirect) + line-buffered + unbuffered + -v, so the
+        # LAST "tests/...::test_..." line printed before the segfault names the
+        # crashing test. (Redirecting to a file block-buffers and loses it on 139.)
+        env:
+          PYTHONUNBUFFERED: "1"
         run: |
           set +e
-          .venv/bin/python -X faulthandler -m pytest -p no:cacheprovider -x -q -o addopts="" > run.txt 2>&1
+          stdbuf -oL -eL .venv/bin/python -X faulthandler -m pytest \
+            -p no:cacheprovider -x -v -o addopts=""
           echo ">>> no-cov run exit: $?"
-          tail -n 50 run.txt
           set -e
 
       - name: Test with pytest
