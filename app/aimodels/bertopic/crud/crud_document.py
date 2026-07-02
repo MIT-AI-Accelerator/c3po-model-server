@@ -16,6 +16,7 @@ class CRUDDocument(CRUDBase[DocumentModel, DocumentCreate, DocumentCreate]):
         end_date: datetime.datetime,
         limit: int = 100000
     ) -> List[DocumentModel]:
+        """Get documents within a date range, ordered by creation time."""
         if not end_date:
             end_date = datetime.datetime.now()
 

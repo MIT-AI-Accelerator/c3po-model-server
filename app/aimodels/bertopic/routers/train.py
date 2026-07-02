@@ -159,6 +159,7 @@ def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db
 
 
 def validate_obj(obj: Union[BertopicEmbeddingPretrainedModel, None]):
+    """Validate training request object has valid ID and is uploaded."""
     if not obj:
         raise HTTPException(
             status_code=422, detail=f"Invalid {str(obj.model_type)} id")
@@ -169,7 +170,7 @@ def validate_obj(obj: Union[BertopicEmbeddingPretrainedModel, None]):
 
 
 def validate_inference_inputs_and_generate_service(request: TrainModelRequest, db: Session, s3: S3Client):
-
+    """Validate inference inputs and generate BasicInference service."""
     # check to make sure id exists
     bertopic_sentence_transformer_obj: BertopicEmbeddingPretrainedModel = crud.bertopic_embedding_pretrained.get(
         db, request.sentence_transformer_id)
@@ -205,7 +206,7 @@ def validate_inference_inputs_and_generate_service(request: TrainModelRequest, d
 
 
 def get_documents_and_embeddings(db, document_ids, sentence_transformer_id):
-
+    """Get documents and embeddings for training, fetching precalculated embeddings if available."""
     # get the documents
     documents = []
     for document_id in document_ids:
@@ -233,7 +234,7 @@ def get_documents_and_embeddings(db, document_ids, sentence_transformer_id):
     return documents, precalculated_embeddings
 
 def upload_topics_and_visualizations(db, model_id, inference_output):
-
+    """Upload topics and visualizations to database for trained model."""
     # upload model-level visualizations
     visualize_model_words = BertopicVisualizationCreate(
         model_or_topic_id=model_id,

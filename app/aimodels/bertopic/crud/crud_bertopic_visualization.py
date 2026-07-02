@@ -9,6 +9,7 @@ class CRUDBertopicVisualization(CRUDBase[BertopicVisualizationModel, BertopicVis
     # CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType])
 
     def get_by_model_or_topic_id(self, db: Session, *, model_or_topic_id: str, visualization_type: BertopicVisualizationTypeEnum) -> Union[BertopicVisualizationModel, None]:
+        """Get visualization by model ID or topic ID and visualization type."""
         if not model_or_topic_id:
             return None
 

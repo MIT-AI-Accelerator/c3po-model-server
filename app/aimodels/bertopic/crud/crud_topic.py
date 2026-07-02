@@ -9,6 +9,7 @@ class CRUDTopicSummary(CRUDBase[TopicSummaryModel, TopicSummaryCreate, TopicSumm
     # CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType])
 
     def get_by_model_id(self, db: Session, *, model_id: str) -> Union[TopicSummaryModel, None]:
+        """Get topics by model ID."""
         if not model_id:
             return None
 

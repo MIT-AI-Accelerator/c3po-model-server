@@ -9,12 +9,14 @@ from app.ppg_common.schemas.bertopic.bertopic_embedding_pretrained import Bertop
 # CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType])
 class CRUDBertopicEmbeddingPretrained(CRUDBase[BertopicEmbeddingPretrainedModel, BertopicEmbeddingPretrainedCreate, BertopicEmbeddingPretrainedUpdate]):
     def get_by_sha256(self, db: Session, *, sha256: str) -> Union[BertopicEmbeddingPretrainedModel, None]:
+        """Get embedding model by SHA256 hash."""
         if not sha256:
             return None
 
         return db.query(self.model).filter(self.model.sha256 == sha256).first()
 
     def get_by_model_name(self, db: Session, *, model_name: str, originated_from = OriginationEnum.ORIGINATED_FROM_APP) -> Union[BertopicEmbeddingPretrainedModel, None]:
+        """Get embedding model by model name, filtered by origin and ordered by version."""
         if not model_name:
             return None
 
@@ -23,6 +25,7 @@ class CRUDBertopicEmbeddingPretrained(CRUDBase[BertopicEmbeddingPretrainedModel,
                                            self.model.originated_from == originated_from).order_by(self.model.version.desc()).first()
 
     def get_latest_label_dictionary(self, db: Session, *, originated_from = OriginationEnum.ORIGINATED_FROM_APP) -> Union[list, None]:
+        """Get latest label dictionary from weak learner embedding models."""
         label_dictionary = None
 
         db_obj = db.query(self.model).filter(self.model.uploaded,
