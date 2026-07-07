@@ -30,6 +30,7 @@ class ValuesNotEmpty(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
 def get_vectorizer(stop_word_list):
+    """Get vectorizer for weak learning label application."""
     all_stop_words = list(ENGLISH_STOP_WORDS.union(stop_word_list))
     return CountVectorizer(stop_words=all_stop_words, ngram_range=(1, 3))
 
@@ -42,11 +43,13 @@ class WeakLearner:
         self.label_model = label_model
 
     def create_label_applier(self):
+        """Create label applier function for weak supervision."""
         ValuesNotEmpty(vectorizer=self.vectorizer, svm=self.svm, mlp=self.mlp)
 
         # create the weak learners
         @labeling_function()
         def lf_svm_rbf(x):
+            """Label function using SVM with RBF kernel."""
             x = self.vectorizer.transform(x).toarray()
             y_pred = self.svm.predict(x)
             y_prob = self.svm.predict_proba(x)
@@ -57,6 +60,7 @@ class WeakLearner:
 
         @labeling_function()
         def lf_mlp(x):
+            """Label function using multi-layer perceptron classifier."""
             x = self.vectorizer.transform(x)
             if (x.shape[0] > 1):
                 return None
@@ -71,12 +75,14 @@ class WeakLearner:
 
         @labeling_function()
         def lf_length(x):
+            """Label function based on text length."""
             if (len(x['message']) < 6):
                 return ChatLabel.RECYCLE
             return ChatLabel.ABSTAIN
 
         @labeling_function()
         def lf_dict(x):
+            """Label function using dictionary-based keyword matching."""
             for category in get_label_dictionary()['labeling_terms']:
                 for term in category:
                     if x['message'].find(term) >= 0:
@@ -88,7 +94,7 @@ class WeakLearner:
         return labeling_functions, label_applier
 
     def train_weak_learners(self, df_train, stop_words_list = []):
-
+        """Train weak learners for topic labeling using multiple classifiers."""
         # train the classifiers
         df_train['message'] = df_train['message'].astype(str)
         df_train = df_train[df_train['createat'].notnull()]
@@ -122,4 +128,5 @@ class WeakLearner:
         return (self.vectorizer, self.svm, self.mlp, self.label_model, get_label_dictionary())
 
     def get_label_model(self):
+        """Get label model for weak supervision."""
         return self.label_model

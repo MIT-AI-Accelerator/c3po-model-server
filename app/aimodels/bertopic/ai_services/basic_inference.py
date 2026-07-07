@@ -54,9 +54,9 @@ class InitInputs(BaseModel):
     topic_summarizer_obj: TopicSummaryModel | None
     stop_word_list: list
 
-    # ensure that model type is defined
     @field_validator('embedding_pretrained_model_obj')
     def embedding_pretrained_model_obj_must_have_model_type_and_be_uploaded(cls, v):
+        """Validate that embedding model has required model_type and is uploaded."""
         # pylint: disable=no-self-argument
         if not v.model_type:
             raise ValueError(
@@ -68,6 +68,7 @@ class InitInputs(BaseModel):
 
     @model_validator(mode='before')
     def check_s3_type(cls, values):
+        """Validate that s3 is a valid BaseClient instance."""
         s3 = values.get('s3')
         if not isinstance(s3, BaseClient):
             raise ValueError(
@@ -88,18 +89,18 @@ class BasicInferenceOutputs(BaseModel):
     model_timeline_visualization: Figure
     topic_timeline_visualization: list[Figure]
 
-    # ensure that documents is same length as embeddings
     @field_validator('embeddings')
     def embeddings_must_be_same_length_as_documents(cls, v, values):
+        """Validate that embeddings list matches document count."""
         # pylint: disable=no-self-argument
         if len(v) != len(values.data['documents']):
             raise ValueError(
                 'embeddings must be same length as documents')
         return v
 
-    # ensure that updated_document_indicies is same length as documents if given
     @field_validator('updated_document_indicies')
     def updated_document_indicies_must_be_same_length_as_documents(cls, v, values):
+        """Validate that updated document indices list matches document count."""
         # pylint: disable=no-self-argument
         if len(v) != len(values.data['documents']):
             raise ValueError(
@@ -115,15 +116,16 @@ class CalculateDocumentEmbeddingsInputs(BaseModel):
 
     @field_validator('documents_text_list')
     def documents_text_list_must_be_non_empty(cls, v):
+        """Validate that documents text list is not empty."""
         # pylint: disable=no-self-argument
         if len(v) == 0:
             raise ValueError(
                 'documents_text_list must be non-empty')
         return v
 
-    # if given, ensure precalculated_embeddings is same length as documents_text_list
     @field_validator('precalculated_embeddings')
     def precalculated_embeddings_must_be_same_length_as_documents_text_list(cls, v, values):
+        """Validate that precalculated embeddings match document count if provided."""
         # pylint: disable=no-self-argument
         if v and len(v) != len(values.data['documents_text_list']):
             raise ValueError(
@@ -138,8 +140,7 @@ class TrainBertopicOnDocumentsInput(BaseModel):
     precalculated_embeddings: list[list[StrictFloat] | None] | None
     num_topics: StrictInt | None
 
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class BuildTopicModelInputs(BaseModel):
@@ -151,15 +152,16 @@ class BuildTopicModelInputs(BaseModel):
 
     @field_validator('documents_text_list')
     def documents_text_list_must_be_large_enough_for_inference(cls, v):
+        """Validate that document list has minimum required size for BERTopic inference."""
         # pylint: disable=no-self-argument
         if len(v) < 7:
             raise ValueError(
                 'documents_text_list must have at least 7 documents')
         return v
 
-    # ensure embeddings is same length as documents_text_list
     @field_validator('embeddings')
     def embeddings_must_be_same_length_as_documents_text_list(cls, v, values):
+        """Validate that embeddings array matches document count."""
         # pylint: disable=no-self-argument
         if values.data.get('documents_text_list') and v.shape[0] != len(values.data['documents_text_list']):
             raise ValueError(
@@ -168,6 +170,7 @@ class BuildTopicModelInputs(BaseModel):
 
     @field_validator('num_topics')
     def num_topics_at_least_two(cls, v):
+        """Validate that num_topics is at least 2 for valid clustering."""
         # pylint: disable=no-self-argument
         if v < 2:
             raise ValueError(
@@ -240,7 +243,7 @@ class BasicInference:
             self.topic_summarizer = topic_summarizer
 
     def get_document_info(self, topic_model, topic_document_data: TopicDocumentData, num_documents=DEFAULT_N_REPR_DOCS):
-
+        """Extract document information and representative documents from trained BERTopic model."""
         # increase number of representative documents (BERTopic default is 3)
         document_info = topic_model.get_document_info(topic_document_data.document_text_list)
         repr_docs, _, _ = topic_model._extract_representative_docs(topic_model.c_tf_idf_,
@@ -262,6 +265,7 @@ class BasicInference:
         return document_info
 
     def train_bertopic_on_documents(self, db, documents, precalculated_embeddings, num_topics, document_df, seed_topic_list=None, num_related_docs=DEFAULT_N_REPR_DOCS, trends_only=False, trend_depth=DEFAULT_TREND_DEPTH_DAYS, train_percent=DEFAULT_TRAIN_PERCENT) -> BasicInferenceOutputs:
+        """Train BERTopic model on documents and generate topic visualizations."""
         # validate input
         TrainBertopicOnDocumentsInput(
             documents=documents, precalculated_embeddings=precalculated_embeddings, num_topics=num_topics)
@@ -356,8 +360,7 @@ class BasicInference:
 
     def calculate_document_embeddings(
             self, documents_text_list, precalculated_embeddings) -> tuple[list[list[StrictFloat]], list[StrictBool]]:
-
-        # validate input
+        """Calculate embeddings for documents, using precalculated embeddings when available."""
         CalculateDocumentEmbeddingsInputs(
             documents_text_list=documents_text_list, precalculated_embeddings=precalculated_embeddings)
 
@@ -385,7 +388,7 @@ class BasicInference:
         return (np.array(embeddings), updated_indices)
 
     def build_topic_model(self, topic_document_data: TopicDocumentData, num_topics, seed_topic_list, train_percent) -> BERTopic:
-        # validate input
+        """Build and train BERTopic model with UMAP dimensionality reduction and HDBSCAN clustering."""
         BuildTopicModelInputs(
             documents_text_list = topic_document_data.document_text_list,
             document_timestamps = topic_document_data.document_timestamps,
@@ -474,7 +477,7 @@ class BasicInference:
         return topic_model, topic_document_data_train, topic_document_data_test
 
     def create_topic_visualizations(self, document_info_train, topic_model, document_df_test, num_related_docs, num_topics, trends_only, trend_depth):
-
+        """Create visualizations and summaries for topics, optionally filtering to trending topics only."""
         topic_info = topic_model.get_topic_info()
 
         trending_topic_ids = detect_trending_topics(document_info_train, document_df_test, trend_depth)

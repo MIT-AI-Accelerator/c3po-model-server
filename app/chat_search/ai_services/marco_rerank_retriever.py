@@ -3,6 +3,7 @@ from langchain_core.retrievers import BaseRetriever
 from langchain_core.documents import Document
 from langchain_core.callbacks import Callbacks
 from sentence_transformers import CrossEncoder
+from pydantic import ConfigDict
 
 class MarcoRerankRetriever(BaseRetriever):
     """Retriever class for Marco Rerank."""
@@ -16,10 +17,7 @@ class MarcoRerankRetriever(BaseRetriever):
     max_relevant_documents: int | None = None
     """The maximum number of documents to return from the reranker. If None, all documents are returned."""
 
-    class Config:
-        """Configuration for this pydantic object."""
-
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     def _get_relevant_documents(
         self, query: str, *, callbacks: Callbacks = None, **kwargs: Any

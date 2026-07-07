@@ -33,6 +33,7 @@ class CRUDBertopicTrained(CRUDBase[BertopicTrainedModel, BertopicTrainedCreate, 
     def create_with_embedding_pretrained_id(
         self, db: Session, *, obj_in: BertopicTrainedCreate, embedding_pretrained_id: UUID4
     ) -> Union[BertopicTrainedModel, None]:
+        """Create trained BERTopic model with embedding pretrained ID."""
         obj_in_data = jsonable_encoder(obj_in)
         db_obj = self.model(**obj_in_data, embedding_pretrained_id=embedding_pretrained_id)
         db.add(db_obj)
@@ -47,6 +48,7 @@ class CRUDBertopicTrained(CRUDBase[BertopicTrainedModel, BertopicTrainedCreate, 
     def get_multi_by_embedding_pretrained_id(
         self, db: Session, *, embedding_pretrained_id: UUID4, skip: int = 0, limit: int = 100
     ) -> list[BertopicTrainedModel]:
+        """Get multiple trained models by embedding pretrained ID with pagination."""
         return (
             db.query(self.model)
             .filter(BertopicTrainedModel.embedding_pretrained_id == embedding_pretrained_id)
@@ -56,7 +58,7 @@ class CRUDBertopicTrained(CRUDBase[BertopicTrainedModel, BertopicTrainedCreate, 
         )
 
     def get_trained_models(self, db: Session, *, row_limit = 1, originated_from = OriginationEnum.ORIGINATED_FROM_APP) -> list[BertopicTrainedModelSummary]:
-
+        """Get trained models with optional filtering and ordering by time."""
         db_objs = db.query(self.model).filter(self.model.originated_from == originated_from,
                                               self.model.uploaded == True).order_by(desc(self.model.time)).limit(row_limit)
         return [BertopicTrainedModelSummary(trained_model = db_obj) for db_obj in db_objs]

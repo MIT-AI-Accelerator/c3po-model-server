@@ -14,8 +14,6 @@ uvicorn = "^0.35.0"
 pydantic = "2.13.4"
 matplotlib = "^3.7.1"
 pandas = "^2.3.2"
-clamd = "^1.0.2"
-python-dotenv = "^1.0.0"
 fastapi-versioning = "^0.10.0"
 sqlalchemy = "^2.0.15"
 psycopg2-binary = "^2.9.6"
@@ -25,33 +23,30 @@ bertopic = "^0.14.1"
 snorkel = ">=0.10.0"
 gpt4all = "^2.8.2"
 langchain = ">=1.2.22"
-torch = "^2.11.0"
-numpy = "^2.4.4"
+torch = "^2.12.1"
+numpy = "2.4.6"
 scikit-learn = "^1.7.1"
 faiss-cpu = "^1.7.4"
 rank-bm25 = "^0.2.2"
 jinja2 = "^3.1.6"
 cython = "^3.1.3"
 typing-extensions = "^4.15.0"
-werkzeug = "^3.1.3"
-glibc = "^0.6.1"
 pillow = "^12.2.0"
 fonttools = "^4.60.2"
 ctransformers = "^0.2.27"
 packaging = "^24.0"
-langsmith = "^0.8.5"
+langsmith = "^0.9.4"
 scipy = "^1.15.3"
 requests = "^2.32.5"
 idna = ">=3.15"
 setuptools = "^80.9.0"
 annotated-types = "^0.7.0"
-langchain-core = ">1.3.2"
+langchain-core = "^1.4.8"
 langchain-text-splitters = "^1.1.2"
 pydantic-settings = "^2.10.1"
 pydantic_core = "^2.18.4"
 h5py = "^3.14.0"
 langchain-community = "^0.4.1"
-virtualenv = "^20.34.0"
 boto3 = "^1.37.37"
 boto3-stubs = {extras = ["s3"], version = "^1.37.38"}
 h11 = "^0.16.0"
@@ -72,7 +67,6 @@ charset-normalizer = "^3.4.3"
 click = "^8.2.1"
 contourpy = "^1.3.2"
 distlib = "^0.4.0"
-email-validator = "^2.3.0"
 filelock = "^3.19.1"
 frozenlist = "^1.7.0"
 fsspec = "^2025.7.0"
@@ -92,8 +86,6 @@ plotly = "^6.5.2"
 propcache = "^0.3.2"
 pygments = "^2.19.2"
 regex = "^2025.7.34"
-rich = "^14.1.0"
-rich-toolkit = "^0.15.0"
 s3transfer = "^0.13.1"
 sentencepiece = "^0.2.1"
 types-awscrt = "^0.27.6"
@@ -101,14 +93,13 @@ types-s3transfer = "^0.13.0"
 wrapt = "^1.17.3"
 yarl = "^1.20.1"
 starlette = "^1.0.1"
-torchvision = "^0.26.0"
+torchvision = "^0.27.1"
 umap-learn = "^0.5.9.post2"
 tf-keras = "^2.19.0"
 keras = "^3.12.1"
 jaraco-context = "^6.1.0"
-mccabe = "^0.6.0"
-flake8 = "^4.0.1"
 langchain-classic = ">=1.0.7"
+llvmlite = "^0.47.0"
 
 [tool.poetry.group.test.dependencies]
 pylint = "^2.17.4"
@@ -117,15 +108,41 @@ pytest-cov = "^4.1.0"
 pytest-asyncio = "^0.21.0"
 pytest-mock = "^3.10.0"
 isort = "^5.12.0"
+httpx2 = "^2.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.3.2"
 pipdeptree = "^2.7.1"
 openai = "^0.27.8"
+flake8 = "^4.0.1"
+mccabe = "^0.6.0"
 
 [tool.coverage.run]
 source = ["app"]
 omit = ["__init__.py", "initial_data.py", "init_db.py"]
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    # FastAPI/Starlette httpx deprecation - will be resolved when FastAPI updates
+    "ignore:Using `httpx` with `starlette.testclient` is deprecated:starlette.testclient.StarletteDeprecationWarning",
+    # Swig internal deprecations - not actionable
+    "ignore:builtin type SwigPyPacked has no __module__ attribute:DeprecationWarning",
+    "ignore:builtin type SwigPyObject has no __module__ attribute:DeprecationWarning",
+    "ignore:builtin type swigvarlink has no __module__ attribute:DeprecationWarning",
+    # langchain-community deprecation - package being sunset, migration tracked separately
+    "ignore:`langchain-community` is being sunset:DeprecationWarning",
+    # UMAP runtime warnings with small test datasets - expected behavior
+    "ignore:n_jobs value .* overridden.*random_state:UserWarning",
+    "ignore:n_neighbors is larger than the dataset size:UserWarning",
+    # HDBSCAN warning for small datasets - expected in tests
+    "ignore:Clusterer does not have any defined clusters:UserWarning",
+    # Sklearn version compatibility - tracked separately
+    "ignore:Trying to unpickle estimator.*version:sklearn.exceptions.InconsistentVersionWarning",
+    # Sklearn SVC probability deprecation - fixed in code, but may appear in old pickled models
+    "ignore:The `probability` parameter was deprecated:FutureWarning",
+    # Snorkel FutureWarning - will be resolved in future snorkel updates
+    "ignore:Input has data type int64.*cast to float64:FutureWarning",
+]
 
 [build-system]
 requires = ["poetry-core"]

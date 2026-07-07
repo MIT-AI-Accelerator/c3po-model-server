@@ -57,7 +57,7 @@ class TopicSummarizer:
                        prompt_template=DEFAULT_PROMPT_TEMPLATE,
                        refine_template=DEFAULT_REFINE_TEMPLATE,
                        temp=DEFAULT_LLM_TEMP):
-
+        """Initialize LLM for topic summarization by downloading model from S3 and configuring CTransformers."""
         self.model_type = model_obj.model_type
         self.model_id = model_obj.id
         llm_path = os.path.join(MODEL_CACHE_BASEDIR, self.model_type)
@@ -94,6 +94,7 @@ class TopicSummarizer:
 
     # check existing llm
     def check_parameters(self, model_id, prompt_template, refine_template):
+        """Check if LLM parameters match existing configuration."""
         return self.model_id == model_id and self.prompt_template == prompt_template and self.refine_template == refine_template
 
     # TODO add configuration parameter for temp
@@ -103,10 +104,12 @@ class TopicSummarizer:
 
     # Replaces acronyms in text with expanded meaning from dictionary
     def replace_acronyms(self, d, text):
+        """Replace acronyms in text with expanded meanings from dictionary."""
         return ' '.join(d[x.upper()] if x.upper() in d else x for x in text.split())
 
     # Fixes text after preprocessing by adding back punctuation and replacing acronyms
     def fix_text(self, docs):
+        """Fix text after preprocessing by adding back punctuation and replacing acronyms."""
         acronym_dictionary = get_acronym_dictionary()
         fixed_docs = []
         for text in docs:
@@ -125,7 +128,7 @@ class TopicSummarizer:
 
     # Function to summarize list of texts using LangChain map-reduce chain with custom prompts.
     def get_summary(self, documents):
-
+        """Summarize list of texts using LangChain with custom prompts."""
         summary_text = 'topic summarization disabled'
 
         if self.llm is None:
@@ -176,7 +179,7 @@ class TopicSummarizer:
 
 
 def detect_trending_topics(document_info_train, document_df_test, trend_depth = DEFAULT_TREND_DEPTH_DAYS):
-
+    """Detect trending topics using Shapiro-Wilk test for non-normal distribution of posts over time."""
     trending_topic_ids = []
 
     if not trend_depth:
@@ -226,6 +229,7 @@ def detect_trending_topics(document_info_train, document_df_test, trend_depth = 
     return trending_topic_ids
 
 def detect_trending_topics_single_day(document_info_train, document_df_test):
+    """Detect trending topics for single-day analysis by comparing test vs train document counts."""
 
     trending_topic_ids = []
 
