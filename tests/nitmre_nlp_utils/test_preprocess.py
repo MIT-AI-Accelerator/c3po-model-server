@@ -1,3 +1,6 @@
+# NOTE: Changes to this module should be copied over to the c3po-model-server repository
+#       to deploy to P1.
+
 import random
 from datetime import datetime
 
@@ -7,7 +10,6 @@ import pytest
 from pandas.testing import assert_frame_equal
 
 from app.nitmre_nlp_utils import preprocess as pre
-
 
 def generate_random_timestamp(
     start_dt: datetime = datetime(2000, 1, 1),

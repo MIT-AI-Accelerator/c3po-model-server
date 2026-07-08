@@ -1,3 +1,6 @@
+# NOTE: Changes to this module should be copied over to the c3po-model-server repository
+#       to deploy to P1.
+
 import math
 import multiprocessing as mp
 import re
