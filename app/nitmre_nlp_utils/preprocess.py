@@ -1,10 +1,14 @@
-import re
+# NOTE: Changes to this module should be copied over to the c3po-model-server repository
+#       to deploy to P1.
+
 import math
-import pandas as pd
-import numpy as np
-from tqdm import tqdm
-from concurrent.futures import ProcessPoolExecutor, as_completed
 import multiprocessing as mp
+import re
+from concurrent.futures import ProcessPoolExecutor, as_completed
+
+import numpy as np
+import pandas as pd
+from tqdm import tqdm
 
 
 def _tokenize(msg: str) -> set[str]:
@@ -69,7 +73,8 @@ def preprocess_message(
             token_expanded = acronym_dictionary[token]
             p = re.compile(r'\s' + r'{}'.format(token) + r's?')
             msg_expanded = p.sub(
-                lambda m, token_expanded=token_expanded: _acronym_repl_helper(m, token_expanded),
+                lambda m, token_expanded=token_expanded:
+                    _acronym_repl_helper(m, token_expanded),
                 msg_expanded
             )
 
@@ -103,7 +108,7 @@ def _sep_roots_and_threads(
     )
 
     # To make sure the thread is in chronological order.
-    df_threads.sort_values(by='create_at', ascending=True, inplace=True)  # type: ignore
+    df_threads.sort_values(by='create_at', ascending=True, inplace=True)
 
     return df_roots, df_threads
 
@@ -125,16 +130,18 @@ def _fix_missing_roots(df: pd.DataFrame) -> pd.DataFrame:
     root_ids = set(df_roots['id'])
     thread_root_ids = set(df_threads['root_id'])
     missing_root_ids = thread_root_ids - root_ids
-    df_missing = df_threads[df_threads['root_id'].isin(missing_root_ids)]  # type: ignore
+    df_missing = df_threads[df_threads['root_id'].isin(missing_root_ids)]
 
     # Take the earliest message in each thread and make that message the root
-    idx_min = df_missing.groupby('root_id')['create_at'].transform('idxmin')  # type: ignore
-    new_root_ids = df_missing.loc[idx_min, 'id'].values  # type: ignore
-    df_missing.loc[:, 'root_id'] = new_root_ids
-    df_missing.loc[:, 'root_id'] = np.where(df_missing['id'] == df_missing['root_id'], '', df_missing['root_id']) # NOSONAR - this is intended
+    idx_min = df_missing.groupby('root_id')['create_at'].transform('idxmin')
+    new_root_ids = df_missing.loc[idx_min, 'id'].values
+    df_missing.loc[:, 'root_id'] = new_root_ids # NOSONAR - this is intended
+    df_missing.loc[:, 'root_id'] = np.where(
+        df_missing['id'] == df_missing['root_id'], '', df_missing['root_id']
+    )
 
     # Update the original dataframe
-    df.update(df_missing)  # type: ignore
+    df.update(df_missing)
 
     return df
 
@@ -153,14 +160,20 @@ def _thread_messages(
         leave=True,
     ):
         # Messages without a thread are untouched.
-        if root_id in grouped_threads:
+        if root_id in grouped_threads.index:
             root_message = root_messages[root_id]
-            thread_messages = grouped_threads[root_id]
+            thread_messages = grouped_threads.loc[root_id, message_col_name]
             all_messages = [root_message] + thread_messages
             threaded = '\n'.join(all_messages)
 
             # Replace the original message with the thread.
             df_roots.loc[df_roots['id'] == root_id, message_col_name] = threaded
+
+            # Keep all message ids for the thread, including the root id
+            thread_ids = grouped_threads.loc[root_id, "thread_ids"]
+            all_thread_ids = [root_id] + thread_ids
+            thread_ids_str = ','.join(all_thread_ids)
+            df_roots.loc[df_roots['id'] == root_id, "thread_ids"] = thread_ids_str
 
     return df_roots
 
@@ -172,14 +185,18 @@ def convert_conversation_threads(
 ) -> pd.DataFrame:
     """Take a full set of individual messages to form single message threads.
 
-    The returned dataframe contains only root message ids, with it's given
-    message column containing the full message thread.
+    The returned dataframe contains:
+    - only root message ids set in the 'id' column
+    - message column containing a sorted, newline-delimited string of all messages in
+        the thread
+    - a new 'thread_ids' column containing a comma-delimited string of all message ids
+        in the thread (including the root id)
 
     The input dataframe must contain the following columns:
-    - id
-    - root_id
-    - create_at
-    - the given message_col_name
+    - id (str)
+    - root_id (str)
+    - create_at (pd.datetime)
+    - the given message_col_name (str)
     """
     req_cols_set = {'id', 'root_id', 'create_at', message_col_name}
     if len(req_cols_set & set(df.columns)) != len(req_cols_set):
@@ -189,13 +206,15 @@ def convert_conversation_threads(
 
     df = _fix_missing_roots(df)
     df_roots, df_threads = _sep_roots_and_threads(df)
+    # Messages not part of a thread will have an empty list for thread ids
+    df_roots["thread_ids"] = ""
 
     # Grouping and mapping messages outside of the loop is more efficient than
     # filtering for each root id in every iteration.
-    grouped_threads = df_threads.groupby('root_id')[message_col_name].apply(  # type: ignore
-        list
-    )
-    root_messages: dict[str, str] = df_roots.set_index('id')[  # type: ignore
+    grouped_threads = df_threads.groupby('root_id').agg(
+        {message_col_name: list, "id": list})
+    grouped_threads = grouped_threads.rename(columns={"id": "thread_ids"})
+    root_messages: dict[str, str] = df_roots.set_index('id')[
         message_col_name
     ].to_dict()
 

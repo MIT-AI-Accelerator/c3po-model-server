@@ -1,13 +1,15 @@
-import pytest
-import random
-import pandas as pd
-import numpy as np
+# NOTE: Changes to this module should be copied over to the c3po-model-server repository
+#       to deploy to P1.
 
+import random
 from datetime import datetime
+
+import numpy as np
+import pandas as pd
+import pytest
 from pandas.testing import assert_frame_equal
 
 from app.nitmre_nlp_utils import preprocess as pre
-
 
 def generate_random_timestamp(
     start_dt: datetime = datetime(2000, 1, 1),
@@ -23,8 +25,8 @@ def generate_random_timestamp(
 def test_threading_successful():
     df = pd.DataFrame(
         {
-            'id': [0, 1, 2, 3, 4, 5, 7, 9, 10, 11],
-            'root_id': ['', np.nan, 0, 0, 1, '', 6, 8, 8, 8],
+            'id': ['0', '1', '2', '3', '4', '5', '7', '9', '10', '11'],
+            'root_id': ['', np.nan, '0', '0', '1', '', '6', '8', '8', '8'],
             'create_at': [
                 datetime(2024, 1, 1),
                 datetime(2024, 2, 1),
@@ -52,18 +54,25 @@ def test_threading_successful():
         }
     )
 
-    expected_root_ids = (0, 1, 5, 7, 10)
+    expected_root_ids = ('0', '1', '5', '7', '10')
     expected = pd.DataFrame(
         {
             'id': expected_root_ids,  # empty string and nans collapse to root id
             'root_id': ['', np.nan, '', '', ''],
-            'create_at': df[df['id'].isin(expected_root_ids)]['create_at'],  # type: ignore
+            'create_at': df[df['id'].isin(expected_root_ids)]['create_at'],
             'message': [
                 'zero\nthree\ntwo',  # threads are sorted by create_at
                 'one\nfour',  # threaded messages are delimited by newlines
                 'five',  # keep messages that don't have a thread
                 'seven',  # Threads with a missing root message aren't lost...
-                'ten\nnine\neleven',  # ...even with more than one message in the thread.
+                'ten\nnine\neleven',  # ...even with more than one message in the thread
+            ],
+            'thread_ids': [
+                '0,3,2',
+                '1,4',
+                '',
+                '',
+                '10,9,11',
             ],
         }
     )
@@ -97,9 +106,10 @@ def test_threading_incorrect_columns():
 
 
 def test_threading_empty_dataframe():
-    df = pd.DataFrame(columns=['id', 'root_id', 'create_at', 'message'])
+    df = pd.DataFrame(columns=np.array(['id', 'root_id', 'create_at', 'message']))
 
-    expected = pd.DataFrame(columns=['id', 'root_id', 'create_at', 'message'])
+    expected = pd.DataFrame(
+        columns=np.array(['id', 'root_id', 'create_at', 'message', 'thread_ids']))
     result = pre.convert_conversation_threads(df, 'message')
     assert_frame_equal(result, expected)
 
@@ -107,8 +117,8 @@ def test_threading_empty_dataframe():
 def test_threading_duplicate_messages():
     df = pd.DataFrame(
         {
-            'id': [0, 1, 2, 3, 4, 5],
-            'root_id': ['', '', 0, 0, 1, 1],
+            'id': ['0', '1', '2', '3', '4', '5'],
+            'root_id': ['', '', '0', '0', '1', '1'],
             'create_at': [
                 datetime(2024, 1, 1),
                 datetime(2024, 2, 1),
@@ -128,16 +138,19 @@ def test_threading_duplicate_messages():
         }
     )
 
-    expected_root_ids = (0, 1)
+    expected_root_ids = ('0', '1')
     expected = pd.DataFrame(
         {
             'id': expected_root_ids,
-            'ro'
-            'ot_id': ['', ''],
-            'create_at': df[df['id'].isin(expected_root_ids)]['create_at'],  # type: ignore
+            'root_id': ['', ''],
+            'create_at': df[df['id'].isin(expected_root_ids)]['create_at'],
             'message': [
                 'zero\ntwo\ntwo',  # Duplicate messages are preserved
                 'one\nfour\nfour',  # Duplicate messages are preserved
+            ],
+            'thread_ids': [
+                '0,2,3',
+                '1,4,5'
             ],
         }
     )
@@ -174,9 +187,13 @@ def test_preprocess_message():
     )
 
     # Test msg_only=True
-    result_msg_only = pre.preprocess_message(acronym_dictionary, icao_dictionary, msg, msg_only=True)
-    assert result_msg_only == expected_msg_only, f"Expected: {expected_msg_only}, Got: {result_msg_only}"
+    result_msg_only = pre.preprocess_message(
+        acronym_dictionary, icao_dictionary, msg, msg_only=True)
+    assert result_msg_only == expected_msg_only, (
+        f"Expected: {expected_msg_only}, Got: {result_msg_only}")
 
     # Test full output (msg_only=False)
-    result_full_output = pre.preprocess_message(acronym_dictionary, icao_dictionary, msg, msg_only=False)
-    assert result_full_output == expected_full_output, f"Expected: {expected_full_output}, Got: {result_full_output}"
+    result_full_output = pre.preprocess_message(
+        acronym_dictionary, icao_dictionary, msg, msg_only=False)
+    assert result_full_output == expected_full_output, (
+        f"Expected: {expected_full_output}, Got: {result_full_output}")
