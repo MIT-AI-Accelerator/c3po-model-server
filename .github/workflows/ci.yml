@@ -337,7 +337,7 @@ jobs:
         # (torch._dynamo -> triton/knobs.py). torch runs fine on CPU without it.
         run: |
           if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
-          uv pip install pytest==9.1.1 pytest-cov==7.1.0
+          uv pip install pytest pytest-cov
           #uv pip uninstall triton || true
 
       - name: Test with pytest
