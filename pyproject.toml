@@ -6,6 +6,9 @@ authors = ["Eric Robinson","Emilie Cowen","Mark Howard","Pat Kelly"]
 readme = "README.md"
 packages = [{include = "app"}]
 
+[tool.poetry.requires-plugins]
+poetry-plugin-export = ">=1.10.0"
+
 [tool.poetry.dependencies]
 python = "~3.13"
 urllib3 = ">=2.7.0"
@@ -23,7 +26,7 @@ bertopic = "^0.14.1"
 snorkel = ">=0.10.0"
 gpt4all = "^2.8.2"
 langchain = ">=1.2.22"
-torch = "2.13.0"
+torch = "2.14.0"
 numpy = "2.4.6"
 scikit-learn = "^1.7.1"
 faiss-cpu = "^1.7.4"
@@ -93,7 +96,7 @@ types-s3transfer = "^0.13.0"
 wrapt = "^1.17.3"
 yarl = "^1.20.1"
 starlette = "^1.0.1"
-torchvision = "0.28.0"
+torchvision = "0.29.0"
 umap-learn = "^0.5.9.post2"
 tf-keras = "^2.19.0"
 keras = "^3.12.1"
@@ -125,6 +128,9 @@ omit = ["__init__.py", "initial_data.py", "init_db.py"]
 filterwarnings = [
     # FastAPI/Starlette httpx deprecation - will be resolved when FastAPI updates
     "ignore:Using `httpx` with `starlette.testclient` is deprecated:starlette.testclient.StarletteDeprecationWarning",
+    # Starlette TestClient anyio.abc.BlockingPortal alias deprecation - internal to
+    # starlette, will be resolved when starlette updates its anyio usage
+    "ignore:The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead:DeprecationWarning",
     # Swig internal deprecations - not actionable
     "ignore:builtin type SwigPyPacked has no __module__ attribute:DeprecationWarning",
     "ignore:builtin type SwigPyObject has no __module__ attribute:DeprecationWarning",
