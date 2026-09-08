@@ -305,3 +305,82 @@ def test_download_file_chunks():
         
         result.seek(0)
         assert result.read() == chunk1 + chunk2
+
+
+def test_download_file_from_s3_closes_stream_on_success():
+    """Test that download_file_from_s3 closes StreamingBody on successful download"""
+    test_id = uuid4()
+    test_content = b"test content"
+    
+    mock_streaming_body = MagicMock()
+    mock_streaming_body.iter_chunks.return_value = [test_content]
+    mock_streaming_body.close = MagicMock()
+    
+    mock_s3 = MagicMock(spec=S3Client)
+    mock_s3.get_object.return_value = {'Body': mock_streaming_body}
+    
+    with patch('app.core.s3.settings') as mock_settings:
+        mock_settings.s3_bucket_name = "test-bucket"
+        
+        download_file_from_s3(test_id, mock_s3)
+        
+        mock_streaming_body.close.assert_called_once()
+
+
+def test_download_file_from_s3_closes_stream_on_error():
+    """Test that download_file_from_s3 closes StreamingBody even on error"""
+    test_id = uuid4()
+    
+    mock_streaming_body = MagicMock()
+    mock_streaming_body.iter_chunks.side_effect = Exception("Download failed")
+    mock_streaming_body.close = MagicMock()
+    
+    mock_s3 = MagicMock(spec=S3Client)
+    mock_s3.get_object.return_value = {'Body': mock_streaming_body}
+    
+    with patch('app.core.s3.settings') as mock_settings:
+        mock_settings.s3_bucket_name = "test-bucket"
+        
+        with pytest.raises(Exception):
+            download_file_from_s3(test_id, mock_s3)
+        
+        mock_streaming_body.close.assert_called_once()
+
+
+def test_download_file_from_s3_returns_empty_bytesio_for_disk_write(tmp_path):
+    """Test that download_file_from_s3 returns empty BytesIO when writing to disk"""
+    test_id = uuid4()
+    test_content = b"file content"
+    test_file = tmp_path / "test_download.txt"
+    
+    mock_streaming_body = MagicMock()
+    mock_streaming_body.iter_chunks.return_value = [test_content]
+    mock_streaming_body.close = MagicMock()
+    
+    mock_s3 = MagicMock(spec=S3Client)
+    mock_s3.get_object.return_value = {'Body': mock_streaming_body}
+    
+    with patch('app.core.s3.settings') as mock_settings:
+        mock_settings.s3_bucket_name = "test-bucket"
+        
+        result = download_file_from_s3(test_id, mock_s3, filename=str(test_file))
+        
+        assert isinstance(result, io.BytesIO)
+        assert result.read() == b""
+        assert test_file.exists()
+        assert test_file.read_bytes() == test_content
+
+
+def test_download_file_from_s3_before_get_object_error():
+    """Test that download_file_from_s3 handles error before StreamingBody is assigned"""
+    test_id = uuid4()
+    mock_s3 = MagicMock(spec=S3Client)
+    mock_s3.get_object.side_effect = BotoCoreError()
+    
+    with patch('app.core.s3.settings') as mock_settings:
+        mock_settings.s3_bucket_name = "test-bucket"
+        
+        with pytest.raises(HTTPException) as exc_info:
+            download_file_from_s3(test_id, mock_s3)
+        
+        assert exc_info.value.status_code == 500

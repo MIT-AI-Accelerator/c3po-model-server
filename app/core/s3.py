@@ -30,7 +30,8 @@ def build_client() -> S3Client:
             region_name=settings.s3_region
         )
     except BotoCoreError as e:
-        raise BotoCoreError(f"An unexpected error occurred while creating the S3 client: {str(e)}. endpoint_url={settings.s3_endpoint_url}, region_name={settings.s3_region}") from e
+        logger.error(f"An unexpected error occurred while creating the S3 client: {str(e)}. endpoint_url={settings.s3_endpoint_url}, region_name={settings.s3_region}")
+        raise
 
 def upload_file_to_s3(file: UploadFile, id: UUID4, s3: S3Client) -> bool:
     output_filename = f"{id}"
@@ -73,31 +74,28 @@ def pickle_and_upload_object_to_s3(object: Any, id: UUID4, s3: S3Client) -> bool
 
 def download_file_from_s3(id: Union[UUID4, str], s3: S3Client, filename: Optional[str] = None) -> io.BytesIO:
     output_filename = f"{str(id)}"
-    data = None
+    data: Optional[StreamingBody] = None
 
     try:
         response = s3.get_object(
             Bucket=settings.s3_bucket_name,
             Key=output_filename
         )
-        data: StreamingBody | None = response['Body']
+        data = response['Body']
 
-        file_obj = None
         write_to_memory = not filename
         if write_to_memory:
-            file_obj = io.BytesIO()
+            file_obj: io.BytesIO = io.BytesIO()
+            for d in data.iter_chunks(chunk_size=32*1024):
+                file_obj.write(d)
+            file_obj.seek(0)
+            return file_obj
         else:
-            file_obj = open(filename, 'wb')
-
-        for d in data.iter_chunks(chunk_size=32*1024):
-            file_obj.write(d)
-
-        file_obj.seek(0)
-
-        if not write_to_memory:
-            file_obj.close()
-
-        return file_obj
+            with open(filename, 'wb') as file_obj:
+                for d in data.iter_chunks(chunk_size=32*1024):
+                    file_obj.write(d)
+            # For file writes, return empty BytesIO since return type expects it
+            return io.BytesIO()
     except BotoCoreError as e:
         logger.error(f"Failed to download file from S3: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error") from e
