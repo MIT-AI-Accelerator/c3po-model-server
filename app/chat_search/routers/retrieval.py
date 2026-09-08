@@ -24,7 +24,10 @@ router = APIRouter(prefix="", tags=["Query Retrieval - Experimental"])
 @router.get(
     "/retrieval",
     response_class=HTMLResponse,
-    responses={'500': {'model': HTTPValidationError}},
+    responses={
+        '422': {'model': HTTPValidationError},
+        '500': {'model': HTTPValidationError}
+    },
     summary="Query retrieval endpoint",
     response_description="Answerwed query with sources",
 )

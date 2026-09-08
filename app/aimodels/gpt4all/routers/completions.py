@@ -1,5 +1,4 @@
-from typing import Annotated
-from typing import Annotated
+from typing import Annotated, Union
 from fastapi import Depends, APIRouter, HTTPException
 from sqlalchemy.orm import Session
 from mypy_boto3_s3.client import S3Client
@@ -15,7 +14,7 @@ router = APIRouter()
 
 @router.post(
     "/basic/completions",
-    response_model=CompletionInferenceOutputs,
+    response_model=Union[CompletionInferenceOutputs, HTTPValidationError],
     responses={'422': {'model': HTTPValidationError}},
     summary="GPT completion endpoint",
     response_description="Completed GPT response"
@@ -32,7 +31,8 @@ async def gpt_completion_post(request: CompletionInferenceInputs, db: Annotated[
 
 @router.post(
     "/chat/completions",
-    response_model=CompletionInferenceOutputs,
+    response_model=Union[CompletionInferenceOutputs, HTTPValidationError],
+    responses={'422': {'model': HTTPValidationError}},
     summary="Chat completion endpoint",
     response_description="Completed Chat response"
 )
