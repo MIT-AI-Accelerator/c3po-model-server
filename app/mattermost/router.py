@@ -235,6 +235,9 @@ def create_conversation_objects(db: Session, thread_type: ThreadTypeEnum, conver
         # update existing thread
         if mm_document_obj:
             document_obj = crud_document.document.get(db, id=row['document_id'])
+            if not document_obj:
+                raise HTTPException(status_code=422, detail=f"Document {row['document_id']} not found")
+            
             crud_document.document.update(db,
                                  db_obj=document_obj,
                                  obj_in=DocumentUpdate(text=thread_str,

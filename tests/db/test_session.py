@@ -1,4 +1,4 @@
-from sqlalchemy import Engine
+from sqlalchemy import Engine, text
 from sqlalchemy.orm import sessionmaker, Session
 from app.db.session import engine, SessionLocal
 from app.core.config import settings
@@ -56,3 +56,24 @@ def test_session_can_be_closed():
     session = SessionLocal()
     session.close()
     assert True
+
+
+def test_database_uri_not_none():
+    """Test that database URI is configured and not None"""
+    assert settings.sqlalchemy_database_uri is not None
+
+
+def test_engine_creation_with_valid_uri():
+    """Test that engine was created successfully with valid URI"""
+    assert engine is not None
+    assert str(engine.url) != 'None'
+
+
+def test_session_local_produces_working_sessions():
+    """Test that SessionLocal produces sessions that can execute queries"""
+    session = SessionLocal()
+    try:
+        result = session.execute(text("SELECT 1"))
+        assert result is not None
+    finally:
+        session.close()

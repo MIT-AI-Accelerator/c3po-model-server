@@ -96,8 +96,11 @@ def get_s3(environment: str, db: Session) -> Union[S3Client, None]:
 
     if (environment in ['local', 'development', 'integration']):
         logger.info("Setting up S3 bucket")
-        init_s3_bucket(s3)
-        logger.info("S3 bucket set up.")
+        if s3 is not None:
+            init_s3_bucket(s3)
+            logger.info("S3 bucket set up.")
+        else:
+            logger.warning("S3 client is None, skipping bucket setup")
 
     if (environment != 'production'):
         logger.info("Creating documents from chats")
@@ -129,7 +132,7 @@ def init_sentence_embedding_object(s3: S3Client, db: Session, model_path: str) -
     hex_dig = hash_object.hexdigest()
 
     # check to make sure sha256 doesn't already exist
-    obj_by_sha: BertopicEmbeddingPretrainedModel = bertopic_crud.bertopic_embedding_pretrained.get_by_sha256(
+    obj_by_sha = bertopic_crud.bertopic_embedding_pretrained.get_by_sha256(
         db, sha256=hex_dig)
 
     if not obj_by_sha:
@@ -158,7 +161,7 @@ def init_sentence_embedding_object(s3: S3Client, db: Session, model_path: str) -
 
         # update the object to reflect uploaded status
         updated_object = BertopicEmbeddingPretrainedUpdate(uploaded=True)
-        new_bertopic_embedding_pretrained_obj: BertopicEmbeddingPretrainedModel = bertopic_crud.bertopic_embedding_pretrained.update(
+        new_bertopic_embedding_pretrained_obj = bertopic_crud.bertopic_embedding_pretrained.update(
             db, db_obj=new_bertopic_embedding_pretrained_obj, obj_in=updated_object)
 
         return new_bertopic_embedding_pretrained_obj
@@ -202,7 +205,7 @@ def init_mistrallite_pretrained_model(s3: S3Client, db: Session) -> LlmPretraine
     hex_dig = hash_object.hexdigest()
 
     # check to make sure sha256 doesn't already exist
-    obj_by_sha: LlmPretrainedModel = gpt4all_crud.llm_pretrained.get_by_sha256(
+    obj_by_sha = gpt4all_crud.llm_pretrained.get_by_sha256(
         db, sha256=hex_dig)
 
     if not obj_by_sha:
@@ -210,7 +213,7 @@ def init_mistrallite_pretrained_model(s3: S3Client, db: Session) -> LlmPretraine
         llm_pretrained_obj = LlmPretrainedCreate(
             sha256=hex_dig, model_type=LlmFilenameEnum.Q4_K_M)
 
-        new_llm_pretrained_obj: LlmPretrainedModel = gpt4all_crud.llm_pretrained.create(
+        new_llm_pretrained_obj = gpt4all_crud.llm_pretrained.create(
             db, obj_in=llm_pretrained_obj)
 
         # utilize id from above to upload file to s3
@@ -220,7 +223,7 @@ def init_mistrallite_pretrained_model(s3: S3Client, db: Session) -> LlmPretraine
 
         # update the object to reflect uploaded status
         updated_object = LlmPretrainedUpdate(uploaded=True)
-        new_llm_pretrained_obj: LlmPretrainedModel = gpt4all_crud.llm_pretrained.update(
+        new_llm_pretrained_obj = gpt4all_crud.llm_pretrained.update(
             db, db_obj=new_llm_pretrained_obj, obj_in=updated_object)
 
         return new_llm_pretrained_obj
@@ -264,7 +267,7 @@ def init_llm_pretrained_model(s3: S3Client, db: Session) -> LlmPretrainedModel:
     hex_dig = hash_object.hexdigest()
 
     # check to make sure sha256 doesn't already exist
-    obj_by_sha: LlmPretrainedModel = gpt4all_crud.llm_pretrained.get_by_sha256(
+    obj_by_sha = gpt4all_crud.llm_pretrained.get_by_sha256(
         db, sha256=hex_dig)
 
     if not obj_by_sha:
@@ -272,7 +275,7 @@ def init_llm_pretrained_model(s3: S3Client, db: Session) -> LlmPretrainedModel:
         llm_pretrained_obj = LlmPretrainedCreate(
             sha256=hex_dig)
 
-        new_llm_pretrained_obj: LlmPretrainedModel = gpt4all_crud.llm_pretrained.create(
+        new_llm_pretrained_obj = gpt4all_crud.llm_pretrained.create(
             db, obj_in=llm_pretrained_obj)
 
         # utilize id from above to upload file to s3
@@ -282,7 +285,7 @@ def init_llm_pretrained_model(s3: S3Client, db: Session) -> LlmPretrainedModel:
 
         # update the object to reflect uploaded status
         updated_object = LlmPretrainedUpdate(uploaded=True)
-        new_llm_pretrained_obj: LlmPretrainedModel = gpt4all_crud.llm_pretrained.update(
+        new_llm_pretrained_obj = gpt4all_crud.llm_pretrained.update(
             db, db_obj=new_llm_pretrained_obj, obj_in=updated_object)
 
         return new_llm_pretrained_obj
@@ -309,7 +312,7 @@ def init_llm_db_obj_staging_prod(s3: S3Client, db: Session, model_enum: LlmFilen
         logger.info(f"Downloaded model from S3 to {local_path}")
 
     # check to make sure sha256 doesn't already exist
-    obj_by_sha: LlmPretrainedModel = gpt4all_crud.llm_pretrained.get_by_sha256(
+    obj_by_sha = gpt4all_crud.llm_pretrained.get_by_sha256(
         db, sha256=default_sha256)
 
     if not obj_by_sha:
@@ -317,12 +320,12 @@ def init_llm_db_obj_staging_prod(s3: S3Client, db: Session, model_enum: LlmFilen
         llm_pretrained_obj = LlmPretrainedCreate(
             sha256=default_sha256, use_base_model=True)
 
-        new_llm_pretrained_obj: LlmPretrainedModel = gpt4all_crud.llm_pretrained.create(
+        new_llm_pretrained_obj = gpt4all_crud.llm_pretrained.create(
             db, obj_in=llm_pretrained_obj)
 
         # update the object to reflect uploaded status
         updated_object = LlmPretrainedUpdate(uploaded=True)
-        new_llm_pretrained_obj: LlmPretrainedModel = gpt4all_crud.llm_pretrained.update(
+        new_llm_pretrained_obj = gpt4all_crud.llm_pretrained.update(
             db, db_obj=new_llm_pretrained_obj, obj_in=updated_object)
 
         return new_llm_pretrained_obj
@@ -344,7 +347,7 @@ def init_weak_learning_object(s3: S3Client, db: Session) -> BertopicEmbeddingPre
     hex_dig = hash_object.hexdigest()
 
     # check to make sure sha256 doesn't already exist
-    obj_by_sha: BertopicEmbeddingPretrainedModel = bertopic_crud.bertopic_embedding_pretrained.get_by_sha256(
+    obj_by_sha = bertopic_crud.bertopic_embedding_pretrained.get_by_sha256(
         db, sha256=hex_dig)
 
     if not obj_by_sha:
@@ -369,7 +372,7 @@ def init_weak_learning_object(s3: S3Client, db: Session) -> BertopicEmbeddingPre
 
         # update the object to reflect uploaded status
         updated_object = BertopicEmbeddingPretrainedUpdate(uploaded=True)
-        new_bertopic_embedding_pretrained_obj: BertopicEmbeddingPretrainedModel = bertopic_crud.bertopic_embedding_pretrained.update(
+        new_bertopic_embedding_pretrained_obj = bertopic_crud.bertopic_embedding_pretrained.update(
             db, db_obj=new_bertopic_embedding_pretrained_obj, obj_in=updated_object)
 
         return new_bertopic_embedding_pretrained_obj
@@ -516,14 +519,18 @@ def main() -> None:
     s3 = get_s3(environment, db)
 
     if (environment != 'test') and (environment != 'integration'):
-        init_large_objects(db)
+        if db is not None:
+            init_large_objects(db)
 
     if (environment == 'local') or (environment == 'integration'):
-        init_large_objects_local(s3, db)
+        if s3 is not None and db is not None:
+            init_large_objects_local(s3, db)
     elif (environment == 'staging' or (environment == 'production' and migration_toggle is True)):
-        init_large_objects_p1(s3, db)
+        if s3 is not None and db is not None:
+            init_large_objects_p1(s3, db)
 
-    list_s3_objects(s3)
+    if s3 is not None:
+        list_s3_objects(s3)
 
     end = time.time()
     logger.info("Initialization complete in %fs" % (end - start))

@@ -1,6 +1,7 @@
 import uuid, datetime
 import pytest
 import pandas as pd
+from unittest.mock import MagicMock, patch
 from sqlalchemy.orm import Session
 from fastapi.testclient import TestClient
 from _pytest.monkeypatch import MonkeyPatch
@@ -434,3 +435,135 @@ def test_upload_mattermost_docs_by_substring(db: Session, client: TestClient, mo
 
     # Assert the response status code
     assert response.status_code == 200
+
+
+def test_create_conversation_objects_with_none_document():
+    """Test that create_conversation_objects raises HTTPException when document is None"""
+    from app.mattermost.router import create_conversation_objects
+    from app.ppg_common.schemas.mattermost.mattermost_documents import ThreadTypeEnum, InfoTypeEnum
+    
+    mock_db = MagicMock(spec=Session)
+    
+    # Create a mock mm_document_obj with proper UUID types
+    mock_mm_doc = MagicMock()
+    mock_mm_doc.message_id = "test-message-id"
+    mock_mm_doc.root_message_id = "test-root-id"
+    mock_mm_doc.type = "test-type"
+    mock_mm_doc.channel = uuid.uuid4()
+    mock_mm_doc.user = uuid.uuid4()
+    mock_mm_doc.document = uuid.uuid4()
+    mock_mm_doc.info_type = InfoTypeEnum.CHAT
+    
+    # Mock the crud methods
+    with patch('app.mattermost.router.crud_mattermost') as mock_crud_mm:
+        with patch('app.mattermost.router.crud_document') as mock_crud_doc:
+            # Return the mock mm_document_obj
+            mock_crud_mm.mattermost_documents.get_by_message_id.return_value = mock_mm_doc
+            
+            # Return None for document.get to trigger the check
+            mock_crud_doc.document.get.return_value = None
+            
+            # Create test dataframe
+            test_df = pd.DataFrame([{
+                'message_id': 'test-message-id',
+                'document_id': 'test-doc-id',
+                'thread': 'test thread',
+                'hashtags': '',
+                'has_reactions': False,
+                'props': {},
+                'metadata': {}
+            }])
+            
+            # Should raise HTTPException
+            with pytest.raises(Exception):
+                create_conversation_objects(mock_db, ThreadTypeEnum.THREAD, test_df)
+
+
+def test_create_conversation_objects_converts_attributes_to_strings():
+    """Test that create_conversation_objects properly converts model attributes to strings"""
+    from app.mattermost.router import create_conversation_objects
+    from app.ppg_common.schemas.mattermost.mattermost_documents import ThreadTypeEnum, InfoTypeEnum
+    
+    mock_db = MagicMock(spec=Session)
+    
+    # Create mock objects with proper UUID types
+    mock_mm_doc = MagicMock()
+    mock_mm_doc.message_id = "test-message-id"
+    mock_mm_doc.root_message_id = "test-root-id"
+    mock_mm_doc.type = "test-type"
+    mock_mm_doc.channel = uuid.uuid4()
+    mock_mm_doc.user = uuid.uuid4()
+    mock_mm_doc.document = uuid.uuid4()
+    mock_mm_doc.info_type = InfoTypeEnum.CHAT
+    
+    mock_document = MagicMock()
+    mock_document.id = "doc-id"
+    mock_document.original_created_time = datetime.datetime.now()
+    
+    mock_updated_doc = MagicMock()
+    
+    with patch('app.mattermost.router.crud_mattermost') as mock_crud_mm:
+        with patch('app.mattermost.router.crud_document') as mock_crud_doc:
+            mock_crud_mm.mattermost_documents.get_by_message_id.return_value = mock_mm_doc
+            mock_crud_doc.document.get.return_value = mock_document
+            mock_crud_doc.document.update.return_value = mock_document
+            mock_crud_mm.mattermost_documents.update.return_value = mock_updated_doc
+            
+            test_df = pd.DataFrame([{
+                'message_id': 'test-message-id',
+                'document_id': 'test-doc-id',
+                'thread': 'test thread',
+                'hashtags': 'tag1 tag2',
+                'has_reactions': True,
+                'props': {'key': 'value'},
+                'metadata': {'meta': 'data'}
+            }])
+            
+            result = create_conversation_objects(mock_db, ThreadTypeEnum.THREAD, test_df)
+            
+            # Verify update was called
+            assert mock_crud_mm.mattermost_documents.update.called
+            
+            # Get the call arguments
+            call_args = mock_crud_mm.mattermost_documents.update.call_args
+            obj_in = call_args.kwargs['obj_in']
+            
+            # Verify that string conversions were applied
+            assert isinstance(obj_in.message_id, str)
+            assert isinstance(obj_in.root_message_id, str)
+            assert isinstance(obj_in.type, str)
+
+
+def test_create_conversation_objects_handles_new_documents():
+    """Test that create_conversation_objects creates new documents when they don't exist"""
+    from app.mattermost.router import create_conversation_objects
+    from app.ppg_common.schemas.mattermost.mattermost_documents import ThreadTypeEnum
+    
+    mock_db = MagicMock(spec=Session)
+    
+    with patch('app.mattermost.router.crud_mattermost') as mock_crud_mm:
+        # Return None to indicate document doesn't exist
+        mock_crud_mm.mattermost_documents.get_by_message_id.return_value = None
+        
+        # Mock create_all_using_df to return list of created documents
+        mock_new_docs = [MagicMock()]
+        mock_crud_mm.mattermost_documents.create_all_using_df.return_value = mock_new_docs
+        
+        test_df = pd.DataFrame([{
+            'message_id': 'new-message-id',
+            'document_id': 'new-doc-id',
+            'thread': 'test thread',
+            'hashtags': '',
+            'has_reactions': False,
+            'props': {},
+            'metadata': {}
+        }])
+        
+        result = create_conversation_objects(mock_db, ThreadTypeEnum.THREAD, test_df)
+        
+        # Verify create_all_using_df was called
+        mock_crud_mm.mattermost_documents.create_all_using_df.assert_called_once()
+        
+        # Verify result contains the new document
+        assert len(result) == 1
+        assert result[0] == mock_new_docs[0]
