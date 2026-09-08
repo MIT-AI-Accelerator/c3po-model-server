@@ -22,8 +22,8 @@ router = APIRouter(
 
 @router.post(
     "/",
-    response_model=Union[LlmPretrained, HTTPValidationError],
     responses={
+        '200': {'model': LlmPretrained},
         '400': {'model': HTTPValidationError},
         '422': {'model': HTTPValidationError}
     },
@@ -52,8 +52,10 @@ def create_llm_pretrained_object_post(llm_pretrained_obj: LlmPretrainedCreate, d
 
 @router.post(
     "/{id}/upload/",
-    response_model=Union[LlmPretrained, HTTPValidationError],
-    responses={'422': {'model': HTTPValidationError}},
+    responses={
+        '200': {'model': LlmPretrained},
+        '422': {'model': HTTPValidationError}
+    },
     summary="Upload gpt4all Pretrained Model Binary",
     response_description="Uploaded Pretrained Model Binary"
 )
@@ -95,8 +97,10 @@ async def upload_gpt4all_post(new_file: UploadFile, id: UUID4, db: Annotated[Ses
 
 @router.get(
     "/",
-    response_model=Union[LlmPretrained, HTTPValidationError],
-    responses={'422': {'model': HTTPValidationError}},
+    responses={
+        '200': {'model': LlmPretrained},
+        '422': {'model': HTTPValidationError}
+    },
     summary="Get latest uploaded LLM Pretrained Model object",
     response_description="Retrieved latest LLM Pretrained Model object"
 )

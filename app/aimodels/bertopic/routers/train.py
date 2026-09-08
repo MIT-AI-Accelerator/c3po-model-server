@@ -47,8 +47,8 @@ class TrainModelRequest(BaseModel):
 
 @router.post(
     "/model/train",
-    response_model=Union[BertopicTrained, HTTPValidationError],
     responses={
+        '200': {'model': BertopicTrained},
         '400': {'model': HTTPValidationError},
         '422': {'model': HTTPValidationError}
     },

@@ -3,6 +3,7 @@ from datetime import datetime
 import pandas as pd
 import requests
 import time as tm
+from urllib.parse import quote
 from app.core.logging import logger
 
 HTTP_REQUEST_TIMEOUT_S = 60
@@ -89,7 +90,7 @@ def get_user_info(mm_base_url, mm_token, mm_user, get_teams = False):
     tdf = pd.DataFrame()
 
     # user info
-    resp = requests.get(f'{mm_base_url}/api/v4/users/username/%s' % mm_user,
+    resp = requests.get(f'{mm_base_url}/api/v4/users/username/{quote(mm_user, safe="")}',
                         headers={'Authorization': f'Bearer {mm_token}'},
                         timeout=HTTP_REQUEST_TIMEOUT_S)
     if resp.status_code < 400:
@@ -99,7 +100,7 @@ def get_user_info(mm_base_url, mm_token, mm_user, get_teams = False):
 
     # team info
     if user and get_teams:
-        url = f'{mm_base_url}/api/v4/users/%s/teams' % user['id']
+        url = f'{mm_base_url}/api/v4/users/{quote(user["id"], safe="")}/teams'
         tdf = get_all_pages(url, mm_token)
         if not tdf.empty:
             tdf.set_index('id', inplace=True)
@@ -113,7 +114,7 @@ def get_user_name(mm_base_url, mm_token, mm_user):
     user_name = None
 
     # user info
-    resp = requests.get(f'{mm_base_url}/api/v4/users/%s' % mm_user,
+    resp = requests.get(f'{mm_base_url}/api/v4/users/{quote(mm_user, safe="")}',
                         headers={'Authorization': f'Bearer {mm_token}'},
                         timeout=HTTP_REQUEST_TIMEOUT_S)
     if resp.status_code < 400:
@@ -130,7 +131,7 @@ def get_user_details(mm_base_url, mm_token, mm_user):
     udf = pd.DataFrame()
 
     # user info
-    resp = requests.get(f'{mm_base_url}/api/v4/users/%s' % mm_user,
+    resp = requests.get(f'{mm_base_url}/api/v4/users/{quote(mm_user, safe="")}',
                         headers={'Authorization': f'Bearer {mm_token}'},
                         timeout=HTTP_REQUEST_TIMEOUT_S)
     if resp.status_code < 400:
@@ -152,8 +153,7 @@ def get_user_details(mm_base_url, mm_token, mm_user):
 def get_user_team_channels(mm_base_url, mm_token, user_id, team_id):
     """get a list of channels by team"""
 
-    url = f'{mm_base_url}/api/v4/users/%s/teams/%s/channels' % (
-        user_id, team_id)
+    url = f'{mm_base_url}/api/v4/users/{quote(user_id, safe="")}/teams/{quote(team_id, safe="")}/channels'
     df = get_all_pages(url, mm_token, do_pagination=False)
     return df[df.total_msg_count > 0]
 
@@ -161,7 +161,7 @@ def get_user_team_channels(mm_base_url, mm_token, user_id, team_id):
 def get_team_channels(mm_base_url, mm_token, team_id):
     """get a list of channels by team"""
 
-    url = f'{mm_base_url}/api/v4/teams/%s/channels' % team_id
+    url = f'{mm_base_url}/api/v4/teams/{quote(team_id, safe="")}/channels'
     df = get_all_pages(url, mm_token, do_pagination=True)
     return df[df.total_msg_count > 0]
 
@@ -200,7 +200,7 @@ def get_channel_info(mm_base_url, mm_token, channel_id):
     channel = None
 
     # channel info
-    url = f'{mm_base_url}/api/v4/channels/%s' % channel_id
+    url = f'{mm_base_url}/api/v4/channels/{quote(channel_id, safe="")}'
     resp = requests.get(url, headers={'Authorization': f'Bearer {mm_token}'},
                         timeout=HTTP_REQUEST_TIMEOUT_S)
     if resp.status_code < 400:
@@ -210,7 +210,7 @@ def get_channel_info(mm_base_url, mm_token, channel_id):
 
     # team info
     if channel:
-        url = f'{mm_base_url}/api/v4/teams/%s' % channel['team_id']
+        url = f'{mm_base_url}/api/v4/teams/{quote(channel["team_id"], safe="")}'
         resp = requests.get(url, headers={'Authorization': f'Bearer {mm_token}'},
                             timeout=HTTP_REQUEST_TIMEOUT_S)
         if resp.status_code < 400:
@@ -226,7 +226,7 @@ def get_channel_info(mm_base_url, mm_token, channel_id):
 def get_channel_posts(mm_base_url, mm_token, channel_id, history_depth=0, filter_system_types=True, usernames_to_filter={MM_BOT_USERNAME}):
     """get a list of posts for a single channel"""
 
-    url = f'{mm_base_url}/api/v4/channels/%s/posts' % channel_id
+    url = f'{mm_base_url}/api/v4/channels/{quote(channel_id, safe="")}/posts'
     posts = get_all_pages(url, mm_token, is_channel=True)
     if not posts.empty:
         posts['datetime'] = [datetime.fromtimestamp(x / 1000) for x in posts['create_at']]
@@ -283,7 +283,7 @@ def get_all_team_posts_by_substring(mm_base_url, mm_token, team_id, search_str):
 
     ddf = pd.DataFrame
 
-    url = f'{mm_base_url}/api/v4/teams/%s/posts/search' % team_id
+    url = f'{mm_base_url}/api/v4/teams/{quote(team_id, safe="")}/posts/search'
     resp = requests.post(url, headers={'Authorization': f'Bearer {mm_token}'},
                         json={'terms': search_str, 'is_or_search': False},
                         timeout=HTTP_REQUEST_TIMEOUT_S)

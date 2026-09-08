@@ -14,8 +14,10 @@ router = APIRouter()
 
 @router.post(
     "/basic/completions",
-    response_model=Union[CompletionInferenceOutputs, HTTPValidationError],
-    responses={'422': {'model': HTTPValidationError}},
+    responses={
+        '200': {'model': CompletionInferenceOutputs},
+        '422': {'model': HTTPValidationError}
+    },
     summary="GPT completion endpoint",
     response_description="Completed GPT response"
 )
@@ -31,8 +33,10 @@ async def gpt_completion_post(request: CompletionInferenceInputs, db: Annotated[
 
 @router.post(
     "/chat/completions",
-    response_model=Union[CompletionInferenceOutputs, HTTPValidationError],
-    responses={'422': {'model': HTTPValidationError}},
+    responses={
+        '200': {'model': CompletionInferenceOutputs},
+        '422': {'model': HTTPValidationError}
+    },
     summary="Chat completion endpoint",
     response_description="Completed Chat response"
 )

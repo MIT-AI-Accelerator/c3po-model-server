@@ -12,8 +12,10 @@ router = APIRouter(
 
 @router.post(
     "/",
-    response_model=Union[list[Document], HTTPValidationError],
-    responses={'422': {'model': HTTPValidationError}},
+    responses={
+        '200': {'model': list[Document]},
+        '422': {'model': HTTPValidationError}
+    },
     summary="Create documents from list",
     response_description="List of created document objects"
 )

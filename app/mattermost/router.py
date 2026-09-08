@@ -27,8 +27,10 @@ class UploadUserRequest(BaseModel):
 
 @router.post(
     "/mattermost/user/upload",
-    response_model=Union[MattermostUser, HTTPValidationError],
-    responses={'422': {'model': HTTPValidationError}},
+    responses={
+        '200': {'model': MattermostUser},
+        '422': {'model': HTTPValidationError}
+    },
     summary="Upload Mattermost user info",
     response_description="Uploaded Mattermost user info")
 async def upload_mm_user_info(request: UploadUserRequest, db: Annotated[Session, Depends(get_db)]) -> (
@@ -51,8 +53,10 @@ async def upload_mm_user_info(request: UploadUserRequest, db: Annotated[Session,
 
 @router.get(
     "/mattermost/user/get",
-    response_model=Union[MattermostUser, HTTPValidationError],
-    responses={'422': {'model': HTTPValidationError}},
+    responses={
+        '200': {'model': MattermostUser},
+        '422': {'model': HTTPValidationError}
+    },
     summary="Get Mattermost user info",
     response_description="Retrieved Mattermost user info")
 async def get_mm_user_info(db: Annotated[Session, Depends(get_db)], user_name: str) -> (
@@ -82,8 +86,10 @@ class UploadDocumentRequest(BaseModel):
 
 @router.post(
     "/mattermost/documents/upload",
-    response_model=Union[list[MattermostDocument], HTTPValidationError],
-    responses={'422': {'model': HTTPValidationError}},
+    responses={
+        '200': {'model': list[MattermostDocument]},
+        '422': {'model': HTTPValidationError}
+    },
     summary="Upload Mattermost documents",
     response_description="Uploaded Mattermost documents")
 async def upload_mm_channel_docs(request: UploadDocumentRequest, db: Annotated[Session, Depends(get_db)]) -> (
@@ -129,8 +135,10 @@ async def upload_mm_channel_docs(request: UploadDocumentRequest, db: Annotated[S
 
 @router.get(
     "/mattermost/documents/get",
-    response_model=Union[list[MattermostDocument], HTTPValidationError],
-    responses={'422': {'model': HTTPValidationError}},
+    responses={
+        '200': {'model': list[MattermostDocument]},
+        '422': {'model': HTTPValidationError}
+    },
     summary="Retrieve Mattermost documents",
     response_description="Retrieved Mattermost documents")
 async def get_mm_channel_docs(db: Annotated[Session, Depends(get_db)], team_name: str, channel_name: str,
@@ -169,8 +177,10 @@ class ConversationThreadResponse(BaseModel):
 
 @router.post(
     "/mattermost/conversation_threads",
-    response_model=Union[ConversationThreadResponse, HTTPValidationError],
-    responses={'422': {'model': HTTPValidationError}},
+    responses={
+        '200': {'model': ConversationThreadResponse},
+        '422': {'model': HTTPValidationError}
+    },
     summary="Retrieve Mattermost conversation documents",
     response_description="Retrieved Mattermost conversation documents")
 async def convert_conversation_threads(request: ConversationThreadRequest,
@@ -277,8 +287,10 @@ class SubstringUploadRequest(BaseModel):
 
 @router.post(
     "/mattermost/search/upload",
-    response_model=dict,
-    responses={'422': {'model': HTTPValidationError}},
+    responses={
+        '200': {'model': dict},
+        '422': {'model': HTTPValidationError}
+    },
     summary="Upload Mattermost documents containing substring",
     response_description="Uploaded Mattermost documents containing substring")
 async def upload_mm_docs_by_substring(request: SubstringUploadRequest, db: Annotated[Session, Depends(get_db)]) -> dict:
@@ -312,8 +324,10 @@ async def upload_mm_docs_by_substring(request: SubstringUploadRequest, db: Annot
 
 @router.get(
     "/mattermost/search/get",
-    response_model=dict,
-    responses={'422': {'model': HTTPValidationError}},
+    responses={
+        '200': {'model': dict},
+        '422': {'model': HTTPValidationError}
+    },
     summary="Retrieve Mattermost documents containing substring",
     response_description="Retrieved Mattermost documents containing substring")
 async def get_mm_docs_by_substring(db: Annotated[Session, Depends(get_db)], search_terms: str) -> dict:

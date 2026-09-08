@@ -15,7 +15,9 @@ router = APIRouter(
 
 @router.get(
     "/models",
-    response_model=Union[list[Any], HTTPValidationError],
+    responses={
+        '200': {'model': list[Any]}
+    },
     summary="Retrieve all available trained BERTopic models",
     response_description="Retrieved trained BERTopic models")
 async def get_model_topics(db: Annotated[Session, Depends(get_db)], limit: int = 1) -> (
@@ -161,8 +163,10 @@ async def visualize_topic_words(id: UUID4, db: Annotated[Session, Depends(get_db
 
 @router.get(
     "/model/{id}/topics",
-    response_model=Union[list[TopicSummary], HTTPValidationError],
-    responses={'422': {'model': HTTPValidationError}},
+    responses={
+        '200': {'model': list[TopicSummary]},
+        '422': {'model': HTTPValidationError}
+    },
     summary="Retrieve topics for a trained BERTopic model",
     response_description="Retrieved topics for a trained BERTopic model")
 async def get_model_topics(id: UUID4, db: Annotated[Session, Depends(get_db)]) -> (
@@ -183,8 +187,10 @@ async def get_model_topics(id: UUID4, db: Annotated[Session, Depends(get_db)]) -
 
 @router.get(
     "/topic/{id}",
-    response_model=Union[TopicSummary, HTTPValidationError],
-    responses={'422': {'model': HTTPValidationError}},
+    responses={
+        '200': {'model': TopicSummary},
+        '422': {'model': HTTPValidationError}
+    },
     summary="Retrieve a BERTopic summary",
     response_description="Retrieved a BERTopic summary")
 async def get_topic_summary(id: UUID4, db: Annotated[Session, Depends(get_db)]) -> (
