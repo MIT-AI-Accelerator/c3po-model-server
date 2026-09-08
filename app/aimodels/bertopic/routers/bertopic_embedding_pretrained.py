@@ -33,8 +33,10 @@ router = APIRouter(
 
 @router.post(
     "/",
-    response_model=Union[BertopicEmbeddingPretrained, HTTPValidationError],
-    responses={'422': {'model': HTTPValidationError}},
+    responses={
+        '200': {'model': BertopicEmbeddingPretrained},
+        '422': {'model': HTTPValidationError}
+    },
     summary="Create BERTopic Embedding Pretrained Model object",
     response_description="Created Embedding Pretrained Model object"
 )
@@ -66,8 +68,10 @@ def create_bertopic_embedding_pretrained_object_post(bertopic_embedding_pretrain
 
 @router.post(
     "/train/",
-    response_model=Union[list, HTTPValidationError],
-    responses={'422': {'model': HTTPValidationError}},
+    responses={
+        '200': {'model': list},
+        '422': {'model': HTTPValidationError}
+    },
     summary="Train a Weak Learner Model for upload",
     response_description="Trained the Weak Learner Model"
 )
@@ -101,8 +105,10 @@ async def upload_bertopic_embedding_post(new_file: UploadFile, db: Annotated[Ses
 
 @router.post(
     "/{id}/upload/",
-    response_model=Union[BertopicEmbeddingPretrained, HTTPValidationError],
-    responses={'422': {'model': HTTPValidationError}},
+    responses={
+        '200': {'model': BertopicEmbeddingPretrained},
+        '422': {'model': HTTPValidationError}
+    },
     summary="Upload BERTopic Embedding Pretrained Model Binary",
     response_description="Uploaded Embedding Pretrained Model Binary"
 )
@@ -143,8 +149,10 @@ async def upload_bertopic_embedding_post(new_file: UploadFile, id: UUID4, db: An
 
 @router.get(
     "/",
-    response_model=Union[BertopicEmbeddingPretrained, HTTPValidationError],
-    responses={'422': {'model': HTTPValidationError}},
+    responses={
+        '200': {'model': BertopicEmbeddingPretrained},
+        '422': {'model': HTTPValidationError}
+    },
     summary="Get latest uploaded BERTopic Embedding Pretrained Model object",
     response_description="Retrieved latest Embedding Pretrained Model object"
 )
@@ -164,8 +172,10 @@ def get_latest_bertopic_embedding_pretrained_object(db: Annotated[Session, Depen
 
 @router.get(
     "/label-dictionary/get",
-    response_model=Union[list, HTTPValidationError],
-    responses={'422': {'model': HTTPValidationError}},
+    responses={
+        '200': {'model': list},
+        '422': {'model': HTTPValidationError}
+    },
     summary="Get label dictionary for latest uploaded BERTopic Weak Learner Model object",
     response_description="Retrieved label dictionary for latest uploaded BERTopic Weak Learner Model object"
 )
@@ -197,8 +207,10 @@ class LabelDictionaryRequest(BaseModel):
 
 @router.post(
     "/label-dictionary/append",
-    response_model=Union[list, HTTPValidationError],
-    responses={'422': {'model': HTTPValidationError}},
+    responses={
+        '200': {'model': list},
+        '422': {'model': HTTPValidationError}
+    },
     summary="Append to latest label dictionary, train and upload a new BERTopic Weak Learner Model object",
     response_description="Uploaded Embedding Pretrained Model Binary"
 )
