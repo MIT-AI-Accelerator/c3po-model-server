@@ -5,7 +5,7 @@ from time import time
 from uuid import uuid4
 from enum import Enum
 from typing import Optional, Any, List
-from pydantic import BaseModel, field_validator, model_validator, ValidationError, ConfigDict
+from pydantic import BaseModel, Field, field_validator, model_validator, ValidationError, ConfigDict
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnableMap
 from langchain_classic.chains import LLMChain
@@ -111,9 +111,9 @@ class CompletionInferenceOutputs(BaseModel):
 
     Note: Right now usage is not implemented, only types are stubbed out in code.
     """
-    id: str = str(uuid4())
+    id: str = Field(default_factory=lambda: str(uuid4()))
     object: str = "text_completion"
-    created: int = int(time())
+    created: int = Field(default_factory=lambda: int(time()))
     model: Optional[LlmFilenameEnum] = None
     choices: list[CompletionInferenceOutputChoices]
     usage: Optional[CompletionInferenceOutputUsage] = None

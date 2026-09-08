@@ -1,5 +1,5 @@
 """mattermost router"""
-from typing import Union
+from typing import Annotated, Union
 from pydantic import BaseModel, UUID4
 from fastapi import Depends, APIRouter, HTTPException
 from tqdm import tqdm
@@ -31,7 +31,7 @@ class UploadUserRequest(BaseModel):
     responses={'422': {'model': HTTPValidationError}},
     summary="Upload Mattermost user info",
     response_description="Uploaded Mattermost user info")
-async def upload_mm_user_info(request: UploadUserRequest, db: Session = Depends(get_db)) -> (
+async def upload_mm_user_info(request: UploadUserRequest, db: Annotated[Session, Depends(get_db)]) -> (
     Union[MattermostUser, HTTPValidationError]
 ):
     """
@@ -55,7 +55,7 @@ async def upload_mm_user_info(request: UploadUserRequest, db: Session = Depends(
     responses={'422': {'model': HTTPValidationError}},
     summary="Get Mattermost user info",
     response_description="Retrieved Mattermost user info")
-async def get_mm_user_info(user_name: str, db: Session = Depends(get_db)) -> (
+async def get_mm_user_info(db: Annotated[Session, Depends(get_db)], user_name: str) -> (
     Union[MattermostUser, HTTPValidationError]
 ):
     """
@@ -86,7 +86,7 @@ class UploadDocumentRequest(BaseModel):
     responses={'422': {'model': HTTPValidationError}},
     summary="Upload Mattermost documents",
     response_description="Uploaded Mattermost documents")
-async def upload_mm_channel_docs(request: UploadDocumentRequest, db: Session = Depends(get_db)) -> (
+async def upload_mm_channel_docs(request: UploadDocumentRequest, db: Annotated[Session, Depends(get_db)]) -> (
     Union[list[MattermostDocument], HTTPValidationError]
 ):
     """
@@ -133,9 +133,8 @@ async def upload_mm_channel_docs(request: UploadDocumentRequest, db: Session = D
     responses={'422': {'model': HTTPValidationError}},
     summary="Retrieve Mattermost documents",
     response_description="Retrieved Mattermost documents")
-async def get_mm_channel_docs(team_name: str, channel_name: str,
-                              history_depth: int = mattermost_utils.DEFAULT_HISTORY_DEPTH_DAYS,
-                              db: Session = Depends(get_db)) -> (
+async def get_mm_channel_docs(db: Annotated[Session, Depends(get_db)], team_name: str, channel_name: str,
+                              history_depth: int = mattermost_utils.DEFAULT_HISTORY_DEPTH_DAYS) -> (
     Union[list[MattermostDocument], HTTPValidationError]
 ):
     """
@@ -175,7 +174,7 @@ class ConversationThreadResponse(BaseModel):
     summary="Retrieve Mattermost conversation documents",
     response_description="Retrieved Mattermost conversation documents")
 async def convert_conversation_threads(request: ConversationThreadRequest,
-                              db: Session = Depends(get_db)) -> (
+                              db: Annotated[Session, Depends(get_db)]) -> (
     Union[ConversationThreadResponse, HTTPValidationError]
 ):
     """
@@ -282,7 +281,7 @@ class SubstringUploadRequest(BaseModel):
     responses={'422': {'model': HTTPValidationError}},
     summary="Upload Mattermost documents containing substring",
     response_description="Uploaded Mattermost documents containing substring")
-async def upload_mm_docs_by_substring(request: SubstringUploadRequest, db: Session = Depends(get_db)) -> dict:
+async def upload_mm_docs_by_substring(request: SubstringUploadRequest, db: Annotated[Session, Depends(get_db)]) -> dict:
     """
     Retrieve mattermost posts by substring
 
@@ -317,7 +316,7 @@ async def upload_mm_docs_by_substring(request: SubstringUploadRequest, db: Sessi
     responses={'422': {'model': HTTPValidationError}},
     summary="Retrieve Mattermost documents containing substring",
     response_description="Retrieved Mattermost documents containing substring")
-async def get_mm_docs_by_substring(search_terms: str, db: Session = Depends(get_db)) -> dict:
+async def get_mm_docs_by_substring(db: Annotated[Session, Depends(get_db)], search_terms: str) -> dict:
     """
     Retrieve mattermost posts by substring
 

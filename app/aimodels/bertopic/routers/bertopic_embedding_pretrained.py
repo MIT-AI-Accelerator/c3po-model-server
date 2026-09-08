@@ -1,7 +1,7 @@
 import hashlib
 import pickle
 import pandas as pd
-from typing import Union
+from typing import Annotated, Union
 from io import StringIO, BytesIO
 
 from fastapi import Depends, APIRouter, UploadFile
@@ -38,7 +38,7 @@ router = APIRouter(
     summary="Create BERTopic Embedding Pretrained Model object",
     response_description="Created Embedding Pretrained Model object"
 )
-def create_bertopic_embedding_pretrained_object_post(bertopic_embedding_pretrained_obj: BertopicEmbeddingPretrainedCreate, db: Session = Depends(get_db)) -> (
+def create_bertopic_embedding_pretrained_object_post(bertopic_embedding_pretrained_obj: BertopicEmbeddingPretrainedCreate, db: Annotated[Session, Depends(get_db)]) -> (
     Union[BertopicEmbeddingPretrained, HTTPValidationError]
 ):
     """
@@ -71,7 +71,7 @@ def create_bertopic_embedding_pretrained_object_post(bertopic_embedding_pretrain
     summary="Train a Weak Learner Model for upload",
     response_description="Trained the Weak Learner Model"
 )
-async def upload_bertopic_embedding_post(new_file: UploadFile, db: Session = Depends(get_db), s3: S3Client = Depends(get_s3)) -> (
+async def upload_bertopic_embedding_post(new_file: UploadFile, db: Annotated[Session, Depends(get_db)], s3: Annotated[S3Client, Depends(get_s3)]) -> (
     Union[list, HTTPValidationError]
 ):
     """
@@ -106,7 +106,7 @@ async def upload_bertopic_embedding_post(new_file: UploadFile, db: Session = Dep
     summary="Upload BERTopic Embedding Pretrained Model Binary",
     response_description="Uploaded Embedding Pretrained Model Binary"
 )
-async def upload_bertopic_embedding_post(new_file: UploadFile, id: UUID4, db: Session = Depends(get_db), s3: S3Client = Depends(get_s3)) -> (
+async def upload_bertopic_embedding_post(new_file: UploadFile, id: UUID4, db: Annotated[Session, Depends(get_db)], s3: Annotated[S3Client, Depends(get_s3)]) -> (
     Union[BertopicEmbeddingPretrained, HTTPValidationError]
 ):
     """
@@ -148,7 +148,7 @@ async def upload_bertopic_embedding_post(new_file: UploadFile, id: UUID4, db: Se
     summary="Get latest uploaded BERTopic Embedding Pretrained Model object",
     response_description="Retrieved latest Embedding Pretrained Model object"
 )
-def get_latest_bertopic_embedding_pretrained_object(model_name: str, db: Session = Depends(get_db)) -> (
+def get_latest_bertopic_embedding_pretrained_object(db: Annotated[Session, Depends(get_db)], model_name: str) -> (
     Union[BertopicEmbeddingPretrained, HTTPValidationError]
 ):
     """
@@ -169,7 +169,7 @@ def get_latest_bertopic_embedding_pretrained_object(model_name: str, db: Session
     summary="Get label dictionary for latest uploaded BERTopic Weak Learner Model object",
     response_description="Retrieved label dictionary for latest uploaded BERTopic Weak Learner Model object"
 )
-def get_latest_weak_label_dictionary(model_name: str, db: Session = Depends(get_db)) -> (
+def get_latest_weak_label_dictionary(db: Annotated[Session, Depends(get_db)], model_name: str) -> (
     Union[list, HTTPValidationError]
 ):
     """
@@ -202,7 +202,7 @@ class LabelDictionaryRequest(BaseModel):
     summary="Append to latest label dictionary, train and upload a new BERTopic Weak Learner Model object",
     response_description="Uploaded Embedding Pretrained Model Binary"
 )
-def append_latest_weak_label_dictionary(request: LabelDictionaryRequest, db: Session = Depends(get_db)) -> (
+def append_latest_weak_label_dictionary(request: LabelDictionaryRequest, db: Annotated[Session, Depends(get_db)]) -> (
     Union[list, HTTPValidationError]
 ):
     """

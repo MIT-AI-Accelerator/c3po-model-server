@@ -338,7 +338,7 @@ jobs:
         run: |
           if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
           uv pip install pytest pytest-cov
-          uv pip uninstall triton || true
+          #uv pip uninstall triton || true
 
       - name: Test with pytest
         env:

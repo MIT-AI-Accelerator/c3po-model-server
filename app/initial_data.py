@@ -79,8 +79,8 @@ def init_s3_bucket(s3: S3Client) -> None:
     bucket_name = settings.s3_bucket_name
     try:
         s3.get_waiter('bucket_exists').wait(Bucket=bucket_name)
-    except WaiterError as e:
-        logger.error(e)
+    except WaiterError:
+        logger.exception("Bucket does not exist")
         logger.info(f"Creating bucket: {bucket_name}")
         s3.create_bucket(Bucket=bucket_name)
 
@@ -429,11 +429,8 @@ def init_large_objects(db: Session) -> None:
 
     # Mattermost documents
     logger.info("Uploading Mattermost documents")
-    doc_objs = init_mattermost_documents(db, bot_obj)
-    if doc_objs:
-        logger.info("Uploaded %d Mattermost documents to DB" % len(doc_objs))
-    else:
-        logger.info("Unable to load Mattermost documents")
+    init_mattermost_documents(db, bot_obj)
+    logger.info("Mattermost documents upload completed")
 
 
 def init_large_objects_local(s3: S3Client, db: Session) -> None:

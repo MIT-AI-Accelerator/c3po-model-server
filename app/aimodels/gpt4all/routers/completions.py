@@ -1,9 +1,11 @@
+from typing import Annotated, Union
 from fastapi import Depends, APIRouter, HTTPException
 from sqlalchemy.orm import Session
 from mypy_boto3_s3.client import S3Client
 from app.aimodels.gpt4all.models.llm_pretrained import LlmFilenameEnum
 from app.dependencies import get_db, get_s3
 from app.core.config import settings
+from app.core.errors import HTTPValidationError
 from .. import crud
 from ..models import LlmPretrainedModel
 from ..ai_services.completion_inference import CompletionInference, CompletionInferenceInputs, CompletionInferenceOutputs
@@ -12,11 +14,12 @@ router = APIRouter()
 
 @router.post(
     "/basic/completions",
-    response_model=CompletionInferenceOutputs,
+    response_model=Union[CompletionInferenceOutputs, HTTPValidationError],
+    responses={'422': {'model': HTTPValidationError}},
     summary="GPT completion endpoint",
     response_description="Completed GPT response"
 )
-async def gpt_completion_post(request: CompletionInferenceInputs, db: Session = Depends(get_db), s3: S3Client = Depends(get_s3)) -> (
+async def gpt_completion_post(request: CompletionInferenceInputs, db: Annotated[Session, Depends(get_db)], s3: Annotated[S3Client, Depends(get_s3)]) -> (
     CompletionInferenceOutputs
 ):
     """
@@ -28,11 +31,12 @@ async def gpt_completion_post(request: CompletionInferenceInputs, db: Session = 
 
 @router.post(
     "/chat/completions",
-    response_model=CompletionInferenceOutputs,
+    response_model=Union[CompletionInferenceOutputs, HTTPValidationError],
+    responses={'422': {'model': HTTPValidationError}},
     summary="Chat completion endpoint",
     response_description="Completed Chat response"
 )
-async def chat_completion_post(request: CompletionInferenceInputs, db: Session = Depends(get_db), s3: S3Client = Depends(get_s3)) -> (
+async def chat_completion_post(request: CompletionInferenceInputs, db: Annotated[Session, Depends(get_db)], s3: Annotated[S3Client, Depends(get_s3)]) -> (
     CompletionInferenceOutputs
 ):
     """

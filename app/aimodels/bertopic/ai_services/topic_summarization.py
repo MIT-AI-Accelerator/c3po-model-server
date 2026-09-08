@@ -150,10 +150,9 @@ class TopicSummarizer:
 
             prompt = PromptTemplate.from_template(self.prompt_template)
 
-            refine_prompt = PromptTemplate.from_template(self.refine_template)
-
             # Takes a list of documents, combines them into a single string, and passes this to an LLMChain
             # initial implementation used langchain.chains.summarize import load_summarize_chain, unavailable in latest langchain
+            # refine_prompt = PromptTemplate.from_template(self.refine_template)
             # chain = load_summarize_chain(self.llm,
             #                                 chain_type="refine",
             #                                 verbose=False,

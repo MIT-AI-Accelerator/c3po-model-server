@@ -1,6 +1,6 @@
 
 import hashlib
-from typing import Union
+from typing import Annotated, Union
 from fastapi import Depends, APIRouter, UploadFile, HTTPException
 from pydantic import UUID4
 from sqlalchemy.orm import Session
@@ -23,11 +23,14 @@ router = APIRouter(
 @router.post(
     "/",
     response_model=Union[LlmPretrained, HTTPValidationError],
-    responses={'422': {'model': HTTPValidationError}},
+    responses={
+        '400': {'model': HTTPValidationError},
+        '422': {'model': HTTPValidationError}
+    },
     summary="Create gpt4all Pretrained Model object",
     response_description="Created Pretrained Model object"
 )
-def create_llm_pretrained_object_post(llm_pretrained_obj: LlmPretrainedCreate, db: Session = Depends(get_db)) -> (
+def create_llm_pretrained_object_post(llm_pretrained_obj: LlmPretrainedCreate, db: Annotated[Session, Depends(get_db)]) -> (
     Union[LlmPretrained, HTTPValidationError]
 ):
     """
@@ -54,7 +57,7 @@ def create_llm_pretrained_object_post(llm_pretrained_obj: LlmPretrainedCreate, d
     summary="Upload gpt4all Pretrained Model Binary",
     response_description="Uploaded Pretrained Model Binary"
 )
-async def upload_gpt4all_post(new_file: UploadFile, id: UUID4, db: Session = Depends(get_db), s3: S3Client = Depends(get_s3)) -> (
+async def upload_gpt4all_post(new_file: UploadFile, id: UUID4, db: Annotated[Session, Depends(get_db)], s3: Annotated[S3Client, Depends(get_s3)]) -> (
     Union[LlmPretrained, HTTPValidationError]
 ):
     """
@@ -97,9 +100,9 @@ async def upload_gpt4all_post(new_file: UploadFile, id: UUID4, db: Session = Dep
     summary="Get latest uploaded LLM Pretrained Model object",
     response_description="Retrieved latest LLM Pretrained Model object"
 )
-def get_latest_llm_pretrained_object(model_type: LlmFilenameEnum =
-                                         LlmFilenameEnum.L13B_SNOOZY,
-                                         db: Session = Depends(get_db)) -> (
+def get_latest_llm_pretrained_object(db: Annotated[Session, Depends(get_db)],
+                                         model_type: LlmFilenameEnum =
+                                         LlmFilenameEnum.L13B_SNOOZY) -> (
     Union[LlmPretrained, HTTPValidationError]
 ):
     """
