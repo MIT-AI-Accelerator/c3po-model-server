@@ -1,4 +1,5 @@
 import os
+from typing import Annotated
 from fastapi import Depends, APIRouter, HTTPException
 from fastapi.responses import HTMLResponse
 from jinja2 import Environment, FileSystemLoader
@@ -10,6 +11,7 @@ from app.aimodels.gpt4all.routers.completions import (
     validate_inputs_and_generate_service,
 )
 from app.dependencies import get_db, get_s3
+from app.core.errors import HTTPValidationError
 from app.aimodels.gpt4all.ai_services.completion_inference import (
     CompletionInference,
     CompletionInferenceInputs,
@@ -22,15 +24,16 @@ router = APIRouter(prefix="", tags=["Query Retrieval - Experimental"])
 @router.get(
     "/retrieval",
     response_class=HTMLResponse,
+    responses={'500': {'model': HTTPValidationError}},
     summary="Query retrieval endpoint",
     response_description="Answerwed query with sources",
 )
 async def chat_query_retrieval_get(
+    db: Annotated[Session, Depends(get_db)],
+    s3: Annotated[S3Client, Depends(get_s3)],
     prompt: str,
     summarize: bool = False,
     max_docs: int = 1000,
-    db: Session = Depends(get_db),
-    s3: S3Client = Depends(get_s3),
 ) -> (HTMLResponse):
     """
     Query retrieval endpoint.

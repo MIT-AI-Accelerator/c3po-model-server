@@ -1,3 +1,4 @@
+from typing import Annotated
 from pydantic import BaseModel
 from fastapi import Depends, APIRouter
 
@@ -15,7 +16,7 @@ class PromptResponse(BaseModel):
     answer: str
 
 @router.post("/getchatstress/", response_model=PromptResponse)
-def predict(request: PromptRequest, model: LstmStressClassifierModel = Depends(get_lstm_stress_classifier_model)):
+def predict(model: Annotated[LstmStressClassifierModel, Depends(get_lstm_stress_classifier_model)], request: PromptRequest):
     answer = model.classify_single_label(request.text)
 
     # convert to low / medium / high labels

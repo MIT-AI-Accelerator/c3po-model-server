@@ -1,12 +1,12 @@
 from datetime import datetime
-from pydantic import BaseModel, UUID4, ConfigDict
+from pydantic import BaseModel, Field, UUID4, ConfigDict
 from typing import Optional
 from app.core.config import OriginationEnum
 
 # Shared properties
 class DocumentBase(BaseModel):
     text: str
-    original_created_time: Optional[datetime] = datetime.now()
+    original_created_time: Optional[datetime] = Field(default_factory=datetime.now)
 
 # Properties to receive on Document creation
 class DocumentCreate(DocumentBase):

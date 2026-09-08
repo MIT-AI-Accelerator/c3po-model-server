@@ -1,4 +1,4 @@
-from typing import Union, Optional
+from typing import Annotated, Union, Optional
 from pydantic import BaseModel, UUID4
 from fastapi import Depends, APIRouter, HTTPException
 from sqlalchemy.orm import Session
@@ -48,11 +48,14 @@ class TrainModelRequest(BaseModel):
 @router.post(
     "/model/train",
     response_model=Union[BertopicTrained, HTTPValidationError],
-    responses={'422': {'model': HTTPValidationError}},
+    responses={
+        '400': {'model': HTTPValidationError},
+        '422': {'model': HTTPValidationError}
+    },
     summary="Train BERTopic on text",
     response_description="Trained Model and Plotly Visualization config"
 )
-def train_bertopic_post(request: TrainModelRequest, db: Session = Depends(get_db), s3: S3Client = Depends(get_s3)) -> (
+def train_bertopic_post(request: TrainModelRequest, db: Annotated[Session, Depends(get_db)], s3: Annotated[S3Client, Depends(get_s3)]) -> (
     Union[BertopicTrained, HTTPValidationError]
 ):
     """

@@ -1,5 +1,6 @@
 from typing import Union
 from datetime import datetime, timedelta
+from itertools import chain
 import pandas as pd
 import numpy as np
 from tqdm import tqdm
@@ -84,11 +85,11 @@ class CRUDMattermostDocument(CRUDBase[MattermostDocumentModel, MattermostDocumen
 
         documents = []
         for itype in content_filter_list:
-            documents += sum([db.query(self.model).join(DocumentModel).filter(self.model.channel == cuuid,
+            documents.extend(chain.from_iterable([db.query(self.model).join(DocumentModel).filter(self.model.channel == cuuid,
                 DocumentModel.original_created_time >= stime,
                 DocumentModel.original_created_time <= ctime,
                 self.model.thread_type == ThreadTypeEnum.MESSAGE,
-                self.model.info_type == itype).all() for cuuid in channels], [])
+                self.model.info_type == itype).all() for cuuid in channels]))
 
         return documents
 
@@ -231,7 +232,7 @@ class CRUDMattermostDocument(CRUDBase[MattermostDocumentModel, MattermostDocumen
 
         return self.create_all_using_id(db, obj_in_list=mattermost_documents)
 
-    def get_by_substring(self, db: Session, *, search_str: str) -> Union[MattermostDocumentModel, None]:
+    def get_by_substring(self, db: Session, *, search_str: str) -> pd.DataFrame:
 
         docs = db.query(self.model, DocumentModel, MattermostUserModel, MattermostChannelModel).join(
             DocumentModel, DocumentModel.id == self.model.document).join(
@@ -282,7 +283,7 @@ def populate_mm_user_info(db: Session, *, mm_user: dict, teams: dict) -> Matterm
     return user_obj
 
 
-def populate_mm_user_team_info(db: Session, *, user_name: str, get_teams = False) -> MattermostUserModel:
+def populate_mm_user_team_info(db: Session, *, user_name: str, get_teams = False) -> Union[MattermostUserModel, None]:
 
     # add or update user info in db
     (mm_user, tdf) = mattermost_utils.get_user_info(

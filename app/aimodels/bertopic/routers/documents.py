@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Annotated, Union
 from fastapi import Depends, APIRouter
 from sqlalchemy.orm import Session
 from app.dependencies import get_db
@@ -17,7 +17,7 @@ router = APIRouter(
     summary="Create documents from list",
     response_description="List of created document objects"
 )
-def create_document_objects_post(documents: list[DocumentCreate], db: Session = Depends(get_db)) -> (
+def create_document_objects_post(documents: list[DocumentCreate], db: Annotated[Session, Depends(get_db)]) -> (
     Union[list[Document], HTTPValidationError]
 ):
     """

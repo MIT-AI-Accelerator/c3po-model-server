@@ -5,6 +5,7 @@ import datetime as dt
 import pandas as pd
 import sqlalchemy as sa
 from io import StringIO
+from typing import Annotated
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_versioning import VersionedFastAPI
@@ -104,7 +105,7 @@ async def upload_icao_list(icao_dictionary: str):
     responses={'422': {'model': HTTPValidationError}},
     summary="Retrieve items from database",
     response_description="Retrieved items from database")
-async def get_items_from_db(table_name: str, limit: int = 0, db: Session = Depends(get_db)):
+async def get_items_from_db(db: Annotated[Session, Depends(get_db)], table_name: str, limit: int = 0):
     """
     Retrieve items from database
 

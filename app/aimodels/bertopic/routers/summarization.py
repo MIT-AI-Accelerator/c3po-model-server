@@ -1,4 +1,4 @@
-from typing import Union, Any
+from typing import Annotated, Union, Any
 from pydantic import UUID4
 from fastapi import Depends, APIRouter, HTTPException
 from fastapi.responses import HTMLResponse
@@ -18,7 +18,7 @@ router = APIRouter(
     response_model=Union[list[Any], HTTPValidationError],
     summary="Retrieve all available trained BERTopic models",
     response_description="Retrieved trained BERTopic models")
-async def get_model_topics(limit: int = 1, db: Session = Depends(get_db)) -> (
+async def get_model_topics(db: Annotated[Session, Depends(get_db)], limit: int = 1) -> (
     Union[list[Any], HTTPValidationError]):
     """
     Retrieve all available trained BERTopic models
@@ -30,9 +30,10 @@ async def get_model_topics(limit: int = 1, db: Session = Depends(get_db)) -> (
 @router.get(
     "/model/{id}/visualize_topic_clusters",
     response_class=HTMLResponse,
+    responses={'422': {'model': HTTPValidationError}},
     summary="Retrieve a BERTopic document cluster visualization",
     response_description="Retrieved a BERTopic document cluster visualization")
-async def visualize_topic_clusters(id: UUID4, db: Session = Depends(get_db)):
+async def visualize_topic_clusters(id: UUID4, db: Annotated[Session, Depends(get_db)]):
     """
     Retrieve a BERTopic document cluster visualization
 
@@ -51,9 +52,10 @@ async def visualize_topic_clusters(id: UUID4, db: Session = Depends(get_db)):
 @router.get(
     "/model/{id}/visualize_topic_clusters/json",
     response_model=Union[str, HTTPValidationError],
+    responses={'422': {'model': HTTPValidationError}},
     summary="Retrieve a BERTopic document cluster visualization",
     response_description="Retrieved a BERTopic document cluster visualization")
-async def visualize_topic_clusters(id: UUID4, db: Session = Depends(get_db)):
+async def visualize_topic_clusters(id: UUID4, db: Annotated[Session, Depends(get_db)]):
     """
     Retrieve a BERTopic document cluster visualization
 
@@ -72,9 +74,10 @@ async def visualize_topic_clusters(id: UUID4, db: Session = Depends(get_db)):
 @router.get(
     "/model/{id}/visualize_topic_words",
     response_class=HTMLResponse,
+    responses={'422': {'model': HTTPValidationError}},
     summary="Retrieve a BERTopic word probability visualization",
     response_description="Retrieved a BERTopic word probability visualization")
-async def visualize_topic_words(id: UUID4, db: Session = Depends(get_db)):
+async def visualize_topic_words(id: UUID4, db: Annotated[Session, Depends(get_db)]):
     """
     Retrieve a BERTopic word probability visualization
 
@@ -93,9 +96,10 @@ async def visualize_topic_words(id: UUID4, db: Session = Depends(get_db)):
 @router.get(
     "/model/{id}/visualize_topic_words/json",
     response_model=Union[str, HTTPValidationError],
+    responses={'422': {'model': HTTPValidationError}},
     summary="Retrieve a BERTopic word probability visualization",
     response_description="Retrieved a BERTopic word probability visualization")
-async def visualize_topic_words(id: UUID4, db: Session = Depends(get_db)):
+async def visualize_topic_words(id: UUID4, db: Annotated[Session, Depends(get_db)]):
     """
     Retrieve a BERTopic word probability visualization
 
@@ -114,9 +118,10 @@ async def visualize_topic_words(id: UUID4, db: Session = Depends(get_db)):
 @router.get(
     "/model/{id}/visualize_topic_timeline",
     response_class=HTMLResponse,
+    responses={'422': {'model': HTTPValidationError}},
     summary="Retrieve a BERTopic model-level topic timeline visualization",
     response_description="Retrieved a BERTopic model-level topic timeline visualization")
-async def visualize_topic_words(id: UUID4, db: Session = Depends(get_db)):
+async def visualize_topic_words(id: UUID4, db: Annotated[Session, Depends(get_db)]):
     """
     Retrieve a BERTopic model-level topic timeline visualization
 
@@ -135,9 +140,10 @@ async def visualize_topic_words(id: UUID4, db: Session = Depends(get_db)):
 @router.get(
     "/model/{id}/visualize_topic_timeline/json",
     response_model=Union[str, HTTPValidationError],
+    responses={'422': {'model': HTTPValidationError}},
     summary="Retrieve a BERTopic model-level topic timeline visualization",
     response_description="Retrieved a BERTopic model-level topic timeline visualization")
-async def visualize_topic_words(id: UUID4, db: Session = Depends(get_db)):
+async def visualize_topic_words(id: UUID4, db: Annotated[Session, Depends(get_db)]):
     """
     Retrieve a BERTopic model-level topic timeline visualization
 
@@ -156,9 +162,10 @@ async def visualize_topic_words(id: UUID4, db: Session = Depends(get_db)):
 @router.get(
     "/model/{id}/topics",
     response_model=Union[list[TopicSummary], HTTPValidationError],
+    responses={'422': {'model': HTTPValidationError}},
     summary="Retrieve topics for a trained BERTopic model",
     response_description="Retrieved topics for a trained BERTopic model")
-async def get_model_topics(id: UUID4, db: Session = Depends(get_db)) -> (
+async def get_model_topics(id: UUID4, db: Annotated[Session, Depends(get_db)]) -> (
     Union[list[TopicSummary], HTTPValidationError]
 ):
     """
@@ -180,7 +187,7 @@ async def get_model_topics(id: UUID4, db: Session = Depends(get_db)) -> (
     responses={'422': {'model': HTTPValidationError}},
     summary="Retrieve a BERTopic summary",
     response_description="Retrieved a BERTopic summary")
-async def get_topic_summary(id: UUID4, db: Session = Depends(get_db)) -> (
+async def get_topic_summary(id: UUID4, db: Annotated[Session, Depends(get_db)]) -> (
     Union[TopicSummary, HTTPValidationError]
 ):
     """
@@ -198,9 +205,10 @@ async def get_topic_summary(id: UUID4, db: Session = Depends(get_db)) -> (
 @router.get(
     "/topic/{id}/visualize_topic_timeline",
     response_class=HTMLResponse,
+    responses={'422': {'model': HTTPValidationError}},
     summary="Retrieve a BERTopic timeline visualization",
     response_description="Retrieved a BERTopic timeline visualization")
-async def visualize_topic_timeline(id: UUID4, db: Session = Depends(get_db)):
+async def visualize_topic_timeline(id: UUID4, db: Annotated[Session, Depends(get_db)]):
     """
     Retrieve a BERTopic timeline visualization
 
@@ -219,9 +227,10 @@ async def visualize_topic_timeline(id: UUID4, db: Session = Depends(get_db)):
 @router.get(
     "/topic/{id}/visualize_topic_timeline/json",
     response_model=Union[str, HTTPValidationError],
+    responses={'422': {'model': HTTPValidationError}},
     summary="Retrieve a BERTopic timeline visualization",
     response_description="Retrieved a BERTopic timeline visualization")
-async def visualize_topic_timeline(id: UUID4, db: Session = Depends(get_db)):
+async def visualize_topic_timeline(id: UUID4, db: Annotated[Session, Depends(get_db)]):
     """
     Retrieve a BERTopic timeline visualization
 

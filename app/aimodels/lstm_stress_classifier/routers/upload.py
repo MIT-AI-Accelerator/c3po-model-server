@@ -1,5 +1,5 @@
 import os
-from typing import Union
+from typing import Annotated, Union
 from pydantic import BaseModel
 from fastapi import Depends, APIRouter, UploadFile
 from aiofiles import open as open_aio
@@ -112,7 +112,7 @@ async def upload_train_data(new_file: Union[UploadFile, None] = None):
         return {"filename": new_file.filename}
 
 @router.post("/refresh-model/", summary="Refresh model", response_description="Success")
-def refresh_model(model: LstmStressClassifierModel = Depends(get_lstm_stress_classifier_model)):
+def refresh_model(model: Annotated[LstmStressClassifierModel, Depends(get_lstm_stress_classifier_model)]):
     """
     Refresh the model to load new inputs
     """
