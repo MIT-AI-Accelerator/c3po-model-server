@@ -61,6 +61,8 @@ class Settings(BaseSettings):
     # Default model hash settings
     default_sha256_l13b_snoozy: str = ""
     default_sha256_q4_k_m: str = ""
+    l13b_snooze_model_id: str = ""
+    q4_k_m_model_id: str = ""
 
     # Weak learner settings
     label_dictionary: dict = {'labeling_terms': [['joined the channel', 'added to the channel'],
