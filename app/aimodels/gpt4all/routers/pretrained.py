@@ -101,7 +101,7 @@ async def upload_gpt4all_post(new_file: UploadFile, id: UUID4, db: Annotated[Ses
         '200': {'model': LlmPretrained},
         '422': {'model': HTTPValidationError}
     },
-    summary="Get latest uploaded LLM Pretrained Model object",
+    summary="Get latest uploaded LLM Pretrained Model object by model type",
     response_description="Retrieved latest LLM Pretrained Model object"
 )
 def get_latest_llm_pretrained_object(db: Annotated[Session, Depends(get_db)],
@@ -115,6 +115,29 @@ def get_latest_llm_pretrained_object(db: Annotated[Session, Depends(get_db)],
     llm_pretrained_obj = crud.llm_pretrained.get_latest_uploaded_by_model_type(
         db, model_type=model_type
     )
+
+    if not llm_pretrained_obj:
+        raise HTTPException(status_code=422, detail="LLM Pretrained Model not found")
+
+    return llm_pretrained_obj
+
+
+@router.get(
+    "/{id}/",
+    responses={
+        '200': {'model': LlmPretrained},
+        '422': {'model': HTTPValidationError}
+    },
+    summary="Get latest uploaded LLM Pretrained Model object by id",
+    response_description="Retrieved latest LLM Pretrained Model object"
+)
+def get_latest_llm_pretrained_object(db: Annotated[Session, Depends(get_db)], id: UUID4) -> (
+    Union[LlmPretrained, HTTPValidationError]
+):
+    """
+    Get latest uploaded LLM Pretrained Model object.
+    """
+    llm_pretrained_obj = crud.llm_pretrained.get(db, id)
 
     if not llm_pretrained_obj:
         raise HTTPException(status_code=422, detail="LLM Pretrained Model not found")
