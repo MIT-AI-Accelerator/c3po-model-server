@@ -294,7 +294,7 @@ def init_llm_db_obj_staging_prod(s3: S3Client, db: Session, model_enum: LlmFilen
 
     if model_enum == LlmFilenameEnum.L13B_SNOOZY:
         default_sha256 = settings.default_sha256_l13b_snoozy
-        model_id = settings.l13b_snooze_model_id
+        model_id = settings.l13b_snoozy_model_id
     else:
         default_sha256 = settings.default_sha256_q4_k_m
         model_id = settings.q4_k_m_model_id
