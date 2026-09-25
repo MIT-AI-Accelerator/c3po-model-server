@@ -284,7 +284,7 @@ def test_get_llm_pretrained_object(client: TestClient, mocker: MagicMock, valid_
     )
 
     response = client.get(
-        f"/aimodels/llm/pretrained/{model_id}",
+        f"/aimodels/llm/pretrained/{model_id}/",
         headers={},
     )
 
@@ -296,7 +296,7 @@ def test_get_llm_pretrained_object_invalid_id(client: TestClient):
     model_id = str(uuid.uuid4())
 
     response = client.get(
-        f"/aimodels/llm/pretrained/{model_id}",
+        f"/aimodels/llm/pretrained/{model_id}/",
         headers={},
     )
 
@@ -308,7 +308,7 @@ def test_delete_llm_pretrained_object_no_db_entry(client: TestClient):
     model_id = str(uuid.uuid4())
 
     response = client.delete(
-        f"/aimodels/llm/pretrained/{model_id}",
+        f"/aimodels/llm/pretrained/{model_id}/",
         headers={}
     )
 
@@ -330,7 +330,7 @@ def test_delete_llm_pretrained_object_no_s3_key(client: TestClient, mocker: Magi
         return_value=False
     )
     response = client.delete(
-        f"/aimodels/llm/pretrained/{model_id}",
+        f"/aimodels/llm/pretrained/{model_id}/",
         headers={}
     )
 
@@ -357,7 +357,7 @@ def test_delete_llm_pretrained_object_db_failure(client: TestClient, mocker: Mag
         return_value=None
     )
     response = client.delete(
-        f"/aimodels/llm/pretrained/{model_id}",
+        f"/aimodels/llm/pretrained/{model_id}/",
         headers={}
     )
 
@@ -384,7 +384,7 @@ def test_delete_llm_pretrained_object(client: TestClient, mocker: MagicMock, upl
         return_value=MagicMock()
     )
     response = client.delete(
-        f"/aimodels/llm/pretrained/{model_id}",
+        f"/aimodels/llm/pretrained/{model_id}/",
         headers={}
     )
 

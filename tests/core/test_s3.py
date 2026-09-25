@@ -330,7 +330,7 @@ def test_delete_obj_success():
 
 
 def test_delete_obj_error():
-    """Test successful object deletion in S3"""
+    """Test object deletion failure in S3"""
     test_id = uuid4()
     mock_s3 = MagicMock(spec=S3Client)
     mock_s3.head_object.side_effect = BotoCoreError()
