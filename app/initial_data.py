@@ -292,9 +292,12 @@ def init_llm_pretrained_model(s3: S3Client, db: Session) -> LlmPretrainedModel:
 
 def init_llm_db_obj_staging_prod(s3: S3Client, db: Session, model_enum: LlmFilenameEnum) -> LlmPretrainedModel:
 
-    default_sha256 = settings.default_sha256_l13b_snoozy \
-        if model_enum == LlmFilenameEnum.L13B_SNOOZY \
-        else settings.default_sha256_q4_k_m
+    if model_enum == LlmFilenameEnum.L13B_SNOOZY:
+        default_sha256 = settings.default_sha256_l13b_snoozy
+        model_id = settings.l13b_snoozy_model_id
+    else:
+        default_sha256 = settings.default_sha256_q4_k_m
+        model_id = settings.q4_k_m_model_id
     model_name = model_enum.value
     local_path = os.path.join(
         MODEL_CACHE_BASEDIR, model_name)
@@ -305,7 +308,7 @@ def init_llm_db_obj_staging_prod(s3: S3Client, db: Session, model_enum: LlmFilen
 
         # Download the file from s3
         logger.info(f"Downloading base model from S3 to {local_path}")
-        download_file_from_s3(model_name, s3, filename=local_path)
+        download_file_from_s3(model_id, s3, filename=local_path)
         logger.info(f"Downloaded model from S3 to {local_path}")
 
     # check to make sure sha256 doesn't already exist

@@ -8,7 +8,7 @@ from pytest_mock import MockerFixture
 from fastapi.testclient import TestClient
 from fastapi.encoders import jsonable_encoder
 from app.core.config import OriginationEnum
-from app.ppg_common.schemas.gpt4all.llm_pretrained import LlmPretrainedCreate
+from app.ppg_common.schemas.gpt4all.llm_pretrained import LlmPretrainedCreate, LlmPretrained
 from app.aimodels.gpt4all.models.llm_pretrained import LlmFilenameEnum
 import app.aimodels.gpt4all.crud.crud_llm_pretrained as crud
 
@@ -87,8 +87,8 @@ def test_create_llm_pretrained_object_post_sha256_converted_to_lowercase(client:
     assert response.status_code == 200
     assert response.json()['sha256'] == valid_sha256.lower()
 
-# ************ upload ************
 
+# ************ upload ************
 
 @pytest.mark.parametrize('model_type', [e for e in LlmFilenameEnum])
 def test_upload_llm_pretrained_object_post_valid_request(client: TestClient,
@@ -225,6 +225,8 @@ def test_upload_llm_pretrained_object_post_id_does_not_exist(client: TestClient)
     assert 'gpt4all Pretrained Model not found' in response.json()['detail']
 
 
+# ************ get ************
+
 def test_get_llm_pretrained_object_invalid_name(client: TestClient):
     body = {'model_type': 'not_a_name.bin'}
 
@@ -261,3 +263,129 @@ def test_get_llm_pretrained_object_valid_name(client: TestClient,
     )
 
     assert response.status_code == 200
+
+
+@pytest.mark.parametrize('model_type', [e for e in LlmFilenameEnum])
+def test_get_llm_pretrained_object(client: TestClient, mocker: MagicMock, valid_sha256: str, model_type):
+    model_id = str(uuid.uuid4())
+
+    mock_llm_pretrained_obj = LlmPretrained(
+        id=model_id,
+        model_type=model_type,
+        uploaded=True,
+        version=1,
+        sha256=valid_sha256,
+        use_base_model=True,
+        originated_from=OriginationEnum.ORIGINATED_FROM_TEST
+    )
+    mocker.patch(
+        "app.aimodels.gpt4all.routers.pretrained.crud.llm_pretrained.get",
+        return_value=mock_llm_pretrained_obj
+    )
+
+    response = client.get(
+        f"/aimodels/llm/pretrained/{model_id}/",
+        headers={},
+    )
+
+    print(response)
+    assert response.status_code == 200
+
+
+def test_get_llm_pretrained_object_invalid_id(client: TestClient):
+    model_id = str(uuid.uuid4())
+
+    response = client.get(
+        f"/aimodels/llm/pretrained/{model_id}/",
+        headers={},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == f"LLM Pretrained Model with id {model_id} not found"
+
+
+def test_delete_llm_pretrained_object_no_db_entry(client: TestClient):
+    model_id = str(uuid.uuid4())
+
+    response = client.delete(
+        f"/aimodels/llm/pretrained/{model_id}/",
+        headers={}
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == f"LLM Pretrained Model with id {model_id} not found"
+
+
+def test_delete_llm_pretrained_object_no_s3_key(client: TestClient, mocker: MagicMock):
+    model_id = str(uuid.uuid4())
+    mock_llm_pretrained_obj = MagicMock()
+    mock_llm_pretrained_obj.uploaded = True
+
+    mocker.patch(
+        "app.aimodels.gpt4all.routers.pretrained.crud.llm_pretrained.get",
+        return_value=mock_llm_pretrained_obj
+    )
+    mocker.patch(
+        "app.aimodels.gpt4all.routers.pretrained.delete_s3_object",
+        return_value=False
+    )
+    response = client.delete(
+        f"/aimodels/llm/pretrained/{model_id}/",
+        headers={}
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == f"Failed to delete object with id {model_id} from S3"
+
+
+@pytest.mark.parametrize("uploaded", (True, False))
+def test_delete_llm_pretrained_object_db_failure(client: TestClient, mocker: MagicMock, uploaded: bool):
+    model_id = str(uuid.uuid4())
+    mock_llm_pretrained_obj = MagicMock()
+    mock_llm_pretrained_obj.uploaded = uploaded
+
+    mocker.patch(
+        "app.aimodels.gpt4all.routers.pretrained.crud.llm_pretrained.get",
+        return_value=mock_llm_pretrained_obj
+    )
+    mocker.patch(
+        "app.aimodels.gpt4all.routers.pretrained.delete_s3_object",
+        return_value=True
+    )
+    mocker.patch(
+        "app.aimodels.gpt4all.routers.pretrained.crud.llm_pretrained.remove",
+        return_value=None
+    )
+    response = client.delete(
+        f"/aimodels/llm/pretrained/{model_id}/",
+        headers={}
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == f"Failed to delete object with id {model_id} from database"
+
+
+@pytest.mark.parametrize("uploaded", (True, False))
+def test_delete_llm_pretrained_object(client: TestClient, mocker: MagicMock, uploaded: bool):
+    model_id = str(uuid.uuid4())
+    mock_llm_pretrained_obj = MagicMock()
+    mock_llm_pretrained_obj.uploaded = uploaded
+
+    mocker.patch(
+        "app.aimodels.gpt4all.routers.pretrained.crud.llm_pretrained.get",
+        return_value=mock_llm_pretrained_obj
+    )
+    mocker.patch(
+        "app.aimodels.gpt4all.routers.pretrained.delete_s3_object",
+        return_value=True
+    )
+    mocker.patch(
+        "app.aimodels.gpt4all.routers.pretrained.crud.llm_pretrained.remove",
+        return_value=MagicMock()
+    )
+    response = client.delete(
+        f"/aimodels/llm/pretrained/{model_id}/",
+        headers={}
+    )
+
+    assert response.status_code == 204

@@ -1,12 +1,12 @@
 
 import hashlib
 from typing import Annotated, Union
-from fastapi import Depends, APIRouter, UploadFile, HTTPException
+from fastapi import Depends, APIRouter, UploadFile, HTTPException, status
 from pydantic import UUID4
 from sqlalchemy.orm import Session
 from mypy_boto3_s3.client import S3Client
 
-from app.core.s3 import upload_file_to_s3
+from app.core.s3 import upload_file_to_s3, delete_s3_object
 from app.dependencies import get_db, get_s3
 from app.core.errors import HTTPValidationError
 from app.ppg_common.schemas.gpt4all.llm_pretrained import LlmPretrained, LlmPretrainedCreate, LlmPretrainedUpdate
@@ -101,7 +101,7 @@ async def upload_gpt4all_post(new_file: UploadFile, id: UUID4, db: Annotated[Ses
         '200': {'model': LlmPretrained},
         '422': {'model': HTTPValidationError}
     },
-    summary="Get latest uploaded LLM Pretrained Model object",
+    summary="Get latest uploaded LLM Pretrained Model object by model type",
     response_description="Retrieved latest LLM Pretrained Model object"
 )
 def get_latest_llm_pretrained_object(db: Annotated[Session, Depends(get_db)],
@@ -120,3 +120,62 @@ def get_latest_llm_pretrained_object(db: Annotated[Session, Depends(get_db)],
         raise HTTPException(status_code=422, detail="LLM Pretrained Model not found")
 
     return llm_pretrained_obj
+
+
+@router.get(
+    "/{id}/",
+    responses={
+        '200': {'model': LlmPretrained},
+        '422': {'model': HTTPValidationError}
+    },
+    summary="Get latest uploaded LLM Pretrained Model object by id",
+    response_description="Retrieved latest LLM Pretrained Model object"
+)
+def get_llm_pretrained_object(db: Annotated[Session, Depends(get_db)], id: UUID4) -> (
+    Union[LlmPretrained, HTTPValidationError]
+):
+    """
+    Get latest uploaded LLM Pretrained Model object.
+    """
+    llm_pretrained_obj = crud.llm_pretrained.get(db, id)
+
+    if not llm_pretrained_obj:
+        raise HTTPException(status_code=422, detail=f"LLM Pretrained Model with id {id} not found")
+
+    return llm_pretrained_obj
+
+
+@router.delete(
+    "/{id}/",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={"422": {"model": HTTPValidationError}},
+    summary="Delete an uploaded LLM Pretrained Model object by id",
+    response_description="Deleted LLM Pretrained Model object"
+)
+def delete_llm_pretrained_object_id(id: UUID4, db: Annotated[Session, Depends(get_db)], s3: Annotated[S3Client, Depends(get_s3)]) -> None:
+    """Delete LLM Pretrained Model object by id.
+
+    If the db entry exists, but the model hasn't been uploaded, will only delete the
+    db entry."""
+
+    llm_pretrained_obj = crud.llm_pretrained.get(db, id)
+    if not llm_pretrained_obj:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=f"LLM Pretrained Model with id {id} not found")
+
+    # Delete from S3 first since this operation is more likely to fail
+    if llm_pretrained_obj.uploaded:
+        res = delete_s3_object(s3, id)
+        if not res:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail=f"Failed to delete object with id {id} from S3")
+
+    res = crud.llm_pretrained.remove(db, id=id)
+    if res is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=f"Failed to delete object with id {id} from database")
+
+    return

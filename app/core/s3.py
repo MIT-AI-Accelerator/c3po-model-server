@@ -8,7 +8,7 @@ from fastapi import UploadFile, HTTPException
 from pydantic import UUID4
 from mypy_boto3_s3.client import S3Client
 from botocore.response import StreamingBody
-from botocore.exceptions import BotoCoreError
+from botocore.exceptions import BotoCoreError, ClientError
 
 def build_client() -> S3Client:
     try:
@@ -123,3 +123,23 @@ def list_s3_objects(s3: S3Client) -> Any:
             logger.info(f"Key: {obj['Key']}, Last modified: {obj['LastModified']}, Size (B): {obj['Size']}")
     except BotoCoreError:
         logger.warning(f"unable to list s3 objects for {settings.s3_bucket_name}")
+
+def delete_s3_object(s3: S3Client, id: Union[UUID4, str]) -> bool:
+    """Deletes an object in the specified bucket.
+
+    First checks if the id (key) exists, then attempts to delete.
+
+    Returns True if successful and False otherwise."""
+
+    try:
+        # Check if the key exists first because the deletion method will not fail
+        # on a missing key.
+        s3.head_object(Bucket=settings.s3_bucket_name, Key=str(id))
+
+        s3.delete_object(Bucket=settings.s3_bucket_name, Key=str(id))
+    except (ClientError, BotoCoreError) as e:
+        logger.exception(e)
+        return False
+
+    return True
+

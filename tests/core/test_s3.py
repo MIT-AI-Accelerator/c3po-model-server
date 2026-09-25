@@ -1,6 +1,6 @@
 import io
 import pickle
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 from uuid import uuid4
 import pytest
 from botocore.exceptions import BotoCoreError, EndpointConnectionError
@@ -13,7 +13,8 @@ from app.core.s3 import (
     pickle_and_upload_object_to_s3,
     download_file_from_s3,
     download_pickled_object_from_s3,
-    list_s3_objects
+    list_s3_objects,
+    delete_s3_object
 )
 
 
@@ -305,3 +306,38 @@ def test_download_file_chunks():
         
         result.seek(0)
         assert result.read() == chunk1 + chunk2
+
+
+def test_delete_obj_success():
+    """Test successful object deletion in S3"""
+    test_id = uuid4()
+    mock_s3 = MagicMock(spec=S3Client)
+    
+    file_content = b"test content"
+    file_obj = io.BytesIO(file_content)
+    upload_file = UploadFile(file_obj, filename="test.txt")
+    
+    with patch('app.core.s3.settings') as mock_settings:
+        mock_settings.s3_bucket_name = "test-bucket"
+        
+        result = upload_file_to_s3(upload_file, test_id, mock_s3)
+        
+        assert result is True
+        mock_s3.put_object.assert_called_once()
+
+        res = delete_s3_object(mock_s3, test_id)
+        assert res
+
+
+def test_delete_obj_error():
+    """Test object deletion failure in S3"""
+    test_id = uuid4()
+    mock_s3 = MagicMock(spec=S3Client)
+    mock_s3.head_object.side_effect = BotoCoreError()
+
+    with patch('app.core.s3.settings') as mock_settings:
+        mock_settings.s3_bucket_name = "test-bucket"
+        
+        res = delete_s3_object(mock_s3, test_id)
+        assert not res
+
