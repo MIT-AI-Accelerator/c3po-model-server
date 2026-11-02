@@ -14,7 +14,7 @@ conda activate transformers-api
 ## Start here if not using conda, just make sure you have the right version of python and pip installed
 This procedure installs the necessary packages, builds and runs the containers.
 
-1. Install `poetry` version 1.8.5: `pip install poetry==1.8.5` (or use `pipx` [on link here](https://python-poetry.org/docs/1.4#installing-with-pipx) if you prefer isolated envs and you don't have `conda` managing your env)
+1. Install `poetry` version 2.0 or later: `pip install "poetry>=2.0"` (or use `pipx` [on link here](https://python-poetry.org/docs/1.4#installing-with-pipx) if you prefer isolated envs and you don't have `conda` managing your env). Note: `pyproject.toml` uses the `[tool.poetry.requires-plugins]` key, which requires Poetry 2.0+; older Poetry versions will fail with "Additional properties are not allowed ('requires-plugins' was unexpected)".
 
 2. Create and enter the virtual environment: `poetry shell`. Note: if you use conda, this step may not be necessary.
 
