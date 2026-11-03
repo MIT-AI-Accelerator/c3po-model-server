@@ -204,7 +204,7 @@ async def convert_conversation_threads(request: ConversationThreadRequest,
 
     # convert message utterances to conversation threads
     conversation_df = crud_mattermost.convert_conversation_threads(df=chat_df)
-    conversation_df.rename(columns={'user_uuid': 'user','channel_uuid': 'channel'}, inplace=True)
+    conversation_df = conversation_df.rename(columns={'user_uuid': 'user','channel_uuid': 'channel'})
 
     other_mm_doc_objs = [crud_mattermost.mattermost_documents.get_by_message_id(db, message_id=row['message_id'])
                          for key, row in other_df.iterrows()]
@@ -307,7 +307,7 @@ async def upload_mm_docs_by_substring(request: SubstringUploadRequest, db: Annot
         ddf = pd.concat([ddf,
                          mattermost_utils.get_all_team_posts_by_substring(settings.mm_base_url, settings.mm_token, request.team_id, search_str)],
                          ignore_index=True)
-    ddf.drop_duplicates(subset=['id'], inplace=True)
+    ddf = ddf.drop_duplicates(subset=['id'])
     for key, row in ddf.iterrows():
         mm_doc = crud_mattermost.mattermost_documents.get_by_message_id(db, message_id=row.id)
         if mm_doc:
@@ -343,6 +343,6 @@ async def get_mm_docs_by_substring(db: Annotated[Session, Depends(get_db)], sear
         ddf = pd.concat([ddf,
                          crud_mattermost.mattermost_documents.get_by_substring(db, search_str=search_str)],
                          ignore_index=True)
-    ddf.drop_duplicates(subset=['link'], inplace=True)
+    ddf = ddf.drop_duplicates(subset=['link'])
 
     return ddf.transpose().to_dict()

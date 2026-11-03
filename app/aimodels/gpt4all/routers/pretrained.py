@@ -177,5 +177,3 @@ def delete_llm_pretrained_object_id(id: UUID4, db: Annotated[Session, Depends(ge
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=f"Failed to delete object with id {id} from database")
-
-    return

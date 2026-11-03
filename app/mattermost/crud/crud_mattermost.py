@@ -316,7 +316,7 @@ def populate_mm_user_team_info(db: Session, *, user_name: str, get_teams = False
         dcdf = dcdf[~dcdf['type'].str.contains("D")]
         if not dcdf.empty:
             logger.warning(f"Duplicate Mattermost channels found: {dcdf.id.unique()}")
-        cdf.drop_duplicates(subset=['id'], keep='first', inplace=True)
+        cdf = cdf.drop_duplicates(subset=['id'], keep='first')
 
         # add new channels to db
         channels = [MattermostChannelCreate(
@@ -406,7 +406,7 @@ def populate_mm_document_info(db: Session, *, document_df: pd.DataFrame):
             udf = cdf[cdf.user_id == user_id]
             udf['channel'] = channel_obj.id
             udf['user'] = user_obj.id
-            udf.rename(columns={"id": "message_id"}, inplace=True)
+            udf = udf.rename(columns={"id": "message_id"})
 
             # create new document objects in db
             new_mattermost_docs = new_mattermost_docs + mattermost_documents.create_all_using_df(db, ddf=udf, thread_type=ThreadTypeEnum.MESSAGE)
@@ -452,7 +452,7 @@ def create_document_objects(db: Session, *,
 
     invalid_post_index = adf[adf['user_id'].isin(deleted_user_ids)].index
     adf = adf.drop(invalid_post_index)
-    adf.rename(columns={'id': 'message_id'}, inplace=True)
+    adf = adf.rename(columns={'id': 'message_id'})
     mattermost_documents.create_all_using_df(db, ddf=adf, thread_type=ThreadTypeEnum.MESSAGE)
 
     return channel_uuids
@@ -465,17 +465,17 @@ def convert_conversation_threads(df: pd.DataFrame):
     df['root_id'] = df['root_id'].fillna('')
     df['message'] = df['message'].fillna('')
 
-    df.rename(columns={'message_id': 'id'}, inplace=True)
-    df.sort_values(by='create_at', ascending=True, inplace=True)
+    df = df.rename(columns={'message_id': 'id'})
+    df = df.sort_values(by='create_at', ascending=True)
 
     tdf = pre.convert_conversation_threads(df, 'message')
-    tdf.sort_values(by='create_at', ascending=True, inplace=True)
+    tdf = tdf.sort_values(by='create_at', ascending=True)
     df['thread'] = tdf['message']
     df['thread'] = df['thread'].fillna('')
 
     df['message_speaker'] = df['user_name'] + ': ' + df['message']
     tdf = pre.convert_conversation_threads(df, 'message_speaker')
-    tdf.sort_values(by='create_at', ascending=True, inplace=True)
+    tdf = tdf.sort_values(by='create_at', ascending=True)
     df['thread_speaker'] = tdf['message_speaker']
     df['thread_speaker'] = df['thread_speaker'].fillna('')
 
@@ -484,11 +484,11 @@ def convert_conversation_threads(df: pd.DataFrame):
         if row['nickname'].strip() != '' else row['message_speaker'],
         axis=1)
     tdf = pre.convert_conversation_threads(df, 'message_speaker_persona')
-    tdf.sort_values(by='create_at', ascending=True, inplace=True)
+    tdf = tdf.sort_values(by='create_at', ascending=True)
     df['thread_speaker_persona'] = tdf['message_speaker_persona']
     df['thread_speaker_persona'] = df['thread_speaker_persona'].fillna('')
 
-    df.rename(columns={'id': 'message_id'}, inplace=True)
+    df = df.rename(columns={'id': 'message_id'})
     return df[df['root_id'] == '']
 
 

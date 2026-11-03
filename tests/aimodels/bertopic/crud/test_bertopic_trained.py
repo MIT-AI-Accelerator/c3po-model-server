@@ -19,7 +19,7 @@ def test_bertopic_trained_summary():
                                       sentence_transformer_id=uuid.uuid4(),
                                       weak_learner_id=uuid.uuid4(),
                                       summarization_model_id=uuid.uuid4())
-    assert isinstance(BertopicTrainedModelSummary(test_model), BertopicTrainedModelSummary)
+    assert isinstance(BertopicTrainedModelSummary.from_trained_model(test_model), BertopicTrainedModelSummary)
 
 def test_create_with_bad_embedding_pretrained_id(db: Session):
     obj_in = BertopicTrainedCreate()

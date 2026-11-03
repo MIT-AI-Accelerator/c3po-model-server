@@ -40,7 +40,7 @@ class RetrievalService(BaseModel):
         if not isinstance(api_inputs, CompletionInferenceInputs):
             raise ValidationError("must input type CompletionInferenceInputs")
 
-        retriever = self._build_retriever(channel_names=[CHAT_DATASET_1_PATH], max_docs=max_docs)
+        retriever = self._build_retriever(max_docs=max_docs)
 
         if summarize:
             llm = self.completion_inference._build_llm(api_inputs)
@@ -59,7 +59,6 @@ class RetrievalService(BaseModel):
 
     def _build_retriever(
         self,
-        channel_names=[],
         max_docs=1000,
     ):
         if self.sentence_model is None:
